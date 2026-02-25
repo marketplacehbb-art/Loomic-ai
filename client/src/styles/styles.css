@@ -1,0 +1,13 @@
+@layer components {
+  .glass {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .hero-gradient {
+    background: radial-gradient(circle at center, rgba(124, 58, 237, 0.15) 0%, transparent 70%);
+  }
+  .text-glow {
+    text-shadow: 0 0 20px rgba(124, 58, 237, 0.5);
+  }
+}
