@@ -1,0 +1,75 @@
+{
+  "generatedAt": "2026-03-01T21:14:20.368Z",
+  "config": {
+    "provider": "gemini",
+    "runs": 1,
+    "warmupRuns": 0,
+    "requestTimeoutMs": 180000,
+    "maxTokens": 512,
+    "promptIds": [
+      "custom"
+    ],
+    "promptMode": "single"
+  },
+  "summary": {
+    "totalMeasuredRuns": 1,
+    "successRuns": 0,
+    "failedRuns": 1,
+    "successRate": 0,
+    "e2eMs": {
+      "count": 1,
+      "min": 18274.65,
+      "max": 18274.65,
+      "mean": 18274.65,
+      "p50": 18274.65,
+      "p95": 18274.65
+    },
+    "e2eMsSuccessOnly": {
+      "count": 0,
+      "min": 0,
+      "max": 0,
+      "mean": 0,
+      "p50": 0,
+      "p95": 0
+    },
+    "apiDurationMs": {
+      "count": 0,
+      "min": 0,
+      "max": 0,
+      "mean": 0,
+      "p50": 0,
+      "p95": 0
+    },
+    "processingTimeMs": {
+      "count": 0,
+      "min": 0,
+      "max": 0,
+      "mean": 0,
+      "p50": 0,
+      "p95": 0
+    }
+  },
+  "stageTimingsMs": {},
+  "failures": [
+    {
+      "run": 1,
+      "promptId": "custom",
+      "httpStatus": 429,
+      "errorCode": "RATE_LIMIT_EXCEEDED",
+      "errorMessage": "Primary provider \"gemini\" failed and all fallbacks failed: openai: OpenRouter(OpenAI) API error: 402 - {\"error\":{\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 512 tokens, but can only afford 51. To increase, visit https://openrouter.ai...",
+      "e2eMs": 18274.65
+    }
+  ],
+  "samples": [
+    {
+      "run": 1,
+      "promptId": "custom",
+      "success": false,
+      "httpStatus": 429,
+      "e2eMs": 18274.65,
+      "apiDurationMs": 18158,
+      "errorCode": "RATE_LIMIT_EXCEEDED",
+      "errorMessage": "Primary provider \"gemini\" failed and all fallbacks failed: openai: OpenRouter(OpenAI) API error: 402 - {\"error\":{\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 512 tokens, but can only afford 51. To increase, visit https://openrouter.ai..."
+    }
+  ]
+}

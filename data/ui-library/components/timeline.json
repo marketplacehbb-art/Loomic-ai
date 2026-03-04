@@ -1,0 +1,842 @@
+{
+  "category": "timeline",
+  "components": [
+    {
+      "id": "timeline-vertical-01",
+      "name": "Timeline Vertical Alternating",
+      "category": "timeline",
+      "subcategory": "vertical",
+      "tags": {
+        "industry": [
+          "agency",
+          "services",
+          "startup"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "elegant"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const EVENTS = [\n  { year: \"2020\", title: \"Gründung\", body: \"Das Unternehmen wurde mit einer klaren Vision gegründet: einfacheres Arbeiten für alle.\" },\n  { year: \"2021\", title: \"Erste 1.000 Kunden\", body: \"Innerhalb von 12 Monaten überschritten wir die Marke von 1.000 zahlenden Kunden.\" },\n  { year: \"2022\", title: \"Series A – €4M\", body: \"Investitionen ermöglichten den Ausbau des Teams und der Infrastruktur.\" },\n  { year: \"2023\", title: \"Expansion DACH\", body: \"Eröffnung von Büros in Wien und Zürich. Betreuung von über 8.000 Teams.\" },\n  { year: \"2024\", title: \"AI-Features Launch\", body: \"Einführung KI-gestützter Automatisierungsfunktionen – das neue Herzstück der Plattform.\" },\n];\n\nexport default function TimelineVertical01() {\n  return (\n    <section id=\"about\" className=\"px-6 py-24\">\n      <div className=\"mx-auto max-w-3xl\">\n        <h2 className=\"text-center text-3xl font-extrabold text-slate-900\">Unsere Geschichte</h2>\n        <div className=\"relative mt-14\">\n          <div className=\"absolute left-5 top-0 h-full w-px bg-slate-200\" />\n          <ol className=\"space-y-10\">\n            {EVENTS.map((ev, i) => (\n              <li key={ev.year} className=\"relative flex gap-6 pl-16\">\n                <div className=\"absolute left-0 flex h-10 w-10 items-center justify-center rounded-full border-2 border-violet-300 bg-white text-xs font-black text-violet-700\">\n                  {ev.year.slice(2)}\n                </div>\n                <div>\n                  <span className=\"text-xs font-bold text-violet-600\">{ev.year}</span>\n                  <h3 className=\"mt-0.5 font-bold text-slate-900\">{ev.title}</h3>\n                  <p className=\"mt-1 text-sm text-slate-500\">{ev.body}</p>\n                </div>\n              </li>\n            ))}\n          </ol>\n        </div>\n      </div>\n    </section>\n  );\n}"
+      }
+    },
+    {
+      "id": "corp-timeline-light-01",
+      "name": "TimelineLightCorporate01",
+      "category": "timeline",
+      "subcategory": "vertical-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STEPS = [\n  { title: 'Plan', text: 'Define scope and measurable outcomes.' },\n  { title: 'Implement', text: 'Ship modular pages and reusable sections.' },\n  { title: 'Scale', text: 'Iterate with governed edits and QA checks.' }\n];\n\nexport default function TimelineLightCorporate01() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Timeline Section 01</h2>\n        <ol className=\"mt-8 space-y-4\">\n          {STEPS.map((s, i) => (\n            <li key={s.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <p className=\"text-xs uppercase tracking-wide text-slate-500\">Phase {i + 1}</p>\n              <p className=\"mt-1 text-base font-semibold text-slate-900\">{s.title}</p>\n              <p className=\"mt-2 text-sm text-slate-600\">{s.text}</p>\n            </li>\n          ))}\n        </ol>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-timeline-light-02",
+      "name": "TimelineLightCorporate02",
+      "category": "timeline",
+      "subcategory": "milestone-row",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STEPS = [\n  { title: 'Plan', text: 'Define scope and measurable outcomes.' },\n  { title: 'Implement', text: 'Ship modular pages and reusable sections.' },\n  { title: 'Scale', text: 'Iterate with governed edits and QA checks.' }\n];\n\nexport default function TimelineLightCorporate02() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Timeline Section 02</h2>\n        <ol className=\"mt-8 space-y-4\">\n          {STEPS.map((s, i) => (\n            <li key={s.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <p className=\"text-xs uppercase tracking-wide text-slate-500\">Phase {i + 1}</p>\n              <p className=\"mt-1 text-base font-semibold text-slate-900\">{s.title}</p>\n              <p className=\"mt-2 text-sm text-slate-600\">{s.text}</p>\n            </li>\n          ))}\n        </ol>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-timeline-light-03",
+      "name": "TimelineLightCorporate03",
+      "category": "timeline",
+      "subcategory": "process-steps",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STEPS = [\n  { title: 'Plan', text: 'Define scope and measurable outcomes.' },\n  { title: 'Implement', text: 'Ship modular pages and reusable sections.' },\n  { title: 'Scale', text: 'Iterate with governed edits and QA checks.' }\n];\n\nexport default function TimelineLightCorporate03() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Timeline Section 03</h2>\n        <ol className=\"mt-8 space-y-4\">\n          {STEPS.map((s, i) => (\n            <li key={s.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <p className=\"text-xs uppercase tracking-wide text-slate-500\">Phase {i + 1}</p>\n              <p className=\"mt-1 text-base font-semibold text-slate-900\">{s.title}</p>\n              <p className=\"mt-2 text-sm text-slate-600\">{s.text}</p>\n            </li>\n          ))}\n        </ol>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-timeline-light-04",
+      "name": "TimelineLightCorporate04",
+      "category": "timeline",
+      "subcategory": "vertical-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STEPS = [\n  { title: 'Plan', text: 'Define scope and measurable outcomes.' },\n  { title: 'Implement', text: 'Ship modular pages and reusable sections.' },\n  { title: 'Scale', text: 'Iterate with governed edits and QA checks.' }\n];\n\nexport default function TimelineLightCorporate04() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Timeline Section 04</h2>\n        <ol className=\"mt-8 space-y-4\">\n          {STEPS.map((s, i) => (\n            <li key={s.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <p className=\"text-xs uppercase tracking-wide text-slate-500\">Phase {i + 1}</p>\n              <p className=\"mt-1 text-base font-semibold text-slate-900\">{s.title}</p>\n              <p className=\"mt-2 text-sm text-slate-600\">{s.text}</p>\n            </li>\n          ))}\n        </ol>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-timeline-light-05",
+      "name": "TimelineLightCorporate05",
+      "category": "timeline",
+      "subcategory": "milestone-row",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STEPS = [\n  { title: 'Plan', text: 'Define scope and measurable outcomes.' },\n  { title: 'Implement', text: 'Ship modular pages and reusable sections.' },\n  { title: 'Scale', text: 'Iterate with governed edits and QA checks.' }\n];\n\nexport default function TimelineLightCorporate05() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Timeline Section 05</h2>\n        <ol className=\"mt-8 space-y-4\">\n          {STEPS.map((s, i) => (\n            <li key={s.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <p className=\"text-xs uppercase tracking-wide text-slate-500\">Phase {i + 1}</p>\n              <p className=\"mt-1 text-base font-semibold text-slate-900\">{s.title}</p>\n              <p className=\"mt-2 text-sm text-slate-600\">{s.text}</p>\n            </li>\n          ))}\n        </ol>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-timeline-light-06",
+      "name": "TimelineLightCorporate06",
+      "category": "timeline",
+      "subcategory": "process-steps",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STEPS = [\n  { title: 'Plan', text: 'Define scope and measurable outcomes.' },\n  { title: 'Implement', text: 'Ship modular pages and reusable sections.' },\n  { title: 'Scale', text: 'Iterate with governed edits and QA checks.' }\n];\n\nexport default function TimelineLightCorporate06() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Timeline Section 06</h2>\n        <ol className=\"mt-8 space-y-4\">\n          {STEPS.map((s, i) => (\n            <li key={s.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <p className=\"text-xs uppercase tracking-wide text-slate-500\">Phase {i + 1}</p>\n              <p className=\"mt-1 text-base font-semibold text-slate-900\">{s.title}</p>\n              <p className=\"mt-2 text-sm text-slate-600\">{s.text}</p>\n            </li>\n          ))}\n        </ol>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-timeline-light-07",
+      "name": "TimelineLightCorporate07",
+      "category": "timeline",
+      "subcategory": "vertical-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STEPS = [\n  { title: 'Plan', text: 'Define scope and measurable outcomes.' },\n  { title: 'Implement', text: 'Ship modular pages and reusable sections.' },\n  { title: 'Scale', text: 'Iterate with governed edits and QA checks.' }\n];\n\nexport default function TimelineLightCorporate07() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Timeline Section 07</h2>\n        <ol className=\"mt-8 space-y-4\">\n          {STEPS.map((s, i) => (\n            <li key={s.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <p className=\"text-xs uppercase tracking-wide text-slate-500\">Phase {i + 1}</p>\n              <p className=\"mt-1 text-base font-semibold text-slate-900\">{s.title}</p>\n              <p className=\"mt-2 text-sm text-slate-600\">{s.text}</p>\n            </li>\n          ))}\n        </ol>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-timeline-light-08",
+      "name": "TimelineLightCorporate08",
+      "category": "timeline",
+      "subcategory": "milestone-row",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STEPS = [\n  { title: 'Plan', text: 'Define scope and measurable outcomes.' },\n  { title: 'Implement', text: 'Ship modular pages and reusable sections.' },\n  { title: 'Scale', text: 'Iterate with governed edits and QA checks.' }\n];\n\nexport default function TimelineLightCorporate08() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Timeline Section 08</h2>\n        <ol className=\"mt-8 space-y-4\">\n          {STEPS.map((s, i) => (\n            <li key={s.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <p className=\"text-xs uppercase tracking-wide text-slate-500\">Phase {i + 1}</p>\n              <p className=\"mt-1 text-base font-semibold text-slate-900\">{s.title}</p>\n              <p className=\"mt-2 text-sm text-slate-600\">{s.text}</p>\n            </li>\n          ))}\n        </ol>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-timeline-light-09",
+      "name": "TimelineLightCorporate09",
+      "category": "timeline",
+      "subcategory": "process-steps",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STEPS = [\n  { title: 'Plan', text: 'Define scope and measurable outcomes.' },\n  { title: 'Implement', text: 'Ship modular pages and reusable sections.' },\n  { title: 'Scale', text: 'Iterate with governed edits and QA checks.' }\n];\n\nexport default function TimelineLightCorporate09() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Timeline Section 09</h2>\n        <ol className=\"mt-8 space-y-4\">\n          {STEPS.map((s, i) => (\n            <li key={s.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <p className=\"text-xs uppercase tracking-wide text-slate-500\">Phase {i + 1}</p>\n              <p className=\"mt-1 text-base font-semibold text-slate-900\">{s.title}</p>\n              <p className=\"mt-2 text-sm text-slate-600\">{s.text}</p>\n            </li>\n          ))}\n        </ol>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-timeline-light-10",
+      "name": "TimelineLightCorporate10",
+      "category": "timeline",
+      "subcategory": "vertical-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STEPS = [\n  { title: 'Plan', text: 'Define scope and measurable outcomes.' },\n  { title: 'Implement', text: 'Ship modular pages and reusable sections.' },\n  { title: 'Scale', text: 'Iterate with governed edits and QA checks.' }\n];\n\nexport default function TimelineLightCorporate10() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Timeline Section 10</h2>\n        <ol className=\"mt-8 space-y-4\">\n          {STEPS.map((s, i) => (\n            <li key={s.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <p className=\"text-xs uppercase tracking-wide text-slate-500\">Phase {i + 1}</p>\n              <p className=\"mt-1 text-base font-semibold text-slate-900\">{s.title}</p>\n              <p className=\"mt-2 text-sm text-slate-600\">{s.text}</p>\n            </li>\n          ))}\n        </ol>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-timeline-light-11",
+      "name": "TimelineLightCorporate11",
+      "category": "timeline",
+      "subcategory": "milestone-row",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STEPS = [\n  { title: 'Plan', text: 'Define scope and measurable outcomes.' },\n  { title: 'Implement', text: 'Ship modular pages and reusable sections.' },\n  { title: 'Scale', text: 'Iterate with governed edits and QA checks.' }\n];\n\nexport default function TimelineLightCorporate11() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Timeline Section 11</h2>\n        <ol className=\"mt-8 space-y-4\">\n          {STEPS.map((s, i) => (\n            <li key={s.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <p className=\"text-xs uppercase tracking-wide text-slate-500\">Phase {i + 1}</p>\n              <p className=\"mt-1 text-base font-semibold text-slate-900\">{s.title}</p>\n              <p className=\"mt-2 text-sm text-slate-600\">{s.text}</p>\n            </li>\n          ))}\n        </ol>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-timeline-light-12",
+      "name": "TimelineLightCorporate12",
+      "category": "timeline",
+      "subcategory": "process-steps",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STEPS = [\n  { title: 'Plan', text: 'Define scope and measurable outcomes.' },\n  { title: 'Implement', text: 'Ship modular pages and reusable sections.' },\n  { title: 'Scale', text: 'Iterate with governed edits and QA checks.' }\n];\n\nexport default function TimelineLightCorporate12() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Timeline Section 12</h2>\n        <ol className=\"mt-8 space-y-4\">\n          {STEPS.map((s, i) => (\n            <li key={s.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <p className=\"text-xs uppercase tracking-wide text-slate-500\">Phase {i + 1}</p>\n              <p className=\"mt-1 text-base font-semibold text-slate-900\">{s.title}</p>\n              <p className=\"mt-2 text-sm text-slate-600\">{s.text}</p>\n            </li>\n          ))}\n        </ol>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-timeline-light-13",
+      "name": "TimelineLightCorporate13",
+      "category": "timeline",
+      "subcategory": "vertical-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STEPS = [\n  { title: 'Plan', text: 'Define scope and measurable outcomes.' },\n  { title: 'Implement', text: 'Ship modular pages and reusable sections.' },\n  { title: 'Scale', text: 'Iterate with governed edits and QA checks.' }\n];\n\nexport default function TimelineLightCorporate13() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Timeline Section 13</h2>\n        <ol className=\"mt-8 space-y-4\">\n          {STEPS.map((s, i) => (\n            <li key={s.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <p className=\"text-xs uppercase tracking-wide text-slate-500\">Phase {i + 1}</p>\n              <p className=\"mt-1 text-base font-semibold text-slate-900\">{s.title}</p>\n              <p className=\"mt-2 text-sm text-slate-600\">{s.text}</p>\n            </li>\n          ))}\n        </ol>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-timeline-light-14",
+      "name": "TimelineLightCorporate14",
+      "category": "timeline",
+      "subcategory": "milestone-row",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STEPS = [\n  { title: 'Plan', text: 'Define scope and measurable outcomes.' },\n  { title: 'Implement', text: 'Ship modular pages and reusable sections.' },\n  { title: 'Scale', text: 'Iterate with governed edits and QA checks.' }\n];\n\nexport default function TimelineLightCorporate14() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Timeline Section 14</h2>\n        <ol className=\"mt-8 space-y-4\">\n          {STEPS.map((s, i) => (\n            <li key={s.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <p className=\"text-xs uppercase tracking-wide text-slate-500\">Phase {i + 1}</p>\n              <p className=\"mt-1 text-base font-semibold text-slate-900\">{s.title}</p>\n              <p className=\"mt-2 text-sm text-slate-600\">{s.text}</p>\n            </li>\n          ))}\n        </ol>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-timeline-light-15",
+      "name": "TimelineLightCorporate15",
+      "category": "timeline",
+      "subcategory": "process-steps",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STEPS = [\n  { title: 'Plan', text: 'Define scope and measurable outcomes.' },\n  { title: 'Implement', text: 'Ship modular pages and reusable sections.' },\n  { title: 'Scale', text: 'Iterate with governed edits and QA checks.' }\n];\n\nexport default function TimelineLightCorporate15() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Timeline Section 15</h2>\n        <ol className=\"mt-8 space-y-4\">\n          {STEPS.map((s, i) => (\n            <li key={s.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <p className=\"text-xs uppercase tracking-wide text-slate-500\">Phase {i + 1}</p>\n              <p className=\"mt-1 text-base font-semibold text-slate-900\">{s.title}</p>\n              <p className=\"mt-2 text-sm text-slate-600\">{s.text}</p>\n            </li>\n          ))}\n        </ol>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-timeline-light-16",
+      "name": "TimelineLightCorporate16",
+      "category": "timeline",
+      "subcategory": "vertical-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STEPS = [\n  { title: 'Plan', text: 'Define scope and measurable outcomes.' },\n  { title: 'Implement', text: 'Ship modular pages and reusable sections.' },\n  { title: 'Scale', text: 'Iterate with governed edits and QA checks.' }\n];\n\nexport default function TimelineLightCorporate16() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Timeline Section 16</h2>\n        <ol className=\"mt-8 space-y-4\">\n          {STEPS.map((s, i) => (\n            <li key={s.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <p className=\"text-xs uppercase tracking-wide text-slate-500\">Phase {i + 1}</p>\n              <p className=\"mt-1 text-base font-semibold text-slate-900\">{s.title}</p>\n              <p className=\"mt-2 text-sm text-slate-600\">{s.text}</p>\n            </li>\n          ))}\n        </ol>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-timeline-light-17",
+      "name": "TimelineLightCorporate17",
+      "category": "timeline",
+      "subcategory": "milestone-row",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STEPS = [\n  { title: 'Plan', text: 'Define scope and measurable outcomes.' },\n  { title: 'Implement', text: 'Ship modular pages and reusable sections.' },\n  { title: 'Scale', text: 'Iterate with governed edits and QA checks.' }\n];\n\nexport default function TimelineLightCorporate17() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Timeline Section 17</h2>\n        <ol className=\"mt-8 space-y-4\">\n          {STEPS.map((s, i) => (\n            <li key={s.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <p className=\"text-xs uppercase tracking-wide text-slate-500\">Phase {i + 1}</p>\n              <p className=\"mt-1 text-base font-semibold text-slate-900\">{s.title}</p>\n              <p className=\"mt-2 text-sm text-slate-600\">{s.text}</p>\n            </li>\n          ))}\n        </ol>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-timeline-light-18",
+      "name": "TimelineLightCorporate18",
+      "category": "timeline",
+      "subcategory": "process-steps",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STEPS = [\n  { title: 'Plan', text: 'Define scope and measurable outcomes.' },\n  { title: 'Implement', text: 'Ship modular pages and reusable sections.' },\n  { title: 'Scale', text: 'Iterate with governed edits and QA checks.' }\n];\n\nexport default function TimelineLightCorporate18() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Timeline Section 18</h2>\n        <ol className=\"mt-8 space-y-4\">\n          {STEPS.map((s, i) => (\n            <li key={s.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <p className=\"text-xs uppercase tracking-wide text-slate-500\">Phase {i + 1}</p>\n              <p className=\"mt-1 text-base font-semibold text-slate-900\">{s.title}</p>\n              <p className=\"mt-2 text-sm text-slate-600\">{s.text}</p>\n            </li>\n          ))}\n        </ol>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-timeline-light-19",
+      "name": "TimelineLightCorporate19",
+      "category": "timeline",
+      "subcategory": "vertical-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STEPS = [\n  { title: 'Plan', text: 'Define scope and measurable outcomes.' },\n  { title: 'Implement', text: 'Ship modular pages and reusable sections.' },\n  { title: 'Scale', text: 'Iterate with governed edits and QA checks.' }\n];\n\nexport default function TimelineLightCorporate19() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Timeline Section 19</h2>\n        <ol className=\"mt-8 space-y-4\">\n          {STEPS.map((s, i) => (\n            <li key={s.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <p className=\"text-xs uppercase tracking-wide text-slate-500\">Phase {i + 1}</p>\n              <p className=\"mt-1 text-base font-semibold text-slate-900\">{s.title}</p>\n              <p className=\"mt-2 text-sm text-slate-600\">{s.text}</p>\n            </li>\n          ))}\n        </ol>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-timeline-light-20",
+      "name": "TimelineLightCorporate20",
+      "category": "timeline",
+      "subcategory": "milestone-row",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STEPS = [\n  { title: 'Plan', text: 'Define scope and measurable outcomes.' },\n  { title: 'Implement', text: 'Ship modular pages and reusable sections.' },\n  { title: 'Scale', text: 'Iterate with governed edits and QA checks.' }\n];\n\nexport default function TimelineLightCorporate20() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Timeline Section 20</h2>\n        <ol className=\"mt-8 space-y-4\">\n          {STEPS.map((s, i) => (\n            <li key={s.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <p className=\"text-xs uppercase tracking-wide text-slate-500\">Phase {i + 1}</p>\n              <p className=\"mt-1 text-base font-semibold text-slate-900\">{s.title}</p>\n              <p className=\"mt-2 text-sm text-slate-600\">{s.text}</p>\n            </li>\n          ))}\n        </ol>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-timeline-light-21",
+      "name": "TimelineLightCorporate21",
+      "category": "timeline",
+      "subcategory": "process-steps",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STEPS = [\n  { title: 'Plan', text: 'Define scope and measurable outcomes.' },\n  { title: 'Implement', text: 'Ship modular pages and reusable sections.' },\n  { title: 'Scale', text: 'Iterate with governed edits and QA checks.' }\n];\n\nexport default function TimelineLightCorporate21() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Timeline Section 21</h2>\n        <ol className=\"mt-8 space-y-4\">\n          {STEPS.map((s, i) => (\n            <li key={s.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <p className=\"text-xs uppercase tracking-wide text-slate-500\">Phase {i + 1}</p>\n              <p className=\"mt-1 text-base font-semibold text-slate-900\">{s.title}</p>\n              <p className=\"mt-2 text-sm text-slate-600\">{s.text}</p>\n            </li>\n          ))}\n        </ol>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-timeline-light-22",
+      "name": "TimelineLightCorporate22",
+      "category": "timeline",
+      "subcategory": "vertical-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STEPS = [\n  { title: 'Plan', text: 'Define scope and measurable outcomes.' },\n  { title: 'Implement', text: 'Ship modular pages and reusable sections.' },\n  { title: 'Scale', text: 'Iterate with governed edits and QA checks.' }\n];\n\nexport default function TimelineLightCorporate22() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Timeline Section 22</h2>\n        <ol className=\"mt-8 space-y-4\">\n          {STEPS.map((s, i) => (\n            <li key={s.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <p className=\"text-xs uppercase tracking-wide text-slate-500\">Phase {i + 1}</p>\n              <p className=\"mt-1 text-base font-semibold text-slate-900\">{s.title}</p>\n              <p className=\"mt-2 text-sm text-slate-600\">{s.text}</p>\n            </li>\n          ))}\n        </ol>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-timeline-light-23",
+      "name": "TimelineLightCorporate23",
+      "category": "timeline",
+      "subcategory": "milestone-row",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STEPS = [\n  { title: 'Plan', text: 'Define scope and measurable outcomes.' },\n  { title: 'Implement', text: 'Ship modular pages and reusable sections.' },\n  { title: 'Scale', text: 'Iterate with governed edits and QA checks.' }\n];\n\nexport default function TimelineLightCorporate23() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Timeline Section 23</h2>\n        <ol className=\"mt-8 space-y-4\">\n          {STEPS.map((s, i) => (\n            <li key={s.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <p className=\"text-xs uppercase tracking-wide text-slate-500\">Phase {i + 1}</p>\n              <p className=\"mt-1 text-base font-semibold text-slate-900\">{s.title}</p>\n              <p className=\"mt-2 text-sm text-slate-600\">{s.text}</p>\n            </li>\n          ))}\n        </ol>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-timeline-light-24",
+      "name": "TimelineLightCorporate24",
+      "category": "timeline",
+      "subcategory": "process-steps",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STEPS = [\n  { title: 'Plan', text: 'Define scope and measurable outcomes.' },\n  { title: 'Implement', text: 'Ship modular pages and reusable sections.' },\n  { title: 'Scale', text: 'Iterate with governed edits and QA checks.' }\n];\n\nexport default function TimelineLightCorporate24() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Timeline Section 24</h2>\n        <ol className=\"mt-8 space-y-4\">\n          {STEPS.map((s, i) => (\n            <li key={s.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <p className=\"text-xs uppercase tracking-wide text-slate-500\">Phase {i + 1}</p>\n              <p className=\"mt-1 text-base font-semibold text-slate-900\">{s.title}</p>\n              <p className=\"mt-2 text-sm text-slate-600\">{s.text}</p>\n            </li>\n          ))}\n        </ol>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-timeline-light-25",
+      "name": "TimelineLightCorporate25",
+      "category": "timeline",
+      "subcategory": "vertical-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STEPS = [\n  { title: 'Plan', text: 'Define scope and measurable outcomes.' },\n  { title: 'Implement', text: 'Ship modular pages and reusable sections.' },\n  { title: 'Scale', text: 'Iterate with governed edits and QA checks.' }\n];\n\nexport default function TimelineLightCorporate25() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Timeline Section 25</h2>\n        <ol className=\"mt-8 space-y-4\">\n          {STEPS.map((s, i) => (\n            <li key={s.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <p className=\"text-xs uppercase tracking-wide text-slate-500\">Phase {i + 1}</p>\n              <p className=\"mt-1 text-base font-semibold text-slate-900\">{s.title}</p>\n              <p className=\"mt-2 text-sm text-slate-600\">{s.text}</p>\n            </li>\n          ))}\n        </ol>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-timeline-light-26",
+      "name": "TimelineLightCorporate26",
+      "category": "timeline",
+      "subcategory": "milestone-row",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STEPS = [\n  { title: 'Plan', text: 'Define scope and measurable outcomes.' },\n  { title: 'Implement', text: 'Ship modular pages and reusable sections.' },\n  { title: 'Scale', text: 'Iterate with governed edits and QA checks.' }\n];\n\nexport default function TimelineLightCorporate26() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Timeline Section 26</h2>\n        <ol className=\"mt-8 space-y-4\">\n          {STEPS.map((s, i) => (\n            <li key={s.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <p className=\"text-xs uppercase tracking-wide text-slate-500\">Phase {i + 1}</p>\n              <p className=\"mt-1 text-base font-semibold text-slate-900\">{s.title}</p>\n              <p className=\"mt-2 text-sm text-slate-600\">{s.text}</p>\n            </li>\n          ))}\n        </ol>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-timeline-light-27",
+      "name": "TimelineLightCorporate27",
+      "category": "timeline",
+      "subcategory": "process-steps",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STEPS = [\n  { title: 'Plan', text: 'Define scope and measurable outcomes.' },\n  { title: 'Implement', text: 'Ship modular pages and reusable sections.' },\n  { title: 'Scale', text: 'Iterate with governed edits and QA checks.' }\n];\n\nexport default function TimelineLightCorporate27() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Timeline Section 27</h2>\n        <ol className=\"mt-8 space-y-4\">\n          {STEPS.map((s, i) => (\n            <li key={s.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <p className=\"text-xs uppercase tracking-wide text-slate-500\">Phase {i + 1}</p>\n              <p className=\"mt-1 text-base font-semibold text-slate-900\">{s.title}</p>\n              <p className=\"mt-2 text-sm text-slate-600\">{s.text}</p>\n            </li>\n          ))}\n        </ol>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-timeline-light-28",
+      "name": "TimelineLightCorporate28",
+      "category": "timeline",
+      "subcategory": "vertical-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STEPS = [\n  { title: 'Plan', text: 'Define scope and measurable outcomes.' },\n  { title: 'Implement', text: 'Ship modular pages and reusable sections.' },\n  { title: 'Scale', text: 'Iterate with governed edits and QA checks.' }\n];\n\nexport default function TimelineLightCorporate28() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Timeline Section 28</h2>\n        <ol className=\"mt-8 space-y-4\">\n          {STEPS.map((s, i) => (\n            <li key={s.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <p className=\"text-xs uppercase tracking-wide text-slate-500\">Phase {i + 1}</p>\n              <p className=\"mt-1 text-base font-semibold text-slate-900\">{s.title}</p>\n              <p className=\"mt-2 text-sm text-slate-600\">{s.text}</p>\n            </li>\n          ))}\n        </ol>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-timeline-light-29",
+      "name": "TimelineLightCorporate29",
+      "category": "timeline",
+      "subcategory": "milestone-row",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STEPS = [\n  { title: 'Plan', text: 'Define scope and measurable outcomes.' },\n  { title: 'Implement', text: 'Ship modular pages and reusable sections.' },\n  { title: 'Scale', text: 'Iterate with governed edits and QA checks.' }\n];\n\nexport default function TimelineLightCorporate29() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Timeline Section 29</h2>\n        <ol className=\"mt-8 space-y-4\">\n          {STEPS.map((s, i) => (\n            <li key={s.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <p className=\"text-xs uppercase tracking-wide text-slate-500\">Phase {i + 1}</p>\n              <p className=\"mt-1 text-base font-semibold text-slate-900\">{s.title}</p>\n              <p className=\"mt-2 text-sm text-slate-600\">{s.text}</p>\n            </li>\n          ))}\n        </ol>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-timeline-light-30",
+      "name": "TimelineLightCorporate30",
+      "category": "timeline",
+      "subcategory": "process-steps",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STEPS = [\n  { title: 'Plan', text: 'Define scope and measurable outcomes.' },\n  { title: 'Implement', text: 'Ship modular pages and reusable sections.' },\n  { title: 'Scale', text: 'Iterate with governed edits and QA checks.' }\n];\n\nexport default function TimelineLightCorporate30() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Timeline Section 30</h2>\n        <ol className=\"mt-8 space-y-4\">\n          {STEPS.map((s, i) => (\n            <li key={s.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <p className=\"text-xs uppercase tracking-wide text-slate-500\">Phase {i + 1}</p>\n              <p className=\"mt-1 text-base font-semibold text-slate-900\">{s.title}</p>\n              <p className=\"mt-2 text-sm text-slate-600\">{s.text}</p>\n            </li>\n          ))}\n        </ol>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    }
+  ]
+}

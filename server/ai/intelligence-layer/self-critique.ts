@@ -1,5 +1,6 @@
 import { llmManager, LLMRequest } from '../llm/manager.js';
 import { ArchitecturePlan } from './architecture-pass.js';
+import { parseJsonWithSchema, z } from './json-contract.js';
 
 /**
  * Self Critique - Phase 1 Component 3
@@ -21,6 +22,32 @@ export interface CritiqueResult {
   issues: CritiqueIssue[];
   suggestions: string[];
   needsRepair: boolean;
+}
+
+const critiqueIssueSchema = z.object({
+  severity: z.enum(['critical', 'major', 'minor']).default('minor'),
+  category: z.enum(['performance', 'maintainability', 'accessibility', 'best-practices', 'security', 'type-safety']).default('best-practices'),
+  description: z.string().default('Issue found'),
+  location: z.string().default('Unknown'),
+  suggestion: z.string().default('Review and fix'),
+});
+
+const critiqueSchema = z.object({
+  score: z.number().default(75),
+  strengths: z.array(z.string()).default([]),
+  weaknesses: z.array(z.string()).default([]),
+  issues: z.array(critiqueIssueSchema).default([]),
+  suggestions: z.array(z.string()).default([]),
+  needsRepair: z.boolean().optional(),
+});
+
+type ParsedCritique = z.infer<typeof critiqueSchema>;
+
+function isAbortError(error: unknown): boolean {
+  if (!error) return false;
+  const name = String((error as any)?.name || '');
+  const message = String((error as any)?.message || '');
+  return name === 'AbortError' || /aborted|aborterror/i.test(message);
 }
 
 export class SelfCritique {
@@ -62,27 +89,49 @@ ${context ? `\nKontext:\n${context}` : ''}
 Original Request: ${request.prompt}`;
 
     try {
+      const critiqueMaxTokens = Math.max(
+        480,
+        Math.min(
+          1400,
+          Math.floor(typeof request.maxTokens === 'number' ? request.maxTokens * 0.35 : 1100)
+        )
+      );
       const response = await llmManager.generate({
         ...request,
         systemPrompt,
         prompt: critiquePrompt,
         temperature: 0.3, // Lower temperature for consistent critique
-        maxTokens: 2000,
+        maxTokens: critiqueMaxTokens,
       });
 
       const responseText = typeof response === 'string'
         ? response
         : ((response as any)?.content || '');
-      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-      
-      if (jsonMatch) {
-        const critique = JSON.parse(jsonMatch[0]);
-        return this.normalizeCritique(critique);
+      const parsed = parseJsonWithSchema(responseText, critiqueSchema);
+      if (parsed.data) {
+        return this.normalizeCritique(parsed.data);
       }
 
-      // Fallback: Basic critique
+      const retry = await llmManager.generate({
+        ...request,
+        systemPrompt,
+        prompt: `${critiquePrompt}\n\nReturn STRICT JSON only. No markdown, no prose.`,
+        temperature: 0,
+        maxTokens: Math.max(512, Math.min(1200, critiqueMaxTokens)),
+      });
+      const retryText = typeof retry === 'string'
+        ? retry
+        : ((retry as any)?.content || '');
+      const retryParsed = parseJsonWithSchema(retryText, critiqueSchema);
+      if (retryParsed.data) {
+        return this.normalizeCritique(retryParsed.data);
+      }
+
       return this.createFallbackCritique(code);
     } catch (error: any) {
+      if (isAbortError(error) || request.signal?.aborted) {
+        throw error;
+      }
       console.warn('[SelfCritique] Failed to critique code, using fallback:', error.message);
       return this.createFallbackCritique(code);
     }
@@ -91,29 +140,27 @@ Original Request: ${request.prompt}`;
   /**
    * Normalize critique result
    */
-  private normalizeCritique(critique: any): CritiqueResult {
+  private normalizeCritique(critique: ParsedCritique): CritiqueResult {
     const score = typeof critique.score === 'number' 
       ? Math.max(0, Math.min(100, critique.score))
       : 75;
 
     return {
       score,
-      strengths: Array.isArray(critique.strengths) ? critique.strengths : [],
-      weaknesses: Array.isArray(critique.weaknesses) ? critique.weaknesses : [],
-      issues: Array.isArray(critique.issues) 
-        ? critique.issues.map((issue: any) => this.normalizeIssue(issue))
-        : [],
-      suggestions: Array.isArray(critique.suggestions) ? critique.suggestions : [],
+      strengths: critique.strengths,
+      weaknesses: critique.weaknesses,
+      issues: critique.issues.map((issue) => this.normalizeIssue(issue)),
+      suggestions: critique.suggestions,
       needsRepair: critique.needsRepair !== undefined 
         ? critique.needsRepair 
-        : score < 70 || (critique.issues || []).some((i: any) => i.severity === 'critical'),
+        : score < 70 || critique.issues.some((issue) => issue.severity === 'critical'),
     };
   }
 
   /**
    * Normalize critique issue
    */
-  private normalizeIssue(issue: any): CritiqueIssue {
+  private normalizeIssue(issue: z.infer<typeof critiqueIssueSchema>): CritiqueIssue {
     return {
       severity: ['critical', 'major', 'minor'].includes(issue.severity)
         ? issue.severity

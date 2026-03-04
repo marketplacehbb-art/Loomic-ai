@@ -1,0 +1,841 @@
+{
+  "category": "contact",
+  "components": [
+    {
+      "id": "contact-split-map-01",
+      "name": "Contact Split with Info",
+      "category": "contact",
+      "subcategory": "split",
+      "tags": {
+        "industry": [
+          "agency",
+          "services",
+          "studio"
+        ],
+        "tone": [
+          "clean",
+          "modern"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ContactSplitMap01() {\n  return (\n    <section id=\"contact\" className=\"bg-white px-6 py-24\">\n      <div className=\"mx-auto grid max-w-6xl gap-12 lg:grid-cols-2\">\n        {/* Info */}\n        <div>\n          <p className=\"text-xs font-bold uppercase tracking-[0.25em] text-violet-600\">Kontakt</p>\n          <h2 className=\"mt-3 text-3xl font-extrabold text-slate-900\">Lass uns sprechen</h2>\n          <p className=\"mt-4 text-slate-500\">Wir sind immer offen für neue Projekte, Kooperationen oder einfach ein Kennenlernen.</p>\n          <div className=\"mt-8 space-y-4\">\n            {[\n              { icon: \"📧\", label: \"Email\", value: \"hello@{{projectName}}.de\" },\n              { icon: \"📞\", label: \"Telefon\", value: \"+49 30 123 456 789\" },\n              { icon: \"📍\", label: \"Adresse\", value: \"Musterstraße 12, 10115 Berlin\" },\n            ].map((c) => (\n              <div key={c.label} className=\"flex items-start gap-4\">\n                <div className=\"flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-lg\">{c.icon}</div>\n                <div>\n                  <p className=\"text-xs font-semibold uppercase tracking-wide text-slate-400\">{c.label}</p>\n                  <p className=\"mt-0.5 text-sm text-slate-700\">{c.value}</p>\n                </div>\n              </div>\n            ))}\n          </div>\n        </div>\n        {/* Form */}\n        <div className=\"rounded-3xl border border-slate-200 bg-slate-50 p-8\">\n          <div className=\"space-y-4\">\n            <div className=\"grid grid-cols-2 gap-4\">\n              <div>\n                <label className=\"mb-1 block text-xs font-semibold text-slate-500\">Vorname</label>\n                <input className=\"w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100\" />\n              </div>\n              <div>\n                <label className=\"mb-1 block text-xs font-semibold text-slate-500\">Nachname</label>\n                <input className=\"w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100\" />\n              </div>\n            </div>\n            <div>\n              <label className=\"mb-1 block text-xs font-semibold text-slate-500\">E-Mail</label>\n              <input className=\"w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100\" />\n            </div>\n            <div>\n              <label className=\"mb-1 block text-xs font-semibold text-slate-500\">Nachricht</label>\n              <textarea rows={4} className=\"w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 resize-none\" />\n            </div>\n            <button type=\"button\" className=\"w-full rounded-xl bg-violet-600 py-3 text-sm font-bold text-white transition hover:bg-violet-500\">\n              Nachricht senden\n            </button>\n          </div>\n        </div>\n      </div>\n    </section>\n  );\n}"
+      }
+    },
+    {
+      "id": "corp-contact-light-01",
+      "name": "ContactLightCorporate01",
+      "category": "contact",
+      "subcategory": "form-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ContactLightCorporate01() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto grid max-w-5xl gap-6 rounded-2xl border border-slate-200 bg-white p-8 md:grid-cols-2\">\n        <div>\n          <h2 className=\"text-3xl font-bold text-slate-900\">Contact Section 01</h2>\n          <p className=\"mt-3 text-sm text-slate-600\">Enterprise-ready contact flow with clear input hierarchy.</p>\n        </div>\n        <form className=\"space-y-3\">\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <textarea className=\"h-24 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <button type=\"button\" className=\"rounded-lg bg-slate-600 px-4 py-2 text-sm font-semibold text-white\">Submit</button>\n        </form>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-contact-light-02",
+      "name": "ContactLightCorporate02",
+      "category": "contact",
+      "subcategory": "split-contact",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ContactLightCorporate02() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto grid max-w-5xl gap-6 rounded-2xl border border-slate-200 bg-white p-8 md:grid-cols-2\">\n        <div>\n          <h2 className=\"text-3xl font-bold text-slate-900\">Contact Section 02</h2>\n          <p className=\"mt-3 text-sm text-slate-600\">Enterprise-ready contact flow with clear input hierarchy.</p>\n        </div>\n        <form className=\"space-y-3\">\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <textarea className=\"h-24 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <button type=\"button\" className=\"rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white\">Submit</button>\n        </form>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-contact-light-03",
+      "name": "ContactLightCorporate03",
+      "category": "contact",
+      "subcategory": "support-panel",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ContactLightCorporate03() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto grid max-w-5xl gap-6 rounded-2xl border border-slate-200 bg-white p-8 md:grid-cols-2\">\n        <div>\n          <h2 className=\"text-3xl font-bold text-slate-900\">Contact Section 03</h2>\n          <p className=\"mt-3 text-sm text-slate-600\">Enterprise-ready contact flow with clear input hierarchy.</p>\n        </div>\n        <form className=\"space-y-3\">\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <textarea className=\"h-24 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <button type=\"button\" className=\"rounded-lg bg-slate-600 px-4 py-2 text-sm font-semibold text-white\">Submit</button>\n        </form>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-contact-light-04",
+      "name": "ContactLightCorporate04",
+      "category": "contact",
+      "subcategory": "form-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ContactLightCorporate04() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto grid max-w-5xl gap-6 rounded-2xl border border-slate-200 bg-white p-8 md:grid-cols-2\">\n        <div>\n          <h2 className=\"text-3xl font-bold text-slate-900\">Contact Section 04</h2>\n          <p className=\"mt-3 text-sm text-slate-600\">Enterprise-ready contact flow with clear input hierarchy.</p>\n        </div>\n        <form className=\"space-y-3\">\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <textarea className=\"h-24 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <button type=\"button\" className=\"rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white\">Submit</button>\n        </form>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-contact-light-05",
+      "name": "ContactLightCorporate05",
+      "category": "contact",
+      "subcategory": "split-contact",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ContactLightCorporate05() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto grid max-w-5xl gap-6 rounded-2xl border border-slate-200 bg-white p-8 md:grid-cols-2\">\n        <div>\n          <h2 className=\"text-3xl font-bold text-slate-900\">Contact Section 05</h2>\n          <p className=\"mt-3 text-sm text-slate-600\">Enterprise-ready contact flow with clear input hierarchy.</p>\n        </div>\n        <form className=\"space-y-3\">\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <textarea className=\"h-24 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <button type=\"button\" className=\"rounded-lg bg-slate-600 px-4 py-2 text-sm font-semibold text-white\">Submit</button>\n        </form>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-contact-light-06",
+      "name": "ContactLightCorporate06",
+      "category": "contact",
+      "subcategory": "support-panel",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ContactLightCorporate06() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto grid max-w-5xl gap-6 rounded-2xl border border-slate-200 bg-white p-8 md:grid-cols-2\">\n        <div>\n          <h2 className=\"text-3xl font-bold text-slate-900\">Contact Section 06</h2>\n          <p className=\"mt-3 text-sm text-slate-600\">Enterprise-ready contact flow with clear input hierarchy.</p>\n        </div>\n        <form className=\"space-y-3\">\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <textarea className=\"h-24 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <button type=\"button\" className=\"rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white\">Submit</button>\n        </form>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-contact-light-07",
+      "name": "ContactLightCorporate07",
+      "category": "contact",
+      "subcategory": "form-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ContactLightCorporate07() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto grid max-w-5xl gap-6 rounded-2xl border border-slate-200 bg-white p-8 md:grid-cols-2\">\n        <div>\n          <h2 className=\"text-3xl font-bold text-slate-900\">Contact Section 07</h2>\n          <p className=\"mt-3 text-sm text-slate-600\">Enterprise-ready contact flow with clear input hierarchy.</p>\n        </div>\n        <form className=\"space-y-3\">\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <textarea className=\"h-24 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <button type=\"button\" className=\"rounded-lg bg-slate-600 px-4 py-2 text-sm font-semibold text-white\">Submit</button>\n        </form>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-contact-light-08",
+      "name": "ContactLightCorporate08",
+      "category": "contact",
+      "subcategory": "split-contact",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ContactLightCorporate08() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto grid max-w-5xl gap-6 rounded-2xl border border-slate-200 bg-white p-8 md:grid-cols-2\">\n        <div>\n          <h2 className=\"text-3xl font-bold text-slate-900\">Contact Section 08</h2>\n          <p className=\"mt-3 text-sm text-slate-600\">Enterprise-ready contact flow with clear input hierarchy.</p>\n        </div>\n        <form className=\"space-y-3\">\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <textarea className=\"h-24 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <button type=\"button\" className=\"rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white\">Submit</button>\n        </form>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-contact-light-09",
+      "name": "ContactLightCorporate09",
+      "category": "contact",
+      "subcategory": "support-panel",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ContactLightCorporate09() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto grid max-w-5xl gap-6 rounded-2xl border border-slate-200 bg-white p-8 md:grid-cols-2\">\n        <div>\n          <h2 className=\"text-3xl font-bold text-slate-900\">Contact Section 09</h2>\n          <p className=\"mt-3 text-sm text-slate-600\">Enterprise-ready contact flow with clear input hierarchy.</p>\n        </div>\n        <form className=\"space-y-3\">\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <textarea className=\"h-24 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <button type=\"button\" className=\"rounded-lg bg-slate-600 px-4 py-2 text-sm font-semibold text-white\">Submit</button>\n        </form>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-contact-light-10",
+      "name": "ContactLightCorporate10",
+      "category": "contact",
+      "subcategory": "form-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ContactLightCorporate10() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto grid max-w-5xl gap-6 rounded-2xl border border-slate-200 bg-white p-8 md:grid-cols-2\">\n        <div>\n          <h2 className=\"text-3xl font-bold text-slate-900\">Contact Section 10</h2>\n          <p className=\"mt-3 text-sm text-slate-600\">Enterprise-ready contact flow with clear input hierarchy.</p>\n        </div>\n        <form className=\"space-y-3\">\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <textarea className=\"h-24 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <button type=\"button\" className=\"rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white\">Submit</button>\n        </form>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-contact-light-11",
+      "name": "ContactLightCorporate11",
+      "category": "contact",
+      "subcategory": "split-contact",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ContactLightCorporate11() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto grid max-w-5xl gap-6 rounded-2xl border border-slate-200 bg-white p-8 md:grid-cols-2\">\n        <div>\n          <h2 className=\"text-3xl font-bold text-slate-900\">Contact Section 11</h2>\n          <p className=\"mt-3 text-sm text-slate-600\">Enterprise-ready contact flow with clear input hierarchy.</p>\n        </div>\n        <form className=\"space-y-3\">\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <textarea className=\"h-24 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <button type=\"button\" className=\"rounded-lg bg-slate-600 px-4 py-2 text-sm font-semibold text-white\">Submit</button>\n        </form>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-contact-light-12",
+      "name": "ContactLightCorporate12",
+      "category": "contact",
+      "subcategory": "support-panel",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ContactLightCorporate12() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto grid max-w-5xl gap-6 rounded-2xl border border-slate-200 bg-white p-8 md:grid-cols-2\">\n        <div>\n          <h2 className=\"text-3xl font-bold text-slate-900\">Contact Section 12</h2>\n          <p className=\"mt-3 text-sm text-slate-600\">Enterprise-ready contact flow with clear input hierarchy.</p>\n        </div>\n        <form className=\"space-y-3\">\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <textarea className=\"h-24 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <button type=\"button\" className=\"rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white\">Submit</button>\n        </form>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-contact-light-13",
+      "name": "ContactLightCorporate13",
+      "category": "contact",
+      "subcategory": "form-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ContactLightCorporate13() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto grid max-w-5xl gap-6 rounded-2xl border border-slate-200 bg-white p-8 md:grid-cols-2\">\n        <div>\n          <h2 className=\"text-3xl font-bold text-slate-900\">Contact Section 13</h2>\n          <p className=\"mt-3 text-sm text-slate-600\">Enterprise-ready contact flow with clear input hierarchy.</p>\n        </div>\n        <form className=\"space-y-3\">\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <textarea className=\"h-24 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <button type=\"button\" className=\"rounded-lg bg-slate-600 px-4 py-2 text-sm font-semibold text-white\">Submit</button>\n        </form>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-contact-light-14",
+      "name": "ContactLightCorporate14",
+      "category": "contact",
+      "subcategory": "split-contact",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ContactLightCorporate14() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto grid max-w-5xl gap-6 rounded-2xl border border-slate-200 bg-white p-8 md:grid-cols-2\">\n        <div>\n          <h2 className=\"text-3xl font-bold text-slate-900\">Contact Section 14</h2>\n          <p className=\"mt-3 text-sm text-slate-600\">Enterprise-ready contact flow with clear input hierarchy.</p>\n        </div>\n        <form className=\"space-y-3\">\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <textarea className=\"h-24 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <button type=\"button\" className=\"rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white\">Submit</button>\n        </form>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-contact-light-15",
+      "name": "ContactLightCorporate15",
+      "category": "contact",
+      "subcategory": "support-panel",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ContactLightCorporate15() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto grid max-w-5xl gap-6 rounded-2xl border border-slate-200 bg-white p-8 md:grid-cols-2\">\n        <div>\n          <h2 className=\"text-3xl font-bold text-slate-900\">Contact Section 15</h2>\n          <p className=\"mt-3 text-sm text-slate-600\">Enterprise-ready contact flow with clear input hierarchy.</p>\n        </div>\n        <form className=\"space-y-3\">\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <textarea className=\"h-24 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <button type=\"button\" className=\"rounded-lg bg-slate-600 px-4 py-2 text-sm font-semibold text-white\">Submit</button>\n        </form>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-contact-light-16",
+      "name": "ContactLightCorporate16",
+      "category": "contact",
+      "subcategory": "form-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ContactLightCorporate16() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto grid max-w-5xl gap-6 rounded-2xl border border-slate-200 bg-white p-8 md:grid-cols-2\">\n        <div>\n          <h2 className=\"text-3xl font-bold text-slate-900\">Contact Section 16</h2>\n          <p className=\"mt-3 text-sm text-slate-600\">Enterprise-ready contact flow with clear input hierarchy.</p>\n        </div>\n        <form className=\"space-y-3\">\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <textarea className=\"h-24 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <button type=\"button\" className=\"rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white\">Submit</button>\n        </form>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-contact-light-17",
+      "name": "ContactLightCorporate17",
+      "category": "contact",
+      "subcategory": "split-contact",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ContactLightCorporate17() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto grid max-w-5xl gap-6 rounded-2xl border border-slate-200 bg-white p-8 md:grid-cols-2\">\n        <div>\n          <h2 className=\"text-3xl font-bold text-slate-900\">Contact Section 17</h2>\n          <p className=\"mt-3 text-sm text-slate-600\">Enterprise-ready contact flow with clear input hierarchy.</p>\n        </div>\n        <form className=\"space-y-3\">\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <textarea className=\"h-24 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <button type=\"button\" className=\"rounded-lg bg-slate-600 px-4 py-2 text-sm font-semibold text-white\">Submit</button>\n        </form>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-contact-light-18",
+      "name": "ContactLightCorporate18",
+      "category": "contact",
+      "subcategory": "support-panel",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ContactLightCorporate18() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto grid max-w-5xl gap-6 rounded-2xl border border-slate-200 bg-white p-8 md:grid-cols-2\">\n        <div>\n          <h2 className=\"text-3xl font-bold text-slate-900\">Contact Section 18</h2>\n          <p className=\"mt-3 text-sm text-slate-600\">Enterprise-ready contact flow with clear input hierarchy.</p>\n        </div>\n        <form className=\"space-y-3\">\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <textarea className=\"h-24 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <button type=\"button\" className=\"rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white\">Submit</button>\n        </form>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-contact-light-19",
+      "name": "ContactLightCorporate19",
+      "category": "contact",
+      "subcategory": "form-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ContactLightCorporate19() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto grid max-w-5xl gap-6 rounded-2xl border border-slate-200 bg-white p-8 md:grid-cols-2\">\n        <div>\n          <h2 className=\"text-3xl font-bold text-slate-900\">Contact Section 19</h2>\n          <p className=\"mt-3 text-sm text-slate-600\">Enterprise-ready contact flow with clear input hierarchy.</p>\n        </div>\n        <form className=\"space-y-3\">\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <textarea className=\"h-24 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <button type=\"button\" className=\"rounded-lg bg-slate-600 px-4 py-2 text-sm font-semibold text-white\">Submit</button>\n        </form>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-contact-light-20",
+      "name": "ContactLightCorporate20",
+      "category": "contact",
+      "subcategory": "split-contact",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ContactLightCorporate20() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto grid max-w-5xl gap-6 rounded-2xl border border-slate-200 bg-white p-8 md:grid-cols-2\">\n        <div>\n          <h2 className=\"text-3xl font-bold text-slate-900\">Contact Section 20</h2>\n          <p className=\"mt-3 text-sm text-slate-600\">Enterprise-ready contact flow with clear input hierarchy.</p>\n        </div>\n        <form className=\"space-y-3\">\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <textarea className=\"h-24 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <button type=\"button\" className=\"rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white\">Submit</button>\n        </form>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-contact-light-21",
+      "name": "ContactLightCorporate21",
+      "category": "contact",
+      "subcategory": "support-panel",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ContactLightCorporate21() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto grid max-w-5xl gap-6 rounded-2xl border border-slate-200 bg-white p-8 md:grid-cols-2\">\n        <div>\n          <h2 className=\"text-3xl font-bold text-slate-900\">Contact Section 21</h2>\n          <p className=\"mt-3 text-sm text-slate-600\">Enterprise-ready contact flow with clear input hierarchy.</p>\n        </div>\n        <form className=\"space-y-3\">\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <textarea className=\"h-24 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <button type=\"button\" className=\"rounded-lg bg-slate-600 px-4 py-2 text-sm font-semibold text-white\">Submit</button>\n        </form>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-contact-light-22",
+      "name": "ContactLightCorporate22",
+      "category": "contact",
+      "subcategory": "form-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ContactLightCorporate22() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto grid max-w-5xl gap-6 rounded-2xl border border-slate-200 bg-white p-8 md:grid-cols-2\">\n        <div>\n          <h2 className=\"text-3xl font-bold text-slate-900\">Contact Section 22</h2>\n          <p className=\"mt-3 text-sm text-slate-600\">Enterprise-ready contact flow with clear input hierarchy.</p>\n        </div>\n        <form className=\"space-y-3\">\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <textarea className=\"h-24 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <button type=\"button\" className=\"rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white\">Submit</button>\n        </form>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-contact-light-23",
+      "name": "ContactLightCorporate23",
+      "category": "contact",
+      "subcategory": "split-contact",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ContactLightCorporate23() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto grid max-w-5xl gap-6 rounded-2xl border border-slate-200 bg-white p-8 md:grid-cols-2\">\n        <div>\n          <h2 className=\"text-3xl font-bold text-slate-900\">Contact Section 23</h2>\n          <p className=\"mt-3 text-sm text-slate-600\">Enterprise-ready contact flow with clear input hierarchy.</p>\n        </div>\n        <form className=\"space-y-3\">\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <textarea className=\"h-24 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <button type=\"button\" className=\"rounded-lg bg-slate-600 px-4 py-2 text-sm font-semibold text-white\">Submit</button>\n        </form>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-contact-light-24",
+      "name": "ContactLightCorporate24",
+      "category": "contact",
+      "subcategory": "support-panel",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ContactLightCorporate24() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto grid max-w-5xl gap-6 rounded-2xl border border-slate-200 bg-white p-8 md:grid-cols-2\">\n        <div>\n          <h2 className=\"text-3xl font-bold text-slate-900\">Contact Section 24</h2>\n          <p className=\"mt-3 text-sm text-slate-600\">Enterprise-ready contact flow with clear input hierarchy.</p>\n        </div>\n        <form className=\"space-y-3\">\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <textarea className=\"h-24 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <button type=\"button\" className=\"rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white\">Submit</button>\n        </form>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-contact-light-25",
+      "name": "ContactLightCorporate25",
+      "category": "contact",
+      "subcategory": "form-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ContactLightCorporate25() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto grid max-w-5xl gap-6 rounded-2xl border border-slate-200 bg-white p-8 md:grid-cols-2\">\n        <div>\n          <h2 className=\"text-3xl font-bold text-slate-900\">Contact Section 25</h2>\n          <p className=\"mt-3 text-sm text-slate-600\">Enterprise-ready contact flow with clear input hierarchy.</p>\n        </div>\n        <form className=\"space-y-3\">\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <textarea className=\"h-24 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <button type=\"button\" className=\"rounded-lg bg-slate-600 px-4 py-2 text-sm font-semibold text-white\">Submit</button>\n        </form>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-contact-light-26",
+      "name": "ContactLightCorporate26",
+      "category": "contact",
+      "subcategory": "split-contact",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ContactLightCorporate26() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto grid max-w-5xl gap-6 rounded-2xl border border-slate-200 bg-white p-8 md:grid-cols-2\">\n        <div>\n          <h2 className=\"text-3xl font-bold text-slate-900\">Contact Section 26</h2>\n          <p className=\"mt-3 text-sm text-slate-600\">Enterprise-ready contact flow with clear input hierarchy.</p>\n        </div>\n        <form className=\"space-y-3\">\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <textarea className=\"h-24 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <button type=\"button\" className=\"rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white\">Submit</button>\n        </form>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-contact-light-27",
+      "name": "ContactLightCorporate27",
+      "category": "contact",
+      "subcategory": "support-panel",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ContactLightCorporate27() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto grid max-w-5xl gap-6 rounded-2xl border border-slate-200 bg-white p-8 md:grid-cols-2\">\n        <div>\n          <h2 className=\"text-3xl font-bold text-slate-900\">Contact Section 27</h2>\n          <p className=\"mt-3 text-sm text-slate-600\">Enterprise-ready contact flow with clear input hierarchy.</p>\n        </div>\n        <form className=\"space-y-3\">\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <textarea className=\"h-24 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <button type=\"button\" className=\"rounded-lg bg-slate-600 px-4 py-2 text-sm font-semibold text-white\">Submit</button>\n        </form>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-contact-light-28",
+      "name": "ContactLightCorporate28",
+      "category": "contact",
+      "subcategory": "form-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ContactLightCorporate28() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto grid max-w-5xl gap-6 rounded-2xl border border-slate-200 bg-white p-8 md:grid-cols-2\">\n        <div>\n          <h2 className=\"text-3xl font-bold text-slate-900\">Contact Section 28</h2>\n          <p className=\"mt-3 text-sm text-slate-600\">Enterprise-ready contact flow with clear input hierarchy.</p>\n        </div>\n        <form className=\"space-y-3\">\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <textarea className=\"h-24 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <button type=\"button\" className=\"rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white\">Submit</button>\n        </form>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-contact-light-29",
+      "name": "ContactLightCorporate29",
+      "category": "contact",
+      "subcategory": "split-contact",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ContactLightCorporate29() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto grid max-w-5xl gap-6 rounded-2xl border border-slate-200 bg-white p-8 md:grid-cols-2\">\n        <div>\n          <h2 className=\"text-3xl font-bold text-slate-900\">Contact Section 29</h2>\n          <p className=\"mt-3 text-sm text-slate-600\">Enterprise-ready contact flow with clear input hierarchy.</p>\n        </div>\n        <form className=\"space-y-3\">\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <textarea className=\"h-24 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <button type=\"button\" className=\"rounded-lg bg-slate-600 px-4 py-2 text-sm font-semibold text-white\">Submit</button>\n        </form>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-contact-light-30",
+      "name": "ContactLightCorporate30",
+      "category": "contact",
+      "subcategory": "support-panel",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ContactLightCorporate30() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto grid max-w-5xl gap-6 rounded-2xl border border-slate-200 bg-white p-8 md:grid-cols-2\">\n        <div>\n          <h2 className=\"text-3xl font-bold text-slate-900\">Contact Section 30</h2>\n          <p className=\"mt-3 text-sm text-slate-600\">Enterprise-ready contact flow with clear input hierarchy.</p>\n        </div>\n        <form className=\"space-y-3\">\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <input className=\"w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <textarea className=\"h-24 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm\" />\n          <button type=\"button\" className=\"rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white\">Submit</button>\n        </form>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    }
+  ]
+}

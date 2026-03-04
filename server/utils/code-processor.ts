@@ -8,6 +8,10 @@ import { iconRegistry } from './icon-registry.js';
 import { iconValidator } from '../ai/code-pipeline/icon-validator.js';
 import { navigationTransformer } from '../ai/code-pipeline/navigation-transformer.js';
 import { parseLLMOutput } from '../ai/project-pipeline/llm-response-parser.js';
+import {
+  RUNTIME_DEP_VERSION_HINTS,
+  VALIDATOR_BROWSER_LIBRARIES
+} from '../ai/runtime/dependency-registry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -36,16 +40,10 @@ export interface ProcessedCode {
 class CodeProcessor {
   private project: Project;
   private defaultPackageVersions: Record<string, string> = {
-    'react': '^18.3.1',
-    'react-dom': '^18.3.1',
-    'react-router-dom': '^6.30.3',
-    'lucide-react': '^0.263.1',
+    ...RUNTIME_DEP_VERSION_HINTS,
     'typescript': '^5.6.3',
     'tailwindcss': '^3.4.11',
     'next': '^14.0.0',
-    'zustand': '^4.4.0',
-    'axios': '^1.6.0',
-    'react-confetti': '^6.1.0',
     'clsx': '^2.0.0',
     'date-fns': '^2.30.0'
   };
@@ -581,21 +579,7 @@ declare module 'react-router-dom' {
 
     // Whitelist of external libraries that are loaded via browser importmap (esm.sh)
     // These will not have type definitions in the backend validator, but work fine in browser
-    const browserLibraries = [
-      'lucide-react',
-      '@heroicons/react',
-      'framer-motion',
-      'react-router-dom',
-      'clsx',
-      'date-fns',
-      'zustand',
-      'axios',
-      'recharts',
-      'react-confetti',
-      'react-icons',
-      '@radix-ui',
-      'class-variance-authority'
-    ];
+    const browserLibraries = VALIDATOR_BROWSER_LIBRARIES;
 
     diagnostics.forEach((diag: any) => {
       const diagnosticSource = typeof diag.getSourceFile === 'function'

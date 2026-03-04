@@ -1,4 +1,4 @@
-import { qualityScorer } from '../processor-evolution/quality-scorer.js';
+﻿import { qualityScorer } from '../processor-evolution/quality-scorer.js';
 
 export type GateSeverity = 'critical' | 'warning' | 'info';
 
@@ -37,6 +37,8 @@ function createFinding(
 function runVisualQa(files: Record<string, string>, prompt: string): { score: number; findings: GateFinding[] } {
   const findings: GateFinding[] = [];
   const joined = Object.values(files).join('\n');
+  const lowerPrompt = prompt.toLowerCase();
+  const hasDomainIntent = /pizza|pizzeria|restaurant|food|menu|shop|store|ecommerce|checkout|cart|coffee|cafe/.test(lowerPrompt);
 
   if (/Feature 1|Feature 2|Feature 3|Lorem ipsum|Welcome to [A-Za-z]/.test(joined)) {
     findings.push(createFinding(
@@ -44,6 +46,18 @@ function runVisualQa(files: Record<string, string>, prompt: string): { score: nu
       'critical',
       'Generic placeholder copy detected in generated UI.',
       'Replace placeholders with domain-specific copy and concrete value propositions.'
+    ));
+  }
+
+  if (
+    hasDomainIntent &&
+    /Design and launch polished products faster\.|Curated sections \+ AI customization\. Keep full control over code and structure\.|Go from idea to polished layout quickly\./.test(joined)
+  ) {
+    findings.push(createFinding(
+      'visual-domain-mismatch-copy',
+      'warning',
+      'Domain prompt detected, but generated copy still contains generic template messaging.',
+      'Rewrite hero/feature/footer copy with domain-specific language, offers, and CTA wording.'
     ));
   }
 
@@ -58,7 +72,7 @@ function runVisualQa(files: Record<string, string>, prompt: string): { score: nu
   }
 
   const accentPalette = (joined.match(/\b(?:bg|text|border)-(?:blue|indigo|cyan|slate)-\d{2,3}\b/g) || []).length;
-  if (accentPalette > 40 && /modern|premium|beautiful|schön|schoen/.test(prompt.toLowerCase())) {
+  if (accentPalette > 40 && /modern|premium|beautiful|schön|schoen/.test(lowerPrompt)) {
     findings.push(createFinding(
       'visual-palette-monotony',
       'warning',
@@ -67,14 +81,36 @@ function runVisualQa(files: Record<string, string>, prompt: string): { score: nu
     ));
   }
 
-  const hasMultiPageIntent = /mehrere seiten|multi-page|multipage|dashboard|products|checkout|login|register/.test(prompt.toLowerCase());
-  const hasRouter = /HashRouter|Routes|Route/.test(joined);
-  if (hasMultiPageIntent && !hasRouter) {
+  const explicitMultiPageIntent = /mehrere seiten|mehr seiten|multi-page|multipage|multi page|additional page|add page|another page|weitere seite|zusatzseite/.test(lowerPrompt);
+  const routeSignalCount = [
+    /\bproducts?\b/,
+    /\bcheckout\b/,
+    /\blogin\b/,
+    /\bregister\b/,
+    /\bpricing\b/,
+    /\bfaq\b/,
+    /\babout\b/,
+    /\bcontact\b/,
+    /\bdashboard\b/,
+  ].reduce((count, pattern) => count + (pattern.test(lowerPrompt) ? 1 : 0), 0);
+  const hasMultiPageIntent = explicitMultiPageIntent || routeSignalCount >= 2;
+  const hasHashRouter = /\bHashRouter\b/.test(joined);
+  const hasRoutePrimitives = /\bRoutes?\b/.test(joined);
+  const hasBrowserRouter = /\bBrowserRouter\b/.test(joined);
+  if (hasMultiPageIntent && (!hasRoutePrimitives || !hasHashRouter)) {
     findings.push(createFinding(
       'visual-routing-missing',
       'critical',
-      'Prompt indicates multi-page intent but route primitives are missing.',
+      'Prompt indicates multi-page intent but HashRouter + route primitives are missing.',
       'Use HashRouter + Routes/Route + navigation links for all requested pages.'
+    ));
+  }
+  if (hasBrowserRouter) {
+    findings.push(createFinding(
+      'visual-routing-browserrouter-incompatible',
+      'critical',
+      'BrowserRouter detected in generated project; preview iframe requires HashRouter.',
+      'Replace BrowserRouter with HashRouter to ensure route rendering in generator preview.'
     ));
   }
 

@@ -54,6 +54,12 @@ interface RawExternalLibraryFile {
   animationPresets?: RawAnimationPreset[];
 }
 
+interface LoadedExternalLibrarySource {
+  cacheKey: string;
+  sourcePath: string;
+  parsed: RawExternalLibraryFile | null;
+}
+
 interface ExternalLibraryData {
   sourcePath: string | null;
   importedBlocks: TemplateBlock[];
@@ -886,6 +892,7 @@ function buildCandidatePaths(): string[] {
   const envPath = process.env.UI_COMPONENT_LIBRARY_PATH?.trim();
   if (envPath) candidates.add(path.resolve(envPath));
 
+  candidates.add(path.resolve(process.cwd(), 'data', 'ui-library'));
   candidates.add(path.resolve(process.cwd(), 'ui-component-library-schema.json'));
   candidates.add(path.resolve(process.cwd(), 'data', 'ui-component-library-schema.json'));
 
@@ -897,22 +904,96 @@ function buildCandidatePaths(): string[] {
   return [...candidates];
 }
 
+function listJsonFiles(dirPath: string): string[] {
+  if (!fs.existsSync(dirPath)) return [];
+  return fs.readdirSync(dirPath)
+    .filter((entry) => entry.toLowerCase().endsWith('.json'))
+    .sort()
+    .map((entry) => path.join(dirPath, entry));
+}
+
+function parseRawExternalChunk(rawSource: string): RawExternalLibraryFile | null {
+  return tryParseExternalLibrary(rawSource);
+}
+
+function appendChunk(target: RawExternalLibraryFile, chunk: RawExternalLibraryFile | null): void {
+  if (!chunk) return;
+  if (Array.isArray(chunk.components) && chunk.components.length > 0) {
+    target.components = [...(target.components || []), ...chunk.components];
+  }
+  if (Array.isArray(chunk.styleKits) && chunk.styleKits.length > 0) {
+    target.styleKits = [...(target.styleKits || []), ...chunk.styleKits];
+  }
+  if (Array.isArray(chunk.animationPresets) && chunk.animationPresets.length > 0) {
+    target.animationPresets = [...(target.animationPresets || []), ...chunk.animationPresets];
+  }
+}
+
+function loadModularExternalLibrary(dirPath: string): LoadedExternalLibrarySource | null {
+  const componentFiles = listJsonFiles(path.join(dirPath, 'components'));
+  const styleKitFiles = listJsonFiles(path.join(dirPath, 'style-kits'));
+  const animationFiles = listJsonFiles(path.join(dirPath, 'animations'));
+  const rootFiles = listJsonFiles(dirPath)
+    .filter((filePath) => {
+      const name = path.basename(filePath).toLowerCase();
+      return name === 'index.json' || name === 'meta.json';
+    });
+
+  const allFiles = [...rootFiles, ...componentFiles, ...styleKitFiles, ...animationFiles];
+  if (allFiles.length === 0) return null;
+
+  const aggregated: RawExternalLibraryFile = {
+    components: [],
+    styleKits: [],
+    animationPresets: [],
+  };
+
+  const keyParts = [dirPath];
+  allFiles.forEach((filePath) => {
+    const stats = fs.statSync(filePath);
+    keyParts.push(`${path.relative(dirPath, filePath)}:${stats.mtimeMs}:${stats.size}`);
+    const source = fs.readFileSync(filePath, 'utf8');
+    appendChunk(aggregated, parseRawExternalChunk(source));
+  });
+
+  return {
+    cacheKey: keyParts.join('|'),
+    sourcePath: dirPath,
+    parsed: aggregated,
+  };
+}
+
+function loadSingleExternalLibraryFile(filePath: string): LoadedExternalLibrarySource | null {
+  if (!fs.existsSync(filePath)) return null;
+  const stats = fs.statSync(filePath);
+  if (!stats.isFile()) return null;
+  const source = fs.readFileSync(filePath, 'utf8');
+  return {
+    cacheKey: `${filePath}:${stats.mtimeMs}:${stats.size}`,
+    sourcePath: filePath,
+    parsed: tryParseExternalLibrary(source),
+  };
+}
+
 function loadExternalLibraryData(): ExternalLibraryData {
   const candidates = buildCandidatePaths();
   for (const candidatePath of candidates) {
     if (!fs.existsSync(candidatePath)) continue;
     const stats = fs.statSync(candidatePath);
-    const nextKey = `${candidatePath}:${stats.mtimeMs}:${stats.size}`;
+    const loadedSource = stats.isDirectory()
+      ? loadModularExternalLibrary(candidatePath)
+      : loadSingleExternalLibraryFile(candidatePath);
+    if (!loadedSource) continue;
+    const nextKey = loadedSource.cacheKey;
     if (cacheKey === nextKey && cacheValue) {
       return cacheValue;
     }
 
-    const source = fs.readFileSync(candidatePath, 'utf8');
-    const parsed = tryParseExternalLibrary(source);
+    const parsed = loadedSource.parsed;
     if (!parsed) {
       cacheKey = nextKey;
       cacheValue = {
-        sourcePath: candidatePath,
+        sourcePath: loadedSource.sourcePath,
         importedBlocks: [],
         styleKits: [],
         animationPresets: [],
@@ -921,7 +1002,7 @@ function loadExternalLibraryData(): ExternalLibraryData {
     }
 
     const loaded: ExternalLibraryData = {
-      sourcePath: candidatePath,
+      sourcePath: loadedSource.sourcePath,
       importedBlocks: parseImportedBlocks(parsed.components),
       styleKits: parseStyleKits(parsed.styleKits),
       animationPresets: parseAnimationPresets(parsed.animationPresets),

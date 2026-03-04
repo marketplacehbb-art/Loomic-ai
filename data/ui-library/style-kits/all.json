@@ -1,0 +1,260 @@
+{
+  "styleKits": [
+    {
+      "id": "kit-saas-clean-pro",
+      "name": "SaaS Clean Pro",
+      "description": "Neutral, conversion-focused SaaS visual system",
+      "fonts": {
+        "heading": {
+          "family": "Plus Jakarta Sans"
+        },
+        "body": {
+          "family": "Inter"
+        }
+      },
+      "colors": {
+        "primary": "#4F46E5",
+        "accent": "#06B6D4",
+        "background": "#F8FAFC",
+        "surface": "#FFFFFF",
+        "border": "#E2E8F0"
+      },
+      "buttons": {
+        "primary": "bg-indigo-600 text-white font-semibold px-6 py-3 rounded-xl hover:bg-indigo-500 transition-colors",
+        "secondary": "bg-slate-100 text-slate-800 font-semibold px-6 py-3 rounded-xl hover:bg-slate-200 transition-colors",
+        "danger": "bg-rose-600 text-white font-semibold px-6 py-3 rounded-xl hover:bg-rose-500 transition-colors"
+      }
+    },
+    {
+      "id": "kit-luxe-gold-dark",
+      "name": "Luxe Gold Dark",
+      "description": "High-end dark style with amber highlights",
+      "fonts": {
+        "heading": {
+          "family": "Playfair Display"
+        },
+        "body": {
+          "family": "DM Sans"
+        }
+      },
+      "colors": {
+        "primary": "#FBBF24",
+        "accent": "#D97706",
+        "background": "#09090B",
+        "surface": "#111827",
+        "border": "rgba(255,255,255,0.1)"
+      },
+      "buttons": {
+        "primary": "bg-amber-400 text-slate-900 font-semibold px-6 py-3 rounded-2xl hover:bg-amber-300 transition-colors",
+        "secondary": "border border-amber-300/30 text-amber-100 font-semibold px-6 py-3 rounded-2xl hover:bg-amber-300/10 transition-colors"
+      }
+    },
+    {
+      "id": "kit-editorial-minimal",
+      "name": "Editorial Minimal",
+      "description": "High whitespace, refined serif + sans pairing",
+      "fonts": {
+        "heading": {
+          "family": "Cormorant Garamond"
+        },
+        "body": {
+          "family": "Source Sans 3"
+        }
+      },
+      "colors": {
+        "primary": "#111827",
+        "accent": "#B45309",
+        "background": "#FFFBF5",
+        "surface": "#FFFFFF",
+        "border": "#E5E7EB"
+      },
+      "buttons": {
+        "primary": "bg-slate-900 text-white font-medium px-7 py-3 rounded-lg hover:bg-slate-700 transition-colors",
+        "secondary": "border border-slate-300 text-slate-700 font-medium px-7 py-3 rounded-lg hover:bg-slate-50 transition-colors"
+      }
+    },
+    {
+      "id": "kit-neon-tech",
+      "name": "Neon Tech",
+      "description": "Dark energetic style with bright cyan accents",
+      "fonts": {
+        "heading": {
+          "family": "Space Grotesk"
+        },
+        "body": {
+          "family": "IBM Plex Sans"
+        }
+      },
+      "colors": {
+        "primary": "#22D3EE",
+        "accent": "#A855F7",
+        "background": "#020617",
+        "surface": "#0F172A",
+        "border": "rgba(255,255,255,0.1)"
+      },
+      "buttons": {
+        "primary": "bg-cyan-400 text-slate-950 font-semibold px-6 py-3 rounded-xl hover:bg-cyan-300 transition-colors",
+        "secondary": "border border-cyan-300/30 text-cyan-100 font-semibold px-6 py-3 rounded-xl hover:bg-cyan-300/10 transition-colors"
+      }
+    },
+    {
+      "id": "kit-warm-neutral",
+      "name": "Warm Neutral",
+      "description": "Earthy tones for agencies and studios",
+      "fonts": {
+        "heading": {
+          "family": "Fraunces"
+        },
+        "body": {
+          "family": "DM Sans"
+        }
+      },
+      "colors": {
+        "primary": "#292524",
+        "accent": "#D97706",
+        "background": "#FAF7F4",
+        "surface": "#F5F0EC",
+        "border": "#E7E0D8"
+      },
+      "buttons": {
+        "primary": "bg-stone-900 text-white font-semibold px-6 py-3 rounded-xl hover:bg-stone-700 transition-colors",
+        "secondary": "border border-stone-300 text-stone-700 font-semibold px-6 py-3 rounded-xl hover:bg-stone-100 transition-colors"
+      }
+    },
+    {
+      "id": "kit-violet-pro",
+      "name": "Violet Pro",
+      "description": "Deep violet SaaS system – conversion-optimised, high contrast",
+      "fonts": {
+        "heading": {
+          "family": "Inter"
+        },
+        "body": {
+          "family": "Inter"
+        }
+      },
+      "colors": {
+        "primary": "#7C3AED",
+        "accent": "#06B6D4",
+        "background": "#F8F7FF",
+        "surface": "#FFFFFF",
+        "border": "#E5E7EB"
+      },
+      "buttons": {
+        "primary": "bg-violet-600 text-white font-bold px-6 py-3 rounded-xl hover:bg-violet-500 transition-colors shadow-lg shadow-violet-500/25",
+        "secondary": "border border-violet-200 text-violet-700 font-semibold px-6 py-3 rounded-xl hover:bg-violet-50 transition-colors",
+        "danger": "bg-rose-600 text-white font-bold px-6 py-3 rounded-xl hover:bg-rose-500 transition-colors",
+        "ghost": "text-violet-600 font-semibold px-6 py-3 rounded-xl hover:bg-violet-50 transition-colors",
+        "link": "text-violet-600 font-semibold underline underline-offset-2 hover:text-violet-800 transition-colors"
+      }
+    },
+    {
+      "id": "kit-obsidian-dark",
+      "name": "Obsidian Dark",
+      "description": "Ultra-dark tech aesthetic with fuchsia/cyan mesh highlights",
+      "fonts": {
+        "heading": {
+          "family": "Space Grotesk"
+        },
+        "body": {
+          "family": "DM Sans"
+        }
+      },
+      "colors": {
+        "primary": "#A855F7",
+        "accent": "#22D3EE",
+        "background": "#030712",
+        "surface": "#0F172A",
+        "border": "rgba(255,255,255,0.07)"
+      },
+      "buttons": {
+        "primary": "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-bold px-6 py-3 rounded-2xl hover:opacity-90 transition-opacity shadow-lg shadow-fuchsia-500/25",
+        "secondary": "border border-white/15 bg-white/5 text-white font-semibold px-6 py-3 rounded-2xl hover:bg-white/10 transition-colors backdrop-blur-sm",
+        "danger": "bg-rose-600 text-white font-bold px-6 py-3 rounded-2xl hover:bg-rose-500 transition-colors",
+        "ghost": "text-slate-300 font-semibold px-6 py-3 rounded-2xl hover:bg-white/5 transition-colors",
+        "link": "text-violet-400 font-semibold underline underline-offset-2 hover:text-violet-300 transition-colors"
+      }
+    },
+    {
+      "id": "kit-fresh-emerald",
+      "name": "Fresh Emerald",
+      "description": "Clean, approachable SaaS kit with an optimistic green palette",
+      "fonts": {
+        "heading": {
+          "family": "Plus Jakarta Sans"
+        },
+        "body": {
+          "family": "Plus Jakarta Sans"
+        }
+      },
+      "colors": {
+        "primary": "#059669",
+        "accent": "#0284C7",
+        "background": "#F0FDF9",
+        "surface": "#FFFFFF",
+        "border": "#D1FAE5"
+      },
+      "buttons": {
+        "primary": "bg-emerald-600 text-white font-bold px-6 py-3 rounded-xl hover:bg-emerald-500 transition-colors shadow-md shadow-emerald-500/20",
+        "secondary": "border border-emerald-200 text-emerald-700 font-semibold px-6 py-3 rounded-xl hover:bg-emerald-50 transition-colors",
+        "danger": "bg-red-600 text-white font-bold px-6 py-3 rounded-xl hover:bg-red-500 transition-colors",
+        "ghost": "text-emerald-700 font-semibold px-6 py-3 rounded-xl hover:bg-emerald-50 transition-colors",
+        "link": "text-emerald-700 font-semibold underline underline-offset-2 hover:text-emerald-900 transition-colors"
+      }
+    },
+    {
+      "id": "kit-zinc-editorial",
+      "name": "Zinc Editorial",
+      "description": "Neutral zinc tones for sophisticated editorial and portfolio sites",
+      "fonts": {
+        "heading": {
+          "family": "Fraunces"
+        },
+        "body": {
+          "family": "Source Sans 3"
+        }
+      },
+      "colors": {
+        "primary": "#18181B",
+        "accent": "#B45309",
+        "background": "#FAFAFA",
+        "surface": "#FFFFFF",
+        "border": "#E4E4E7"
+      },
+      "buttons": {
+        "primary": "bg-zinc-900 text-white font-semibold px-7 py-3 rounded-lg hover:bg-zinc-700 transition-colors",
+        "secondary": "border border-zinc-300 text-zinc-700 font-semibold px-7 py-3 rounded-lg hover:bg-zinc-100 transition-colors",
+        "danger": "border border-red-300 bg-red-50 text-red-700 font-semibold px-7 py-3 rounded-lg hover:bg-red-100 transition-colors",
+        "ghost": "text-zinc-700 font-semibold px-7 py-3 rounded-lg hover:bg-zinc-100 transition-colors",
+        "link": "text-amber-700 font-semibold underline underline-offset-2 hover:text-amber-900 transition-colors"
+      }
+    },
+    {
+      "id": "kit-rose-brand",
+      "name": "Rose Brand",
+      "description": "Warm rose palette for ecommerce, beauty and lifestyle brands",
+      "fonts": {
+        "heading": {
+          "family": "Playfair Display"
+        },
+        "body": {
+          "family": "DM Sans"
+        }
+      },
+      "colors": {
+        "primary": "#E11D48",
+        "accent": "#F59E0B",
+        "background": "#FFF1F2",
+        "surface": "#FFFFFF",
+        "border": "#FECDD3"
+      },
+      "buttons": {
+        "primary": "bg-rose-600 text-white font-bold px-6 py-3 rounded-2xl hover:bg-rose-500 transition-colors shadow-md shadow-rose-500/20",
+        "secondary": "border border-rose-200 text-rose-700 font-semibold px-6 py-3 rounded-2xl hover:bg-rose-50 transition-colors",
+        "danger": "bg-red-700 text-white font-bold px-6 py-3 rounded-2xl hover:bg-red-600 transition-colors",
+        "ghost": "text-rose-700 font-semibold px-6 py-3 rounded-2xl hover:bg-rose-50 transition-colors",
+        "link": "text-rose-700 font-semibold underline underline-offset-2 hover:text-rose-900 transition-colors"
+      }
+    }
+  ]
+}

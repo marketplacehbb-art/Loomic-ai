@@ -4,6 +4,7 @@
  * Enforces allowlisting for verified external libraries and blocks
  * scaffolds/placeholders/low-quality code patterns.
  */
+import { isAllowlistedDependency } from '../runtime/dependency-registry.js';
 
 export interface LibraryQualityResult {
     approved: boolean;
@@ -23,29 +24,6 @@ export interface ScaffoldWarning {
     message: string;
 }
 
-// Verified, high-quality libraries that are safe to use
-const LIBRARY_ALLOWLIST = new Set([
-    'react', 'react-dom', 'react-router-dom', 'react-router',
-    'next', 'vite',
-    'tailwindcss', 'postcss', 'autoprefixer',
-    'lucide-react', 'react-icons', '@heroicons/react',
-    'framer-motion', 'motion',
-    'clsx', 'class-variance-authority', 'tailwind-merge',
-    'zustand', 'jotai', 'recoil',
-    'axios', 'swr', '@tanstack/react-query',
-    'zod', 'yup', 'joi',
-    'date-fns', 'dayjs', 'moment',
-    'recharts', 'chart.js', 'react-chartjs-2',
-    'embla-carousel-react',
-    '@radix-ui', '@headlessui/react',
-    'shadcn', '@shadcn/ui',
-    'sonner', 'react-hot-toast', 'react-toastify',
-    'react-hook-form', '@hookform/resolvers',
-    'lodash', 'lodash-es', 'underscore',
-    'uuid', 'nanoid', 'cuid',
-    'typescript', '@types/',
-]);
-
 // Known deprecated or problematic libraries
 const BLOCKED_LIBRARIES = new Map<string, { reason: string; suggestion: string }>([
     ['moment', { reason: 'deprecated', suggestion: 'Use date-fns or dayjs instead' }],
@@ -64,18 +42,6 @@ const SCAFFOLD_PATTERNS = [
     { pattern: /onClick=\{?\s*\(\)\s*=>\s*\{\s*\}\s*\}?/g, type: 'empty_handler' as const },
     { pattern: /console\.log\s*\([^)]*\)\s*;?\s*$/gm, type: 'console_log_only' as const },
 ];
-
-/**
- * Check if a library name is in the allowlist.
- */
-function isAllowlisted(lib: string): boolean {
-    if (LIBRARY_ALLOWLIST.has(lib)) return true;
-    // Check prefixed packages (e.g., @radix-ui/react-dialog)
-    for (const allowed of LIBRARY_ALLOWLIST) {
-        if (lib.startsWith(allowed)) return true;
-    }
-    return false;
-}
 
 /**
  * Extract library imports from code.
@@ -132,7 +98,7 @@ export function evaluateLibraryQuality(
             continue;
         }
 
-        if (strictMode && !isAllowlisted(lib)) {
+        if (strictMode && !isAllowlistedDependency(lib)) {
             blockedLibraries.push({
                 name: lib,
                 reason: 'not_allowlisted',

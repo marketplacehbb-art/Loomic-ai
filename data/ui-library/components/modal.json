@@ -1,0 +1,892 @@
+{
+  "category": "modal",
+  "components": [
+    {
+      "id": "modal-confirm-premium-01",
+      "name": "Modal Confirm Premium",
+      "category": "modal",
+      "subcategory": "confirm",
+      "tags": {
+        "industry": [
+          "saas",
+          "dashboard",
+          "ecommerce"
+        ],
+        "tone": [
+          "premium",
+          "clean"
+        ],
+        "theme": [
+          "dark"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ModalConfirmPremium01() {\n  return (\n    <section className=\"mx-auto w-full max-w-lg rounded-2xl border border-white/10 bg-slate-900 p-7 text-slate-200 shadow-2xl\">\n      <div className=\"flex items-start gap-4\">\n        <span className=\"flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-500/20 text-xl\">⚠️</span>\n        <div>\n          <h3 className=\"text-xl font-semibold text-white\">Aktion bestätigen</h3>\n          <p className=\"mt-2 text-sm text-slate-300\">Bitte bestätige die Aktion. Dieser Schritt kann nicht rückgängig gemacht werden und hat direkte Auswirkungen auf dein Konto.</p>\n        </div>\n      </div>\n      <div className=\"mt-7 flex justify-end gap-3\">\n        <button className=\"rounded-xl border border-white/20 px-4 py-2 text-sm transition hover:bg-white/10\">Abbrechen</button>\n        <button className=\"rounded-xl bg-rose-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-400\">Endgültig löschen</button>\n      </div>\n    </section>\n  );\n}"
+      }
+    },
+    {
+      "id": "modal-info-glass-01",
+      "name": "Modal Info Glass Light",
+      "category": "modal",
+      "subcategory": "info",
+      "tags": {
+        "industry": [
+          "saas",
+          "dashboard"
+        ],
+        "tone": [
+          "clean",
+          "modern"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "import { useState } from \"react\";\n\nexport default function ModalInfoGlass01() {\n  const [open, setOpen] = useState(true);\n  if (!open) return null;\n  return (\n    <div className=\"fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm\">\n      <div className=\"w-full max-w-md rounded-3xl border border-slate-200 bg-white/90 p-8 shadow-2xl backdrop-blur-xl\">\n        <div className=\"flex items-center justify-between\">\n          <h3 className=\"text-lg font-semibold text-slate-900\">Wichtige Information</h3>\n          <button onClick={() => setOpen(false)} className=\"rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700\">✕</button>\n        </div>\n        <p className=\"mt-3 text-sm text-slate-600\">Diese Funktion befindet sich noch in der Beta-Phase. Du kannst sie bereits nutzen, aber wir empfehlen regelmäßige Backups deiner Daten.</p>\n        <div className=\"mt-6 flex gap-3\">\n          <button className=\"flex-1 rounded-xl bg-indigo-600 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500\">Verstanden</button>\n          <button onClick={() => setOpen(false)} className=\"flex-1 rounded-xl border border-slate-200 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50\">Später</button>\n        </div>\n      </div>\n    </div>\n  );\n}"
+      }
+    },
+    {
+      "id": "modal-command-palette-01",
+      "name": "Modal Command Palette",
+      "category": "modal",
+      "subcategory": "command",
+      "tags": {
+        "industry": [
+          "saas",
+          "tech",
+          "dashboard"
+        ],
+        "tone": [
+          "modern",
+          "enterprise"
+        ],
+        "theme": [
+          "dark"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "import { useState } from \"react\";\n\nconst COMMANDS = [\n  { icon: \"⚡\", label: \"Neues Projekt erstellen\", shortcut: \"N\" },\n  { icon: \"👥\", label: \"Teammitglied einladen\", shortcut: \"I\" },\n  { icon: \"📊\", label: \"Analytics öffnen\", shortcut: \"A\" },\n  { icon: \"⚙️\", label: \"Einstellungen\", shortcut: \"S\" },\n  { icon: \"📝\", label: \"Dokumentation\", shortcut: \"D\" },\n  { icon: \"🔍\", label: \"Globale Suche\", shortcut: \"/\" },\n];\n\nexport default function ModalCommandPalette01() {\n  const [query, setQuery] = useState(\"\");\n  const filtered = COMMANDS.filter((c) =>\n    c.label.toLowerCase().includes(query.toLowerCase())\n  );\n\n  return (\n    <div className=\"mx-auto w-full max-w-lg overflow-hidden rounded-2xl border border-white/10 bg-slate-900 shadow-2xl\">\n      <div className=\"flex items-center gap-3 border-b border-white/10 px-4 py-3\">\n        <span className=\"text-slate-400\">🔍</span>\n        <input\n          className=\"flex-1 bg-transparent text-sm text-white placeholder-slate-500 outline-none\"\n         \n          value={query}\n          onChange={(e) => setQuery(e.target.value)}\n          autoFocus\n        />\n        <kbd className=\"rounded border border-white/10 px-1.5 py-0.5 text-[10px] text-slate-400\">ESC</kbd>\n      </div>\n      <div className=\"py-2\">\n        {filtered.length === 0 ? (\n          <p className=\"px-4 py-6 text-center text-sm text-slate-500\">Keine Ergebnisse für „{query}\"</p>\n        ) : (\n          filtered.map((cmd, i) => (\n            <button\n              key={cmd.label}\n              className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm transition ${i === 0 ? \"bg-violet-600/20 text-violet-100\" : \"text-slate-300 hover:bg-white/5\"}`}\n            >\n              <span className=\"text-base\">{cmd.icon}</span>\n              <span className=\"flex-1\">{cmd.label}</span>\n              <kbd className=\"rounded border border-white/10 px-1.5 py-0.5 text-[10px] text-slate-500\">{cmd.shortcut}</kbd>\n            </button>\n          ))\n        )}\n      </div>\n      <div className=\"border-t border-white/5 px-4 py-2 flex gap-4 text-[10px] text-slate-600\">\n        <span>↑↓ Navigieren</span>\n        <span>↵ Ausführen</span>\n        <span>ESC Schließen</span>\n      </div>\n    </div>\n  );\n}"
+      }
+    },
+    {
+      "id": "corp-modal-light-01",
+      "name": "ModalLightCorporate01",
+      "category": "modal",
+      "subcategory": "confirm-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "admin"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ModalLightCorporate01() {\n  return (\n    <section className=\"mx-auto w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-sm\">\n      <h3 className=\"text-lg font-semibold text-slate-900\">Modal Section 01</h3>\n      <p className=\"mt-2 text-sm text-slate-600\">Use clear copy, strong hierarchy and safe actions.</p>\n      <div className=\"mt-5 flex gap-3\">\n        <button type=\"button\" className=\"rounded-lg border border-slate-300 px-4 py-2 text-sm\">Cancel</button>\n        <button type=\"button\" className=\"rounded-lg bg-slate-600 px-4 py-2 text-sm font-semibold text-white\">Confirm</button>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-modal-light-02",
+      "name": "ModalLightCorporate02",
+      "category": "modal",
+      "subcategory": "info-panel",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "admin"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ModalLightCorporate02() {\n  return (\n    <section className=\"mx-auto w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-sm\">\n      <h3 className=\"text-lg font-semibold text-slate-900\">Modal Section 02</h3>\n      <p className=\"mt-2 text-sm text-slate-600\">Use clear copy, strong hierarchy and safe actions.</p>\n      <div className=\"mt-5 flex gap-3\">\n        <button type=\"button\" className=\"rounded-lg border border-slate-300 px-4 py-2 text-sm\">Cancel</button>\n        <button type=\"button\" className=\"rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white\">Confirm</button>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-modal-light-03",
+      "name": "ModalLightCorporate03",
+      "category": "modal",
+      "subcategory": "action-modal",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "admin"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ModalLightCorporate03() {\n  return (\n    <section className=\"mx-auto w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-sm\">\n      <h3 className=\"text-lg font-semibold text-slate-900\">Modal Section 03</h3>\n      <p className=\"mt-2 text-sm text-slate-600\">Use clear copy, strong hierarchy and safe actions.</p>\n      <div className=\"mt-5 flex gap-3\">\n        <button type=\"button\" className=\"rounded-lg border border-slate-300 px-4 py-2 text-sm\">Cancel</button>\n        <button type=\"button\" className=\"rounded-lg bg-slate-600 px-4 py-2 text-sm font-semibold text-white\">Confirm</button>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-modal-light-04",
+      "name": "ModalLightCorporate04",
+      "category": "modal",
+      "subcategory": "confirm-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "admin"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ModalLightCorporate04() {\n  return (\n    <section className=\"mx-auto w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-sm\">\n      <h3 className=\"text-lg font-semibold text-slate-900\">Modal Section 04</h3>\n      <p className=\"mt-2 text-sm text-slate-600\">Use clear copy, strong hierarchy and safe actions.</p>\n      <div className=\"mt-5 flex gap-3\">\n        <button type=\"button\" className=\"rounded-lg border border-slate-300 px-4 py-2 text-sm\">Cancel</button>\n        <button type=\"button\" className=\"rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white\">Confirm</button>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-modal-light-05",
+      "name": "ModalLightCorporate05",
+      "category": "modal",
+      "subcategory": "info-panel",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "admin"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ModalLightCorporate05() {\n  return (\n    <section className=\"mx-auto w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-sm\">\n      <h3 className=\"text-lg font-semibold text-slate-900\">Modal Section 05</h3>\n      <p className=\"mt-2 text-sm text-slate-600\">Use clear copy, strong hierarchy and safe actions.</p>\n      <div className=\"mt-5 flex gap-3\">\n        <button type=\"button\" className=\"rounded-lg border border-slate-300 px-4 py-2 text-sm\">Cancel</button>\n        <button type=\"button\" className=\"rounded-lg bg-slate-600 px-4 py-2 text-sm font-semibold text-white\">Confirm</button>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-modal-light-06",
+      "name": "ModalLightCorporate06",
+      "category": "modal",
+      "subcategory": "action-modal",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "admin"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ModalLightCorporate06() {\n  return (\n    <section className=\"mx-auto w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-sm\">\n      <h3 className=\"text-lg font-semibold text-slate-900\">Modal Section 06</h3>\n      <p className=\"mt-2 text-sm text-slate-600\">Use clear copy, strong hierarchy and safe actions.</p>\n      <div className=\"mt-5 flex gap-3\">\n        <button type=\"button\" className=\"rounded-lg border border-slate-300 px-4 py-2 text-sm\">Cancel</button>\n        <button type=\"button\" className=\"rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white\">Confirm</button>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-modal-light-07",
+      "name": "ModalLightCorporate07",
+      "category": "modal",
+      "subcategory": "confirm-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "admin"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ModalLightCorporate07() {\n  return (\n    <section className=\"mx-auto w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-sm\">\n      <h3 className=\"text-lg font-semibold text-slate-900\">Modal Section 07</h3>\n      <p className=\"mt-2 text-sm text-slate-600\">Use clear copy, strong hierarchy and safe actions.</p>\n      <div className=\"mt-5 flex gap-3\">\n        <button type=\"button\" className=\"rounded-lg border border-slate-300 px-4 py-2 text-sm\">Cancel</button>\n        <button type=\"button\" className=\"rounded-lg bg-slate-600 px-4 py-2 text-sm font-semibold text-white\">Confirm</button>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-modal-light-08",
+      "name": "ModalLightCorporate08",
+      "category": "modal",
+      "subcategory": "info-panel",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "admin"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ModalLightCorporate08() {\n  return (\n    <section className=\"mx-auto w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-sm\">\n      <h3 className=\"text-lg font-semibold text-slate-900\">Modal Section 08</h3>\n      <p className=\"mt-2 text-sm text-slate-600\">Use clear copy, strong hierarchy and safe actions.</p>\n      <div className=\"mt-5 flex gap-3\">\n        <button type=\"button\" className=\"rounded-lg border border-slate-300 px-4 py-2 text-sm\">Cancel</button>\n        <button type=\"button\" className=\"rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white\">Confirm</button>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-modal-light-09",
+      "name": "ModalLightCorporate09",
+      "category": "modal",
+      "subcategory": "action-modal",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "admin"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ModalLightCorporate09() {\n  return (\n    <section className=\"mx-auto w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-sm\">\n      <h3 className=\"text-lg font-semibold text-slate-900\">Modal Section 09</h3>\n      <p className=\"mt-2 text-sm text-slate-600\">Use clear copy, strong hierarchy and safe actions.</p>\n      <div className=\"mt-5 flex gap-3\">\n        <button type=\"button\" className=\"rounded-lg border border-slate-300 px-4 py-2 text-sm\">Cancel</button>\n        <button type=\"button\" className=\"rounded-lg bg-slate-600 px-4 py-2 text-sm font-semibold text-white\">Confirm</button>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-modal-light-10",
+      "name": "ModalLightCorporate10",
+      "category": "modal",
+      "subcategory": "confirm-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "admin"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ModalLightCorporate10() {\n  return (\n    <section className=\"mx-auto w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-sm\">\n      <h3 className=\"text-lg font-semibold text-slate-900\">Modal Section 10</h3>\n      <p className=\"mt-2 text-sm text-slate-600\">Use clear copy, strong hierarchy and safe actions.</p>\n      <div className=\"mt-5 flex gap-3\">\n        <button type=\"button\" className=\"rounded-lg border border-slate-300 px-4 py-2 text-sm\">Cancel</button>\n        <button type=\"button\" className=\"rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white\">Confirm</button>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-modal-light-11",
+      "name": "ModalLightCorporate11",
+      "category": "modal",
+      "subcategory": "info-panel",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "admin"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ModalLightCorporate11() {\n  return (\n    <section className=\"mx-auto w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-sm\">\n      <h3 className=\"text-lg font-semibold text-slate-900\">Modal Section 11</h3>\n      <p className=\"mt-2 text-sm text-slate-600\">Use clear copy, strong hierarchy and safe actions.</p>\n      <div className=\"mt-5 flex gap-3\">\n        <button type=\"button\" className=\"rounded-lg border border-slate-300 px-4 py-2 text-sm\">Cancel</button>\n        <button type=\"button\" className=\"rounded-lg bg-slate-600 px-4 py-2 text-sm font-semibold text-white\">Confirm</button>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-modal-light-12",
+      "name": "ModalLightCorporate12",
+      "category": "modal",
+      "subcategory": "action-modal",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "admin"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ModalLightCorporate12() {\n  return (\n    <section className=\"mx-auto w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-sm\">\n      <h3 className=\"text-lg font-semibold text-slate-900\">Modal Section 12</h3>\n      <p className=\"mt-2 text-sm text-slate-600\">Use clear copy, strong hierarchy and safe actions.</p>\n      <div className=\"mt-5 flex gap-3\">\n        <button type=\"button\" className=\"rounded-lg border border-slate-300 px-4 py-2 text-sm\">Cancel</button>\n        <button type=\"button\" className=\"rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white\">Confirm</button>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-modal-light-13",
+      "name": "ModalLightCorporate13",
+      "category": "modal",
+      "subcategory": "confirm-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "admin"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ModalLightCorporate13() {\n  return (\n    <section className=\"mx-auto w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-sm\">\n      <h3 className=\"text-lg font-semibold text-slate-900\">Modal Section 13</h3>\n      <p className=\"mt-2 text-sm text-slate-600\">Use clear copy, strong hierarchy and safe actions.</p>\n      <div className=\"mt-5 flex gap-3\">\n        <button type=\"button\" className=\"rounded-lg border border-slate-300 px-4 py-2 text-sm\">Cancel</button>\n        <button type=\"button\" className=\"rounded-lg bg-slate-600 px-4 py-2 text-sm font-semibold text-white\">Confirm</button>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-modal-light-14",
+      "name": "ModalLightCorporate14",
+      "category": "modal",
+      "subcategory": "info-panel",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "admin"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ModalLightCorporate14() {\n  return (\n    <section className=\"mx-auto w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-sm\">\n      <h3 className=\"text-lg font-semibold text-slate-900\">Modal Section 14</h3>\n      <p className=\"mt-2 text-sm text-slate-600\">Use clear copy, strong hierarchy and safe actions.</p>\n      <div className=\"mt-5 flex gap-3\">\n        <button type=\"button\" className=\"rounded-lg border border-slate-300 px-4 py-2 text-sm\">Cancel</button>\n        <button type=\"button\" className=\"rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white\">Confirm</button>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-modal-light-15",
+      "name": "ModalLightCorporate15",
+      "category": "modal",
+      "subcategory": "action-modal",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "admin"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ModalLightCorporate15() {\n  return (\n    <section className=\"mx-auto w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-sm\">\n      <h3 className=\"text-lg font-semibold text-slate-900\">Modal Section 15</h3>\n      <p className=\"mt-2 text-sm text-slate-600\">Use clear copy, strong hierarchy and safe actions.</p>\n      <div className=\"mt-5 flex gap-3\">\n        <button type=\"button\" className=\"rounded-lg border border-slate-300 px-4 py-2 text-sm\">Cancel</button>\n        <button type=\"button\" className=\"rounded-lg bg-slate-600 px-4 py-2 text-sm font-semibold text-white\">Confirm</button>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-modal-light-16",
+      "name": "ModalLightCorporate16",
+      "category": "modal",
+      "subcategory": "confirm-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "admin"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ModalLightCorporate16() {\n  return (\n    <section className=\"mx-auto w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-sm\">\n      <h3 className=\"text-lg font-semibold text-slate-900\">Modal Section 16</h3>\n      <p className=\"mt-2 text-sm text-slate-600\">Use clear copy, strong hierarchy and safe actions.</p>\n      <div className=\"mt-5 flex gap-3\">\n        <button type=\"button\" className=\"rounded-lg border border-slate-300 px-4 py-2 text-sm\">Cancel</button>\n        <button type=\"button\" className=\"rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white\">Confirm</button>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-modal-light-17",
+      "name": "ModalLightCorporate17",
+      "category": "modal",
+      "subcategory": "info-panel",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "admin"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ModalLightCorporate17() {\n  return (\n    <section className=\"mx-auto w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-sm\">\n      <h3 className=\"text-lg font-semibold text-slate-900\">Modal Section 17</h3>\n      <p className=\"mt-2 text-sm text-slate-600\">Use clear copy, strong hierarchy and safe actions.</p>\n      <div className=\"mt-5 flex gap-3\">\n        <button type=\"button\" className=\"rounded-lg border border-slate-300 px-4 py-2 text-sm\">Cancel</button>\n        <button type=\"button\" className=\"rounded-lg bg-slate-600 px-4 py-2 text-sm font-semibold text-white\">Confirm</button>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-modal-light-18",
+      "name": "ModalLightCorporate18",
+      "category": "modal",
+      "subcategory": "action-modal",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "admin"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ModalLightCorporate18() {\n  return (\n    <section className=\"mx-auto w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-sm\">\n      <h3 className=\"text-lg font-semibold text-slate-900\">Modal Section 18</h3>\n      <p className=\"mt-2 text-sm text-slate-600\">Use clear copy, strong hierarchy and safe actions.</p>\n      <div className=\"mt-5 flex gap-3\">\n        <button type=\"button\" className=\"rounded-lg border border-slate-300 px-4 py-2 text-sm\">Cancel</button>\n        <button type=\"button\" className=\"rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white\">Confirm</button>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-modal-light-19",
+      "name": "ModalLightCorporate19",
+      "category": "modal",
+      "subcategory": "confirm-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "admin"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ModalLightCorporate19() {\n  return (\n    <section className=\"mx-auto w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-sm\">\n      <h3 className=\"text-lg font-semibold text-slate-900\">Modal Section 19</h3>\n      <p className=\"mt-2 text-sm text-slate-600\">Use clear copy, strong hierarchy and safe actions.</p>\n      <div className=\"mt-5 flex gap-3\">\n        <button type=\"button\" className=\"rounded-lg border border-slate-300 px-4 py-2 text-sm\">Cancel</button>\n        <button type=\"button\" className=\"rounded-lg bg-slate-600 px-4 py-2 text-sm font-semibold text-white\">Confirm</button>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-modal-light-20",
+      "name": "ModalLightCorporate20",
+      "category": "modal",
+      "subcategory": "info-panel",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "admin"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ModalLightCorporate20() {\n  return (\n    <section className=\"mx-auto w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-sm\">\n      <h3 className=\"text-lg font-semibold text-slate-900\">Modal Section 20</h3>\n      <p className=\"mt-2 text-sm text-slate-600\">Use clear copy, strong hierarchy and safe actions.</p>\n      <div className=\"mt-5 flex gap-3\">\n        <button type=\"button\" className=\"rounded-lg border border-slate-300 px-4 py-2 text-sm\">Cancel</button>\n        <button type=\"button\" className=\"rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white\">Confirm</button>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-modal-light-21",
+      "name": "ModalLightCorporate21",
+      "category": "modal",
+      "subcategory": "action-modal",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "admin"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ModalLightCorporate21() {\n  return (\n    <section className=\"mx-auto w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-sm\">\n      <h3 className=\"text-lg font-semibold text-slate-900\">Modal Section 21</h3>\n      <p className=\"mt-2 text-sm text-slate-600\">Use clear copy, strong hierarchy and safe actions.</p>\n      <div className=\"mt-5 flex gap-3\">\n        <button type=\"button\" className=\"rounded-lg border border-slate-300 px-4 py-2 text-sm\">Cancel</button>\n        <button type=\"button\" className=\"rounded-lg bg-slate-600 px-4 py-2 text-sm font-semibold text-white\">Confirm</button>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-modal-light-22",
+      "name": "ModalLightCorporate22",
+      "category": "modal",
+      "subcategory": "confirm-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "admin"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ModalLightCorporate22() {\n  return (\n    <section className=\"mx-auto w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-sm\">\n      <h3 className=\"text-lg font-semibold text-slate-900\">Modal Section 22</h3>\n      <p className=\"mt-2 text-sm text-slate-600\">Use clear copy, strong hierarchy and safe actions.</p>\n      <div className=\"mt-5 flex gap-3\">\n        <button type=\"button\" className=\"rounded-lg border border-slate-300 px-4 py-2 text-sm\">Cancel</button>\n        <button type=\"button\" className=\"rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white\">Confirm</button>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-modal-light-23",
+      "name": "ModalLightCorporate23",
+      "category": "modal",
+      "subcategory": "info-panel",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "admin"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ModalLightCorporate23() {\n  return (\n    <section className=\"mx-auto w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-sm\">\n      <h3 className=\"text-lg font-semibold text-slate-900\">Modal Section 23</h3>\n      <p className=\"mt-2 text-sm text-slate-600\">Use clear copy, strong hierarchy and safe actions.</p>\n      <div className=\"mt-5 flex gap-3\">\n        <button type=\"button\" className=\"rounded-lg border border-slate-300 px-4 py-2 text-sm\">Cancel</button>\n        <button type=\"button\" className=\"rounded-lg bg-slate-600 px-4 py-2 text-sm font-semibold text-white\">Confirm</button>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-modal-light-24",
+      "name": "ModalLightCorporate24",
+      "category": "modal",
+      "subcategory": "action-modal",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "admin"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ModalLightCorporate24() {\n  return (\n    <section className=\"mx-auto w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-sm\">\n      <h3 className=\"text-lg font-semibold text-slate-900\">Modal Section 24</h3>\n      <p className=\"mt-2 text-sm text-slate-600\">Use clear copy, strong hierarchy and safe actions.</p>\n      <div className=\"mt-5 flex gap-3\">\n        <button type=\"button\" className=\"rounded-lg border border-slate-300 px-4 py-2 text-sm\">Cancel</button>\n        <button type=\"button\" className=\"rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white\">Confirm</button>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-modal-light-25",
+      "name": "ModalLightCorporate25",
+      "category": "modal",
+      "subcategory": "confirm-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "admin"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ModalLightCorporate25() {\n  return (\n    <section className=\"mx-auto w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-sm\">\n      <h3 className=\"text-lg font-semibold text-slate-900\">Modal Section 25</h3>\n      <p className=\"mt-2 text-sm text-slate-600\">Use clear copy, strong hierarchy and safe actions.</p>\n      <div className=\"mt-5 flex gap-3\">\n        <button type=\"button\" className=\"rounded-lg border border-slate-300 px-4 py-2 text-sm\">Cancel</button>\n        <button type=\"button\" className=\"rounded-lg bg-slate-600 px-4 py-2 text-sm font-semibold text-white\">Confirm</button>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-modal-light-26",
+      "name": "ModalLightCorporate26",
+      "category": "modal",
+      "subcategory": "info-panel",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "admin"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ModalLightCorporate26() {\n  return (\n    <section className=\"mx-auto w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-sm\">\n      <h3 className=\"text-lg font-semibold text-slate-900\">Modal Section 26</h3>\n      <p className=\"mt-2 text-sm text-slate-600\">Use clear copy, strong hierarchy and safe actions.</p>\n      <div className=\"mt-5 flex gap-3\">\n        <button type=\"button\" className=\"rounded-lg border border-slate-300 px-4 py-2 text-sm\">Cancel</button>\n        <button type=\"button\" className=\"rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white\">Confirm</button>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-modal-light-27",
+      "name": "ModalLightCorporate27",
+      "category": "modal",
+      "subcategory": "action-modal",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "admin"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ModalLightCorporate27() {\n  return (\n    <section className=\"mx-auto w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-sm\">\n      <h3 className=\"text-lg font-semibold text-slate-900\">Modal Section 27</h3>\n      <p className=\"mt-2 text-sm text-slate-600\">Use clear copy, strong hierarchy and safe actions.</p>\n      <div className=\"mt-5 flex gap-3\">\n        <button type=\"button\" className=\"rounded-lg border border-slate-300 px-4 py-2 text-sm\">Cancel</button>\n        <button type=\"button\" className=\"rounded-lg bg-slate-600 px-4 py-2 text-sm font-semibold text-white\">Confirm</button>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-modal-light-28",
+      "name": "ModalLightCorporate28",
+      "category": "modal",
+      "subcategory": "confirm-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "admin"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ModalLightCorporate28() {\n  return (\n    <section className=\"mx-auto w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-sm\">\n      <h3 className=\"text-lg font-semibold text-slate-900\">Modal Section 28</h3>\n      <p className=\"mt-2 text-sm text-slate-600\">Use clear copy, strong hierarchy and safe actions.</p>\n      <div className=\"mt-5 flex gap-3\">\n        <button type=\"button\" className=\"rounded-lg border border-slate-300 px-4 py-2 text-sm\">Cancel</button>\n        <button type=\"button\" className=\"rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white\">Confirm</button>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-modal-light-29",
+      "name": "ModalLightCorporate29",
+      "category": "modal",
+      "subcategory": "info-panel",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "admin"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ModalLightCorporate29() {\n  return (\n    <section className=\"mx-auto w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-sm\">\n      <h3 className=\"text-lg font-semibold text-slate-900\">Modal Section 29</h3>\n      <p className=\"mt-2 text-sm text-slate-600\">Use clear copy, strong hierarchy and safe actions.</p>\n      <div className=\"mt-5 flex gap-3\">\n        <button type=\"button\" className=\"rounded-lg border border-slate-300 px-4 py-2 text-sm\">Cancel</button>\n        <button type=\"button\" className=\"rounded-lg bg-slate-600 px-4 py-2 text-sm font-semibold text-white\">Confirm</button>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-modal-light-30",
+      "name": "ModalLightCorporate30",
+      "category": "modal",
+      "subcategory": "action-modal",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "admin"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function ModalLightCorporate30() {\n  return (\n    <section className=\"mx-auto w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-sm\">\n      <h3 className=\"text-lg font-semibold text-slate-900\">Modal Section 30</h3>\n      <p className=\"mt-2 text-sm text-slate-600\">Use clear copy, strong hierarchy and safe actions.</p>\n      <div className=\"mt-5 flex gap-3\">\n        <button type=\"button\" className=\"rounded-lg border border-slate-300 px-4 py-2 text-sm\">Cancel</button>\n        <button type=\"button\" className=\"rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white\">Confirm</button>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    }
+  ]
+}

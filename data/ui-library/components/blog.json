@@ -1,0 +1,841 @@
+{
+  "category": "blog",
+  "components": [
+    {
+      "id": "blog-cards-grid-01",
+      "name": "Blog Cards Grid",
+      "category": "blog",
+      "subcategory": "grid",
+      "tags": {
+        "industry": [
+          "saas",
+          "agency",
+          "education"
+        ],
+        "tone": [
+          "clean",
+          "modern"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const POSTS = [\n  { category: \"Produkt\", date: \"12. Jan 2026\", title: \"Wie wir unseren Build-Prozess um 60 % beschleunigt haben\", excerpt: \"Ein Deep-Dive in unsere neue CI-Pipeline und die Tools die den Unterschied gemacht haben.\", readTime: \"5 Min.\", gradient: \"from-violet-100 to-indigo-100\" },\n  { category: \"Design\", date: \"28. Dez 2025\", title: \"Design-Tokens: Warum wir alles neu aufgesetzt haben\", excerpt: \"Konsistenz über 40+ Komponenten hinweg – wie wir ein skalierbares Token-System etabliert haben.\", readTime: \"8 Min.\", gradient: \"from-rose-100 to-pink-100\" },\n  { category: \"Engineering\", date: \"15. Nov 2025\", title: \"Von Monolith zu Microservices – unsere ehrliche Einschätzung\", excerpt: \"Was wirklich passiert wenn ein schnell wachsendes Team seine Architektur umbaut.\", readTime: \"12 Min.\", gradient: \"from-amber-100 to-orange-100\" },\n];\n\nexport default function BlogCardsGrid01() {\n  return (\n    <section id=\"blog\" className=\"px-6 py-24\">\n      <div className=\"mx-auto max-w-6xl\">\n        <div className=\"flex items-end justify-between\">\n          <div>\n            <p className=\"text-xs font-bold uppercase tracking-[0.25em] text-violet-600\">Blog</p>\n            <h2 className=\"mt-2 text-3xl font-extrabold text-slate-900\">Aus unserem Team</h2>\n          </div>\n          <a href=\"#\" className=\"hidden text-sm font-semibold text-violet-600 hover:underline sm:block\">Alle Artikel →</a>\n        </div>\n        <div className=\"mt-10 grid gap-6 md:grid-cols-3\">\n          {POSTS.map((post) => (\n            <article key={post.title} className=\"group flex flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md\">\n              <div className={`h-36 bg-gradient-to-br ${post.gradient}`} />\n              <div className=\"flex flex-1 flex-col p-6\">\n                <div className=\"flex items-center gap-2 text-xs text-slate-500\">\n                  <span className=\"font-bold text-violet-600\">{post.category}</span>\n                  <span>·</span>\n                  <span>{post.date}</span>\n                  <span>·</span>\n                  <span>{post.readTime}</span>\n                </div>\n                <h3 className=\"mt-3 font-bold leading-snug text-slate-900 group-hover:text-violet-700 transition\">{post.title}</h3>\n                <p className=\"mt-2 text-sm text-slate-500 flex-1\">{post.excerpt}</p>\n                <a href=\"#\" className=\"mt-4 text-sm font-semibold text-violet-600 hover:underline\">Weiterlesen →</a>\n              </div>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}"
+      }
+    },
+    {
+      "id": "corp-blog-light-01",
+      "name": "BlogLightCorporate01",
+      "category": "blog",
+      "subcategory": "cards-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "content"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const POSTS = [\n  { title: 'Operational clarity at scale', text: 'Practical patterns for high-quality product delivery.' },\n  { title: 'Design governance in fast teams', text: 'How to keep consistency while iterating quickly.' },\n  { title: 'Reusable section systems', text: 'Building blocks that reduce regressions over time.' }\n];\n\nexport default function BlogLightCorporate01() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Blog Section 01</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {POSTS.map((p) => (\n            <article key={p.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{p.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{p.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-blog-light-02",
+      "name": "BlogLightCorporate02",
+      "category": "blog",
+      "subcategory": "list-modern",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "content"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const POSTS = [\n  { title: 'Operational clarity at scale', text: 'Practical patterns for high-quality product delivery.' },\n  { title: 'Design governance in fast teams', text: 'How to keep consistency while iterating quickly.' },\n  { title: 'Reusable section systems', text: 'Building blocks that reduce regressions over time.' }\n];\n\nexport default function BlogLightCorporate02() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Blog Section 02</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {POSTS.map((p) => (\n            <article key={p.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{p.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{p.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-blog-light-03",
+      "name": "BlogLightCorporate03",
+      "category": "blog",
+      "subcategory": "editorial-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "content"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const POSTS = [\n  { title: 'Operational clarity at scale', text: 'Practical patterns for high-quality product delivery.' },\n  { title: 'Design governance in fast teams', text: 'How to keep consistency while iterating quickly.' },\n  { title: 'Reusable section systems', text: 'Building blocks that reduce regressions over time.' }\n];\n\nexport default function BlogLightCorporate03() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Blog Section 03</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {POSTS.map((p) => (\n            <article key={p.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{p.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{p.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-blog-light-04",
+      "name": "BlogLightCorporate04",
+      "category": "blog",
+      "subcategory": "cards-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "content"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const POSTS = [\n  { title: 'Operational clarity at scale', text: 'Practical patterns for high-quality product delivery.' },\n  { title: 'Design governance in fast teams', text: 'How to keep consistency while iterating quickly.' },\n  { title: 'Reusable section systems', text: 'Building blocks that reduce regressions over time.' }\n];\n\nexport default function BlogLightCorporate04() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Blog Section 04</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {POSTS.map((p) => (\n            <article key={p.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{p.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{p.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-blog-light-05",
+      "name": "BlogLightCorporate05",
+      "category": "blog",
+      "subcategory": "list-modern",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "content"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const POSTS = [\n  { title: 'Operational clarity at scale', text: 'Practical patterns for high-quality product delivery.' },\n  { title: 'Design governance in fast teams', text: 'How to keep consistency while iterating quickly.' },\n  { title: 'Reusable section systems', text: 'Building blocks that reduce regressions over time.' }\n];\n\nexport default function BlogLightCorporate05() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Blog Section 05</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {POSTS.map((p) => (\n            <article key={p.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{p.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{p.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-blog-light-06",
+      "name": "BlogLightCorporate06",
+      "category": "blog",
+      "subcategory": "editorial-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "content"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const POSTS = [\n  { title: 'Operational clarity at scale', text: 'Practical patterns for high-quality product delivery.' },\n  { title: 'Design governance in fast teams', text: 'How to keep consistency while iterating quickly.' },\n  { title: 'Reusable section systems', text: 'Building blocks that reduce regressions over time.' }\n];\n\nexport default function BlogLightCorporate06() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Blog Section 06</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {POSTS.map((p) => (\n            <article key={p.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{p.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{p.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-blog-light-07",
+      "name": "BlogLightCorporate07",
+      "category": "blog",
+      "subcategory": "cards-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "content"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const POSTS = [\n  { title: 'Operational clarity at scale', text: 'Practical patterns for high-quality product delivery.' },\n  { title: 'Design governance in fast teams', text: 'How to keep consistency while iterating quickly.' },\n  { title: 'Reusable section systems', text: 'Building blocks that reduce regressions over time.' }\n];\n\nexport default function BlogLightCorporate07() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Blog Section 07</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {POSTS.map((p) => (\n            <article key={p.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{p.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{p.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-blog-light-08",
+      "name": "BlogLightCorporate08",
+      "category": "blog",
+      "subcategory": "list-modern",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "content"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const POSTS = [\n  { title: 'Operational clarity at scale', text: 'Practical patterns for high-quality product delivery.' },\n  { title: 'Design governance in fast teams', text: 'How to keep consistency while iterating quickly.' },\n  { title: 'Reusable section systems', text: 'Building blocks that reduce regressions over time.' }\n];\n\nexport default function BlogLightCorporate08() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Blog Section 08</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {POSTS.map((p) => (\n            <article key={p.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{p.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{p.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-blog-light-09",
+      "name": "BlogLightCorporate09",
+      "category": "blog",
+      "subcategory": "editorial-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "content"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const POSTS = [\n  { title: 'Operational clarity at scale', text: 'Practical patterns for high-quality product delivery.' },\n  { title: 'Design governance in fast teams', text: 'How to keep consistency while iterating quickly.' },\n  { title: 'Reusable section systems', text: 'Building blocks that reduce regressions over time.' }\n];\n\nexport default function BlogLightCorporate09() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Blog Section 09</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {POSTS.map((p) => (\n            <article key={p.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{p.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{p.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-blog-light-10",
+      "name": "BlogLightCorporate10",
+      "category": "blog",
+      "subcategory": "cards-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "content"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const POSTS = [\n  { title: 'Operational clarity at scale', text: 'Practical patterns for high-quality product delivery.' },\n  { title: 'Design governance in fast teams', text: 'How to keep consistency while iterating quickly.' },\n  { title: 'Reusable section systems', text: 'Building blocks that reduce regressions over time.' }\n];\n\nexport default function BlogLightCorporate10() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Blog Section 10</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {POSTS.map((p) => (\n            <article key={p.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{p.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{p.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-blog-light-11",
+      "name": "BlogLightCorporate11",
+      "category": "blog",
+      "subcategory": "list-modern",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "content"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const POSTS = [\n  { title: 'Operational clarity at scale', text: 'Practical patterns for high-quality product delivery.' },\n  { title: 'Design governance in fast teams', text: 'How to keep consistency while iterating quickly.' },\n  { title: 'Reusable section systems', text: 'Building blocks that reduce regressions over time.' }\n];\n\nexport default function BlogLightCorporate11() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Blog Section 11</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {POSTS.map((p) => (\n            <article key={p.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{p.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{p.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-blog-light-12",
+      "name": "BlogLightCorporate12",
+      "category": "blog",
+      "subcategory": "editorial-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "content"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const POSTS = [\n  { title: 'Operational clarity at scale', text: 'Practical patterns for high-quality product delivery.' },\n  { title: 'Design governance in fast teams', text: 'How to keep consistency while iterating quickly.' },\n  { title: 'Reusable section systems', text: 'Building blocks that reduce regressions over time.' }\n];\n\nexport default function BlogLightCorporate12() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Blog Section 12</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {POSTS.map((p) => (\n            <article key={p.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{p.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{p.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-blog-light-13",
+      "name": "BlogLightCorporate13",
+      "category": "blog",
+      "subcategory": "cards-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "content"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const POSTS = [\n  { title: 'Operational clarity at scale', text: 'Practical patterns for high-quality product delivery.' },\n  { title: 'Design governance in fast teams', text: 'How to keep consistency while iterating quickly.' },\n  { title: 'Reusable section systems', text: 'Building blocks that reduce regressions over time.' }\n];\n\nexport default function BlogLightCorporate13() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Blog Section 13</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {POSTS.map((p) => (\n            <article key={p.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{p.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{p.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-blog-light-14",
+      "name": "BlogLightCorporate14",
+      "category": "blog",
+      "subcategory": "list-modern",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "content"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const POSTS = [\n  { title: 'Operational clarity at scale', text: 'Practical patterns for high-quality product delivery.' },\n  { title: 'Design governance in fast teams', text: 'How to keep consistency while iterating quickly.' },\n  { title: 'Reusable section systems', text: 'Building blocks that reduce regressions over time.' }\n];\n\nexport default function BlogLightCorporate14() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Blog Section 14</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {POSTS.map((p) => (\n            <article key={p.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{p.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{p.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-blog-light-15",
+      "name": "BlogLightCorporate15",
+      "category": "blog",
+      "subcategory": "editorial-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "content"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const POSTS = [\n  { title: 'Operational clarity at scale', text: 'Practical patterns for high-quality product delivery.' },\n  { title: 'Design governance in fast teams', text: 'How to keep consistency while iterating quickly.' },\n  { title: 'Reusable section systems', text: 'Building blocks that reduce regressions over time.' }\n];\n\nexport default function BlogLightCorporate15() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Blog Section 15</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {POSTS.map((p) => (\n            <article key={p.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{p.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{p.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-blog-light-16",
+      "name": "BlogLightCorporate16",
+      "category": "blog",
+      "subcategory": "cards-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "content"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const POSTS = [\n  { title: 'Operational clarity at scale', text: 'Practical patterns for high-quality product delivery.' },\n  { title: 'Design governance in fast teams', text: 'How to keep consistency while iterating quickly.' },\n  { title: 'Reusable section systems', text: 'Building blocks that reduce regressions over time.' }\n];\n\nexport default function BlogLightCorporate16() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Blog Section 16</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {POSTS.map((p) => (\n            <article key={p.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{p.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{p.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-blog-light-17",
+      "name": "BlogLightCorporate17",
+      "category": "blog",
+      "subcategory": "list-modern",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "content"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const POSTS = [\n  { title: 'Operational clarity at scale', text: 'Practical patterns for high-quality product delivery.' },\n  { title: 'Design governance in fast teams', text: 'How to keep consistency while iterating quickly.' },\n  { title: 'Reusable section systems', text: 'Building blocks that reduce regressions over time.' }\n];\n\nexport default function BlogLightCorporate17() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Blog Section 17</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {POSTS.map((p) => (\n            <article key={p.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{p.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{p.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-blog-light-18",
+      "name": "BlogLightCorporate18",
+      "category": "blog",
+      "subcategory": "editorial-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "content"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const POSTS = [\n  { title: 'Operational clarity at scale', text: 'Practical patterns for high-quality product delivery.' },\n  { title: 'Design governance in fast teams', text: 'How to keep consistency while iterating quickly.' },\n  { title: 'Reusable section systems', text: 'Building blocks that reduce regressions over time.' }\n];\n\nexport default function BlogLightCorporate18() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Blog Section 18</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {POSTS.map((p) => (\n            <article key={p.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{p.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{p.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-blog-light-19",
+      "name": "BlogLightCorporate19",
+      "category": "blog",
+      "subcategory": "cards-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "content"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const POSTS = [\n  { title: 'Operational clarity at scale', text: 'Practical patterns for high-quality product delivery.' },\n  { title: 'Design governance in fast teams', text: 'How to keep consistency while iterating quickly.' },\n  { title: 'Reusable section systems', text: 'Building blocks that reduce regressions over time.' }\n];\n\nexport default function BlogLightCorporate19() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Blog Section 19</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {POSTS.map((p) => (\n            <article key={p.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{p.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{p.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-blog-light-20",
+      "name": "BlogLightCorporate20",
+      "category": "blog",
+      "subcategory": "list-modern",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "content"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const POSTS = [\n  { title: 'Operational clarity at scale', text: 'Practical patterns for high-quality product delivery.' },\n  { title: 'Design governance in fast teams', text: 'How to keep consistency while iterating quickly.' },\n  { title: 'Reusable section systems', text: 'Building blocks that reduce regressions over time.' }\n];\n\nexport default function BlogLightCorporate20() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Blog Section 20</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {POSTS.map((p) => (\n            <article key={p.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{p.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{p.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-blog-light-21",
+      "name": "BlogLightCorporate21",
+      "category": "blog",
+      "subcategory": "editorial-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "content"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const POSTS = [\n  { title: 'Operational clarity at scale', text: 'Practical patterns for high-quality product delivery.' },\n  { title: 'Design governance in fast teams', text: 'How to keep consistency while iterating quickly.' },\n  { title: 'Reusable section systems', text: 'Building blocks that reduce regressions over time.' }\n];\n\nexport default function BlogLightCorporate21() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Blog Section 21</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {POSTS.map((p) => (\n            <article key={p.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{p.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{p.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-blog-light-22",
+      "name": "BlogLightCorporate22",
+      "category": "blog",
+      "subcategory": "cards-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "content"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const POSTS = [\n  { title: 'Operational clarity at scale', text: 'Practical patterns for high-quality product delivery.' },\n  { title: 'Design governance in fast teams', text: 'How to keep consistency while iterating quickly.' },\n  { title: 'Reusable section systems', text: 'Building blocks that reduce regressions over time.' }\n];\n\nexport default function BlogLightCorporate22() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Blog Section 22</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {POSTS.map((p) => (\n            <article key={p.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{p.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{p.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-blog-light-23",
+      "name": "BlogLightCorporate23",
+      "category": "blog",
+      "subcategory": "list-modern",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "content"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const POSTS = [\n  { title: 'Operational clarity at scale', text: 'Practical patterns for high-quality product delivery.' },\n  { title: 'Design governance in fast teams', text: 'How to keep consistency while iterating quickly.' },\n  { title: 'Reusable section systems', text: 'Building blocks that reduce regressions over time.' }\n];\n\nexport default function BlogLightCorporate23() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Blog Section 23</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {POSTS.map((p) => (\n            <article key={p.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{p.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{p.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-blog-light-24",
+      "name": "BlogLightCorporate24",
+      "category": "blog",
+      "subcategory": "editorial-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "content"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const POSTS = [\n  { title: 'Operational clarity at scale', text: 'Practical patterns for high-quality product delivery.' },\n  { title: 'Design governance in fast teams', text: 'How to keep consistency while iterating quickly.' },\n  { title: 'Reusable section systems', text: 'Building blocks that reduce regressions over time.' }\n];\n\nexport default function BlogLightCorporate24() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Blog Section 24</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {POSTS.map((p) => (\n            <article key={p.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{p.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{p.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-blog-light-25",
+      "name": "BlogLightCorporate25",
+      "category": "blog",
+      "subcategory": "cards-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "content"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const POSTS = [\n  { title: 'Operational clarity at scale', text: 'Practical patterns for high-quality product delivery.' },\n  { title: 'Design governance in fast teams', text: 'How to keep consistency while iterating quickly.' },\n  { title: 'Reusable section systems', text: 'Building blocks that reduce regressions over time.' }\n];\n\nexport default function BlogLightCorporate25() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Blog Section 25</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {POSTS.map((p) => (\n            <article key={p.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{p.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{p.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-blog-light-26",
+      "name": "BlogLightCorporate26",
+      "category": "blog",
+      "subcategory": "list-modern",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "content"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const POSTS = [\n  { title: 'Operational clarity at scale', text: 'Practical patterns for high-quality product delivery.' },\n  { title: 'Design governance in fast teams', text: 'How to keep consistency while iterating quickly.' },\n  { title: 'Reusable section systems', text: 'Building blocks that reduce regressions over time.' }\n];\n\nexport default function BlogLightCorporate26() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Blog Section 26</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {POSTS.map((p) => (\n            <article key={p.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{p.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{p.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-blog-light-27",
+      "name": "BlogLightCorporate27",
+      "category": "blog",
+      "subcategory": "editorial-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "content"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const POSTS = [\n  { title: 'Operational clarity at scale', text: 'Practical patterns for high-quality product delivery.' },\n  { title: 'Design governance in fast teams', text: 'How to keep consistency while iterating quickly.' },\n  { title: 'Reusable section systems', text: 'Building blocks that reduce regressions over time.' }\n];\n\nexport default function BlogLightCorporate27() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Blog Section 27</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {POSTS.map((p) => (\n            <article key={p.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{p.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{p.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-blog-light-28",
+      "name": "BlogLightCorporate28",
+      "category": "blog",
+      "subcategory": "cards-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "content"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const POSTS = [\n  { title: 'Operational clarity at scale', text: 'Practical patterns for high-quality product delivery.' },\n  { title: 'Design governance in fast teams', text: 'How to keep consistency while iterating quickly.' },\n  { title: 'Reusable section systems', text: 'Building blocks that reduce regressions over time.' }\n];\n\nexport default function BlogLightCorporate28() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Blog Section 28</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {POSTS.map((p) => (\n            <article key={p.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{p.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{p.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-blog-light-29",
+      "name": "BlogLightCorporate29",
+      "category": "blog",
+      "subcategory": "list-modern",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "content"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const POSTS = [\n  { title: 'Operational clarity at scale', text: 'Practical patterns for high-quality product delivery.' },\n  { title: 'Design governance in fast teams', text: 'How to keep consistency while iterating quickly.' },\n  { title: 'Reusable section systems', text: 'Building blocks that reduce regressions over time.' }\n];\n\nexport default function BlogLightCorporate29() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Blog Section 29</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {POSTS.map((p) => (\n            <article key={p.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{p.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{p.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-blog-light-30",
+      "name": "BlogLightCorporate30",
+      "category": "blog",
+      "subcategory": "editorial-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "content"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const POSTS = [\n  { title: 'Operational clarity at scale', text: 'Practical patterns for high-quality product delivery.' },\n  { title: 'Design governance in fast teams', text: 'How to keep consistency while iterating quickly.' },\n  { title: 'Reusable section systems', text: 'Building blocks that reduce regressions over time.' }\n];\n\nexport default function BlogLightCorporate30() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Blog Section 30</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {POSTS.map((p) => (\n            <article key={p.title} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{p.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{p.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    }
+  ]
+}

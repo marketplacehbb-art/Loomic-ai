@@ -1,0 +1,867 @@
+{
+  "category": "testimonials",
+  "components": [
+    {
+      "id": "testimonials-masonry-01",
+      "name": "Testimonials Masonry Grid",
+      "category": "testimonials",
+      "subcategory": "masonry",
+      "tags": {
+        "industry": [
+          "saas",
+          "ecommerce",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const TESTIMONIALS = [\n  { name: \"Sophie Krämer\", role: \"Head of Product @ Flowbase\", avatar: \"SK\", text: \"Endlich eine Lösung die unser Team wirklich nutzt. Onboarding dauerte 10 Minuten, ROI war nach einer Woche messbar.\", stars: 5 },\n  { name: \"Marcus Heidler\", role: \"CTO @ Stackly\", avatar: \"MH\", text: \"Die API-Dokumentation ist erstklassig. Integration in unser bestehendes System war ein Nachmittagsprojekt.\", stars: 5 },\n  { name: \"Lena Bergmann\", role: \"Freelance Designer\", avatar: \"LB\", text: \"Ich nutze es für alle Kundenprojekte. Spart mir pro Woche gut 4 Stunden.\", stars: 5 },\n  { name: \"Tom Richter\", role: \"Founder @ NovaSaaS\", avatar: \"TR\", text: \"Von allen Tools die wir getestet haben hat keines so schnell einen Unterschied gemacht. Absolute Empfehlung.\", stars: 5 },\n  { name: \"Anna Schreiber\", role: \"VP Engineering @ Pulsar\", avatar: \"AS\", text: \"Das Dashboard ist intuitiv und die Daten sind verlässlich. Unser ganzes Reporting läuft darüber.\", stars: 4 },\n];\n\nexport default function TestimonialsMasonry01() {\n  return (\n    <section id=\"testimonials\" className=\"bg-slate-50 px-6 py-24\">\n      <div className=\"mx-auto max-w-6xl\">\n        <p className=\"text-center text-xs font-bold uppercase tracking-[0.25em] text-violet-600\">Kundenstimmen</p>\n        <h2 className=\"mt-3 text-center text-3xl font-extrabold text-slate-900\">Was unsere Nutzer sagen</h2>\n        <div className=\"mt-12 columns-1 gap-4 sm:columns-2 lg:columns-3\">\n          {TESTIMONIALS.map((t) => (\n            <article key={t.name} className=\"mb-4 break-inside-avoid rounded-2xl border border-slate-200 bg-white p-6 shadow-sm\">\n              <div className=\"flex text-amber-400 text-sm\">{\"★\".repeat(t.stars)}</div>\n              <p className=\"mt-3 text-sm text-slate-700 leading-relaxed\">\"{t.text}\"</p>\n              <div className=\"mt-4 flex items-center gap-3\">\n                <div className=\"flex h-9 w-9 items-center justify-center rounded-full bg-violet-100 text-xs font-bold text-violet-700\">{t.avatar}</div>\n                <div>\n                  <p className=\"text-sm font-semibold text-slate-900\">{t.name}</p>\n                  <p className=\"text-xs text-slate-400\">{t.role}</p>\n                </div>\n              </div>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}"
+      }
+    },
+    {
+      "id": "testimonials-single-spotlight-01",
+      "name": "Testimonials Single Spotlight Dark",
+      "category": "testimonials",
+      "subcategory": "spotlight",
+      "tags": {
+        "industry": [
+          "agency",
+          "studio",
+          "portfolio"
+        ],
+        "tone": [
+          "premium",
+          "elegant"
+        ],
+        "theme": [
+          "dark"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "import { useState } from \"react\";\n\nconst QUOTES = [\n  { quote: \"Das beste Investment das wir für unsere Marke gemacht haben. Die Ergebnisse sprechen für sich.\", name: \"Clara Hoffmann\", company: \"Brandhaus GmbH\", initials: \"CH\" },\n  { quote: \"Innerhalb von drei Monaten haben wir unsere Conversion-Rate verdoppelt. Außergewöhnliche Qualität.\", name: \"Jonas Müller\", company: \"ScaleUp AG\", initials: \"JM\" },\n  { quote: \"Professionell, schnell und immer auf Augenhöhe. Kein anderer Partner kann das bieten.\", name: \"Petra Wolff\", company: \"Wolff Studios\", initials: \"PW\" },\n];\n\nexport default function TestimonialsSingleSpotlight01() {\n  const [idx, setIdx] = useState(0);\n  const q = QUOTES[idx];\n  return (\n    <section className=\"bg-zinc-950 px-6 py-24\">\n      <div className=\"mx-auto max-w-3xl text-center\">\n        <div className=\"flex justify-center gap-1 text-amber-400 text-xl mb-8\">★★★★★</div>\n        <blockquote className=\"text-2xl font-semibold leading-relaxed text-white sm:text-3xl\">\n          \"{q.quote}\"\n        </blockquote>\n        <div className=\"mt-8 flex items-center justify-center gap-3\">\n          <div className=\"flex h-10 w-10 items-center justify-center rounded-full bg-amber-400/20 font-bold text-amber-300\">\n            {q.initials}\n          </div>\n          <div className=\"text-left\">\n            <p className=\"text-sm font-semibold text-white\">{q.name}</p>\n            <p className=\"text-xs text-zinc-500\">{q.company}</p>\n          </div>\n        </div>\n        <div className=\"mt-8 flex justify-center gap-2\">\n          {QUOTES.map((_, i) => (\n            <button\n              key={i}\n              onClick={() => setIdx(i)}\n              className={`h-2 rounded-full transition-all ${i === idx ? \"w-8 bg-amber-400\" : \"w-2 bg-zinc-700\"}`}\n            />\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}"
+      }
+    },
+    {
+      "id": "corp-testimonials-light-01",
+      "name": "TestimonialsLightCorporate01",
+      "category": "testimonials",
+      "subcategory": "cards-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const QUOTES = [\n  { name: 'Lena Weber', role: 'COO', quote: 'Strong design consistency and clear communication.' },\n  { name: 'David Klein', role: 'CTO', quote: 'The section system scales across teams.' },\n  { name: 'Mara Fischer', role: 'Head of Ops', quote: 'Fast updates without visual regressions.' }\n];\n\nexport default function TestimonialsLightCorporate01() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Testimonials Section 01</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {QUOTES.map((q) => (\n            <article key={q.name} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <p className=\"text-sm text-slate-600\">\"{q.quote}\"</p>\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{q.name}</p>\n              <p className=\"text-xs text-slate-500\">{q.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-testimonials-light-02",
+      "name": "TestimonialsLightCorporate02",
+      "category": "testimonials",
+      "subcategory": "single-quote",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const QUOTES = [\n  { name: 'Lena Weber', role: 'COO', quote: 'Strong design consistency and clear communication.' },\n  { name: 'David Klein', role: 'CTO', quote: 'The section system scales across teams.' },\n  { name: 'Mara Fischer', role: 'Head of Ops', quote: 'Fast updates without visual regressions.' }\n];\n\nexport default function TestimonialsLightCorporate02() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Testimonials Section 02</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {QUOTES.map((q) => (\n            <article key={q.name} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <p className=\"text-sm text-slate-600\">\"{q.quote}\"</p>\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{q.name}</p>\n              <p className=\"text-xs text-slate-500\">{q.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-testimonials-light-03",
+      "name": "TestimonialsLightCorporate03",
+      "category": "testimonials",
+      "subcategory": "logo-proof",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const QUOTES = [\n  { name: 'Lena Weber', role: 'COO', quote: 'Strong design consistency and clear communication.' },\n  { name: 'David Klein', role: 'CTO', quote: 'The section system scales across teams.' },\n  { name: 'Mara Fischer', role: 'Head of Ops', quote: 'Fast updates without visual regressions.' }\n];\n\nexport default function TestimonialsLightCorporate03() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Testimonials Section 03</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {QUOTES.map((q) => (\n            <article key={q.name} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <p className=\"text-sm text-slate-600\">\"{q.quote}\"</p>\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{q.name}</p>\n              <p className=\"text-xs text-slate-500\">{q.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-testimonials-light-04",
+      "name": "TestimonialsLightCorporate04",
+      "category": "testimonials",
+      "subcategory": "cards-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const QUOTES = [\n  { name: 'Lena Weber', role: 'COO', quote: 'Strong design consistency and clear communication.' },\n  { name: 'David Klein', role: 'CTO', quote: 'The section system scales across teams.' },\n  { name: 'Mara Fischer', role: 'Head of Ops', quote: 'Fast updates without visual regressions.' }\n];\n\nexport default function TestimonialsLightCorporate04() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Testimonials Section 04</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {QUOTES.map((q) => (\n            <article key={q.name} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <p className=\"text-sm text-slate-600\">\"{q.quote}\"</p>\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{q.name}</p>\n              <p className=\"text-xs text-slate-500\">{q.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-testimonials-light-05",
+      "name": "TestimonialsLightCorporate05",
+      "category": "testimonials",
+      "subcategory": "single-quote",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const QUOTES = [\n  { name: 'Lena Weber', role: 'COO', quote: 'Strong design consistency and clear communication.' },\n  { name: 'David Klein', role: 'CTO', quote: 'The section system scales across teams.' },\n  { name: 'Mara Fischer', role: 'Head of Ops', quote: 'Fast updates without visual regressions.' }\n];\n\nexport default function TestimonialsLightCorporate05() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Testimonials Section 05</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {QUOTES.map((q) => (\n            <article key={q.name} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <p className=\"text-sm text-slate-600\">\"{q.quote}\"</p>\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{q.name}</p>\n              <p className=\"text-xs text-slate-500\">{q.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-testimonials-light-06",
+      "name": "TestimonialsLightCorporate06",
+      "category": "testimonials",
+      "subcategory": "logo-proof",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const QUOTES = [\n  { name: 'Lena Weber', role: 'COO', quote: 'Strong design consistency and clear communication.' },\n  { name: 'David Klein', role: 'CTO', quote: 'The section system scales across teams.' },\n  { name: 'Mara Fischer', role: 'Head of Ops', quote: 'Fast updates without visual regressions.' }\n];\n\nexport default function TestimonialsLightCorporate06() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Testimonials Section 06</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {QUOTES.map((q) => (\n            <article key={q.name} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <p className=\"text-sm text-slate-600\">\"{q.quote}\"</p>\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{q.name}</p>\n              <p className=\"text-xs text-slate-500\">{q.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-testimonials-light-07",
+      "name": "TestimonialsLightCorporate07",
+      "category": "testimonials",
+      "subcategory": "cards-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const QUOTES = [\n  { name: 'Lena Weber', role: 'COO', quote: 'Strong design consistency and clear communication.' },\n  { name: 'David Klein', role: 'CTO', quote: 'The section system scales across teams.' },\n  { name: 'Mara Fischer', role: 'Head of Ops', quote: 'Fast updates without visual regressions.' }\n];\n\nexport default function TestimonialsLightCorporate07() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Testimonials Section 07</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {QUOTES.map((q) => (\n            <article key={q.name} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <p className=\"text-sm text-slate-600\">\"{q.quote}\"</p>\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{q.name}</p>\n              <p className=\"text-xs text-slate-500\">{q.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-testimonials-light-08",
+      "name": "TestimonialsLightCorporate08",
+      "category": "testimonials",
+      "subcategory": "single-quote",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const QUOTES = [\n  { name: 'Lena Weber', role: 'COO', quote: 'Strong design consistency and clear communication.' },\n  { name: 'David Klein', role: 'CTO', quote: 'The section system scales across teams.' },\n  { name: 'Mara Fischer', role: 'Head of Ops', quote: 'Fast updates without visual regressions.' }\n];\n\nexport default function TestimonialsLightCorporate08() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Testimonials Section 08</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {QUOTES.map((q) => (\n            <article key={q.name} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <p className=\"text-sm text-slate-600\">\"{q.quote}\"</p>\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{q.name}</p>\n              <p className=\"text-xs text-slate-500\">{q.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-testimonials-light-09",
+      "name": "TestimonialsLightCorporate09",
+      "category": "testimonials",
+      "subcategory": "logo-proof",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const QUOTES = [\n  { name: 'Lena Weber', role: 'COO', quote: 'Strong design consistency and clear communication.' },\n  { name: 'David Klein', role: 'CTO', quote: 'The section system scales across teams.' },\n  { name: 'Mara Fischer', role: 'Head of Ops', quote: 'Fast updates without visual regressions.' }\n];\n\nexport default function TestimonialsLightCorporate09() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Testimonials Section 09</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {QUOTES.map((q) => (\n            <article key={q.name} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <p className=\"text-sm text-slate-600\">\"{q.quote}\"</p>\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{q.name}</p>\n              <p className=\"text-xs text-slate-500\">{q.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-testimonials-light-10",
+      "name": "TestimonialsLightCorporate10",
+      "category": "testimonials",
+      "subcategory": "cards-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const QUOTES = [\n  { name: 'Lena Weber', role: 'COO', quote: 'Strong design consistency and clear communication.' },\n  { name: 'David Klein', role: 'CTO', quote: 'The section system scales across teams.' },\n  { name: 'Mara Fischer', role: 'Head of Ops', quote: 'Fast updates without visual regressions.' }\n];\n\nexport default function TestimonialsLightCorporate10() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Testimonials Section 10</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {QUOTES.map((q) => (\n            <article key={q.name} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <p className=\"text-sm text-slate-600\">\"{q.quote}\"</p>\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{q.name}</p>\n              <p className=\"text-xs text-slate-500\">{q.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-testimonials-light-11",
+      "name": "TestimonialsLightCorporate11",
+      "category": "testimonials",
+      "subcategory": "single-quote",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const QUOTES = [\n  { name: 'Lena Weber', role: 'COO', quote: 'Strong design consistency and clear communication.' },\n  { name: 'David Klein', role: 'CTO', quote: 'The section system scales across teams.' },\n  { name: 'Mara Fischer', role: 'Head of Ops', quote: 'Fast updates without visual regressions.' }\n];\n\nexport default function TestimonialsLightCorporate11() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Testimonials Section 11</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {QUOTES.map((q) => (\n            <article key={q.name} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <p className=\"text-sm text-slate-600\">\"{q.quote}\"</p>\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{q.name}</p>\n              <p className=\"text-xs text-slate-500\">{q.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-testimonials-light-12",
+      "name": "TestimonialsLightCorporate12",
+      "category": "testimonials",
+      "subcategory": "logo-proof",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const QUOTES = [\n  { name: 'Lena Weber', role: 'COO', quote: 'Strong design consistency and clear communication.' },\n  { name: 'David Klein', role: 'CTO', quote: 'The section system scales across teams.' },\n  { name: 'Mara Fischer', role: 'Head of Ops', quote: 'Fast updates without visual regressions.' }\n];\n\nexport default function TestimonialsLightCorporate12() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Testimonials Section 12</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {QUOTES.map((q) => (\n            <article key={q.name} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <p className=\"text-sm text-slate-600\">\"{q.quote}\"</p>\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{q.name}</p>\n              <p className=\"text-xs text-slate-500\">{q.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-testimonials-light-13",
+      "name": "TestimonialsLightCorporate13",
+      "category": "testimonials",
+      "subcategory": "cards-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const QUOTES = [\n  { name: 'Lena Weber', role: 'COO', quote: 'Strong design consistency and clear communication.' },\n  { name: 'David Klein', role: 'CTO', quote: 'The section system scales across teams.' },\n  { name: 'Mara Fischer', role: 'Head of Ops', quote: 'Fast updates without visual regressions.' }\n];\n\nexport default function TestimonialsLightCorporate13() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Testimonials Section 13</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {QUOTES.map((q) => (\n            <article key={q.name} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <p className=\"text-sm text-slate-600\">\"{q.quote}\"</p>\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{q.name}</p>\n              <p className=\"text-xs text-slate-500\">{q.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-testimonials-light-14",
+      "name": "TestimonialsLightCorporate14",
+      "category": "testimonials",
+      "subcategory": "single-quote",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const QUOTES = [\n  { name: 'Lena Weber', role: 'COO', quote: 'Strong design consistency and clear communication.' },\n  { name: 'David Klein', role: 'CTO', quote: 'The section system scales across teams.' },\n  { name: 'Mara Fischer', role: 'Head of Ops', quote: 'Fast updates without visual regressions.' }\n];\n\nexport default function TestimonialsLightCorporate14() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Testimonials Section 14</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {QUOTES.map((q) => (\n            <article key={q.name} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <p className=\"text-sm text-slate-600\">\"{q.quote}\"</p>\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{q.name}</p>\n              <p className=\"text-xs text-slate-500\">{q.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-testimonials-light-15",
+      "name": "TestimonialsLightCorporate15",
+      "category": "testimonials",
+      "subcategory": "logo-proof",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const QUOTES = [\n  { name: 'Lena Weber', role: 'COO', quote: 'Strong design consistency and clear communication.' },\n  { name: 'David Klein', role: 'CTO', quote: 'The section system scales across teams.' },\n  { name: 'Mara Fischer', role: 'Head of Ops', quote: 'Fast updates without visual regressions.' }\n];\n\nexport default function TestimonialsLightCorporate15() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Testimonials Section 15</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {QUOTES.map((q) => (\n            <article key={q.name} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <p className=\"text-sm text-slate-600\">\"{q.quote}\"</p>\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{q.name}</p>\n              <p className=\"text-xs text-slate-500\">{q.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-testimonials-light-16",
+      "name": "TestimonialsLightCorporate16",
+      "category": "testimonials",
+      "subcategory": "cards-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const QUOTES = [\n  { name: 'Lena Weber', role: 'COO', quote: 'Strong design consistency and clear communication.' },\n  { name: 'David Klein', role: 'CTO', quote: 'The section system scales across teams.' },\n  { name: 'Mara Fischer', role: 'Head of Ops', quote: 'Fast updates without visual regressions.' }\n];\n\nexport default function TestimonialsLightCorporate16() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Testimonials Section 16</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {QUOTES.map((q) => (\n            <article key={q.name} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <p className=\"text-sm text-slate-600\">\"{q.quote}\"</p>\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{q.name}</p>\n              <p className=\"text-xs text-slate-500\">{q.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-testimonials-light-17",
+      "name": "TestimonialsLightCorporate17",
+      "category": "testimonials",
+      "subcategory": "single-quote",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const QUOTES = [\n  { name: 'Lena Weber', role: 'COO', quote: 'Strong design consistency and clear communication.' },\n  { name: 'David Klein', role: 'CTO', quote: 'The section system scales across teams.' },\n  { name: 'Mara Fischer', role: 'Head of Ops', quote: 'Fast updates without visual regressions.' }\n];\n\nexport default function TestimonialsLightCorporate17() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Testimonials Section 17</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {QUOTES.map((q) => (\n            <article key={q.name} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <p className=\"text-sm text-slate-600\">\"{q.quote}\"</p>\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{q.name}</p>\n              <p className=\"text-xs text-slate-500\">{q.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-testimonials-light-18",
+      "name": "TestimonialsLightCorporate18",
+      "category": "testimonials",
+      "subcategory": "logo-proof",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const QUOTES = [\n  { name: 'Lena Weber', role: 'COO', quote: 'Strong design consistency and clear communication.' },\n  { name: 'David Klein', role: 'CTO', quote: 'The section system scales across teams.' },\n  { name: 'Mara Fischer', role: 'Head of Ops', quote: 'Fast updates without visual regressions.' }\n];\n\nexport default function TestimonialsLightCorporate18() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Testimonials Section 18</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {QUOTES.map((q) => (\n            <article key={q.name} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <p className=\"text-sm text-slate-600\">\"{q.quote}\"</p>\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{q.name}</p>\n              <p className=\"text-xs text-slate-500\">{q.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-testimonials-light-19",
+      "name": "TestimonialsLightCorporate19",
+      "category": "testimonials",
+      "subcategory": "cards-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const QUOTES = [\n  { name: 'Lena Weber', role: 'COO', quote: 'Strong design consistency and clear communication.' },\n  { name: 'David Klein', role: 'CTO', quote: 'The section system scales across teams.' },\n  { name: 'Mara Fischer', role: 'Head of Ops', quote: 'Fast updates without visual regressions.' }\n];\n\nexport default function TestimonialsLightCorporate19() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Testimonials Section 19</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {QUOTES.map((q) => (\n            <article key={q.name} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <p className=\"text-sm text-slate-600\">\"{q.quote}\"</p>\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{q.name}</p>\n              <p className=\"text-xs text-slate-500\">{q.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-testimonials-light-20",
+      "name": "TestimonialsLightCorporate20",
+      "category": "testimonials",
+      "subcategory": "single-quote",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const QUOTES = [\n  { name: 'Lena Weber', role: 'COO', quote: 'Strong design consistency and clear communication.' },\n  { name: 'David Klein', role: 'CTO', quote: 'The section system scales across teams.' },\n  { name: 'Mara Fischer', role: 'Head of Ops', quote: 'Fast updates without visual regressions.' }\n];\n\nexport default function TestimonialsLightCorporate20() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Testimonials Section 20</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {QUOTES.map((q) => (\n            <article key={q.name} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <p className=\"text-sm text-slate-600\">\"{q.quote}\"</p>\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{q.name}</p>\n              <p className=\"text-xs text-slate-500\">{q.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-testimonials-light-21",
+      "name": "TestimonialsLightCorporate21",
+      "category": "testimonials",
+      "subcategory": "logo-proof",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const QUOTES = [\n  { name: 'Lena Weber', role: 'COO', quote: 'Strong design consistency and clear communication.' },\n  { name: 'David Klein', role: 'CTO', quote: 'The section system scales across teams.' },\n  { name: 'Mara Fischer', role: 'Head of Ops', quote: 'Fast updates without visual regressions.' }\n];\n\nexport default function TestimonialsLightCorporate21() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Testimonials Section 21</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {QUOTES.map((q) => (\n            <article key={q.name} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <p className=\"text-sm text-slate-600\">\"{q.quote}\"</p>\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{q.name}</p>\n              <p className=\"text-xs text-slate-500\">{q.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-testimonials-light-22",
+      "name": "TestimonialsLightCorporate22",
+      "category": "testimonials",
+      "subcategory": "cards-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const QUOTES = [\n  { name: 'Lena Weber', role: 'COO', quote: 'Strong design consistency and clear communication.' },\n  { name: 'David Klein', role: 'CTO', quote: 'The section system scales across teams.' },\n  { name: 'Mara Fischer', role: 'Head of Ops', quote: 'Fast updates without visual regressions.' }\n];\n\nexport default function TestimonialsLightCorporate22() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Testimonials Section 22</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {QUOTES.map((q) => (\n            <article key={q.name} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <p className=\"text-sm text-slate-600\">\"{q.quote}\"</p>\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{q.name}</p>\n              <p className=\"text-xs text-slate-500\">{q.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-testimonials-light-23",
+      "name": "TestimonialsLightCorporate23",
+      "category": "testimonials",
+      "subcategory": "single-quote",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const QUOTES = [\n  { name: 'Lena Weber', role: 'COO', quote: 'Strong design consistency and clear communication.' },\n  { name: 'David Klein', role: 'CTO', quote: 'The section system scales across teams.' },\n  { name: 'Mara Fischer', role: 'Head of Ops', quote: 'Fast updates without visual regressions.' }\n];\n\nexport default function TestimonialsLightCorporate23() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Testimonials Section 23</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {QUOTES.map((q) => (\n            <article key={q.name} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <p className=\"text-sm text-slate-600\">\"{q.quote}\"</p>\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{q.name}</p>\n              <p className=\"text-xs text-slate-500\">{q.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-testimonials-light-24",
+      "name": "TestimonialsLightCorporate24",
+      "category": "testimonials",
+      "subcategory": "logo-proof",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const QUOTES = [\n  { name: 'Lena Weber', role: 'COO', quote: 'Strong design consistency and clear communication.' },\n  { name: 'David Klein', role: 'CTO', quote: 'The section system scales across teams.' },\n  { name: 'Mara Fischer', role: 'Head of Ops', quote: 'Fast updates without visual regressions.' }\n];\n\nexport default function TestimonialsLightCorporate24() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Testimonials Section 24</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {QUOTES.map((q) => (\n            <article key={q.name} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <p className=\"text-sm text-slate-600\">\"{q.quote}\"</p>\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{q.name}</p>\n              <p className=\"text-xs text-slate-500\">{q.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-testimonials-light-25",
+      "name": "TestimonialsLightCorporate25",
+      "category": "testimonials",
+      "subcategory": "cards-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const QUOTES = [\n  { name: 'Lena Weber', role: 'COO', quote: 'Strong design consistency and clear communication.' },\n  { name: 'David Klein', role: 'CTO', quote: 'The section system scales across teams.' },\n  { name: 'Mara Fischer', role: 'Head of Ops', quote: 'Fast updates without visual regressions.' }\n];\n\nexport default function TestimonialsLightCorporate25() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Testimonials Section 25</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {QUOTES.map((q) => (\n            <article key={q.name} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <p className=\"text-sm text-slate-600\">\"{q.quote}\"</p>\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{q.name}</p>\n              <p className=\"text-xs text-slate-500\">{q.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-testimonials-light-26",
+      "name": "TestimonialsLightCorporate26",
+      "category": "testimonials",
+      "subcategory": "single-quote",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const QUOTES = [\n  { name: 'Lena Weber', role: 'COO', quote: 'Strong design consistency and clear communication.' },\n  { name: 'David Klein', role: 'CTO', quote: 'The section system scales across teams.' },\n  { name: 'Mara Fischer', role: 'Head of Ops', quote: 'Fast updates without visual regressions.' }\n];\n\nexport default function TestimonialsLightCorporate26() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Testimonials Section 26</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {QUOTES.map((q) => (\n            <article key={q.name} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <p className=\"text-sm text-slate-600\">\"{q.quote}\"</p>\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{q.name}</p>\n              <p className=\"text-xs text-slate-500\">{q.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-testimonials-light-27",
+      "name": "TestimonialsLightCorporate27",
+      "category": "testimonials",
+      "subcategory": "logo-proof",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const QUOTES = [\n  { name: 'Lena Weber', role: 'COO', quote: 'Strong design consistency and clear communication.' },\n  { name: 'David Klein', role: 'CTO', quote: 'The section system scales across teams.' },\n  { name: 'Mara Fischer', role: 'Head of Ops', quote: 'Fast updates without visual regressions.' }\n];\n\nexport default function TestimonialsLightCorporate27() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Testimonials Section 27</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {QUOTES.map((q) => (\n            <article key={q.name} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <p className=\"text-sm text-slate-600\">\"{q.quote}\"</p>\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{q.name}</p>\n              <p className=\"text-xs text-slate-500\">{q.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-testimonials-light-28",
+      "name": "TestimonialsLightCorporate28",
+      "category": "testimonials",
+      "subcategory": "cards-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const QUOTES = [\n  { name: 'Lena Weber', role: 'COO', quote: 'Strong design consistency and clear communication.' },\n  { name: 'David Klein', role: 'CTO', quote: 'The section system scales across teams.' },\n  { name: 'Mara Fischer', role: 'Head of Ops', quote: 'Fast updates without visual regressions.' }\n];\n\nexport default function TestimonialsLightCorporate28() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Testimonials Section 28</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {QUOTES.map((q) => (\n            <article key={q.name} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <p className=\"text-sm text-slate-600\">\"{q.quote}\"</p>\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{q.name}</p>\n              <p className=\"text-xs text-slate-500\">{q.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-testimonials-light-29",
+      "name": "TestimonialsLightCorporate29",
+      "category": "testimonials",
+      "subcategory": "single-quote",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const QUOTES = [\n  { name: 'Lena Weber', role: 'COO', quote: 'Strong design consistency and clear communication.' },\n  { name: 'David Klein', role: 'CTO', quote: 'The section system scales across teams.' },\n  { name: 'Mara Fischer', role: 'Head of Ops', quote: 'Fast updates without visual regressions.' }\n];\n\nexport default function TestimonialsLightCorporate29() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Testimonials Section 29</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {QUOTES.map((q) => (\n            <article key={q.name} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <p className=\"text-sm text-slate-600\">\"{q.quote}\"</p>\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{q.name}</p>\n              <p className=\"text-xs text-slate-500\">{q.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-testimonials-light-30",
+      "name": "TestimonialsLightCorporate30",
+      "category": "testimonials",
+      "subcategory": "logo-proof",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const QUOTES = [\n  { name: 'Lena Weber', role: 'COO', quote: 'Strong design consistency and clear communication.' },\n  { name: 'David Klein', role: 'CTO', quote: 'The section system scales across teams.' },\n  { name: 'Mara Fischer', role: 'Head of Ops', quote: 'Fast updates without visual regressions.' }\n];\n\nexport default function TestimonialsLightCorporate30() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Testimonials Section 30</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {QUOTES.map((q) => (\n            <article key={q.name} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <p className=\"text-sm text-slate-600\">\"{q.quote}\"</p>\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{q.name}</p>\n              <p className=\"text-xs text-slate-500\">{q.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    }
+  ]
+}

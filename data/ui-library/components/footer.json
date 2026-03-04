@@ -1,0 +1,919 @@
+{
+  "category": "footer",
+  "components": [
+    {
+      "id": "footer-columns-brand-01",
+      "name": "Footer Columns Brand",
+      "category": "footer",
+      "subcategory": "multi-column",
+      "tags": {
+        "industry": [
+          "saas",
+          "agency",
+          "ecommerce"
+        ],
+        "tone": [
+          "clean",
+          "professional"
+        ],
+        "theme": [
+          "dark"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function FooterColumnsBrand01() {\n  return (\n    <footer id=\"contact\" className=\"border-t border-white/10 bg-slate-950 px-6 py-14 text-slate-300\">\n      <div className=\"mx-auto grid max-w-6xl gap-10 md:grid-cols-4\">\n        <div>\n          <h3 className=\"text-lg font-semibold text-white\">{{projectName}}</h3>\n          <p className=\"mt-3 text-sm text-slate-400\">Enterprise-ready generation with strong design consistency.</p>\n        </div>\n        <div>\n          <h4 className=\"text-sm font-semibold text-white\">Produkt</h4>\n          <ul className=\"mt-3 space-y-2 text-sm\">\n            <li><a href=\"#features\" className=\"transition hover:text-white\">Features</a></li>\n            <li><a href=\"#pricing\" className=\"transition hover:text-white\">Pricing</a></li>\n            <li><a href=\"#roadmap\" className=\"transition hover:text-white\">Roadmap</a></li>\n          </ul>\n        </div>\n        <div>\n          <h4 className=\"text-sm font-semibold text-white\">Ressourcen</h4>\n          <ul className=\"mt-3 space-y-2 text-sm\">\n            <li><a href=\"#docs\" className=\"transition hover:text-white\">Docs</a></li>\n            <li><a href=\"#guides\" className=\"transition hover:text-white\">Guides</a></li>\n            <li><a href=\"#support\" className=\"transition hover:text-white\">Support</a></li>\n          </ul>\n        </div>\n        <div>\n          <h4 className=\"text-sm font-semibold text-white\">Recht</h4>\n          <ul className=\"mt-3 space-y-2 text-sm\">\n            <li><a href=\"#privacy\" className=\"transition hover:text-white\">Datenschutz</a></li>\n            <li><a href=\"#imprint\" className=\"transition hover:text-white\">Impressum</a></li>\n            <li><a href=\"#terms\" className=\"transition hover:text-white\">AGB</a></li>\n          </ul>\n        </div>\n      </div>\n      <div className=\"mx-auto mt-10 max-w-6xl border-t border-white/10 pt-6 text-xs text-slate-500\">\n        © {new Date().getFullYear()} {{projectName}}. Alle Rechte vorbehalten.\n      </div>\n    </footer>\n  );\n}"
+      }
+    },
+    {
+      "id": "footer-minimal-light-01",
+      "name": "Footer Minimal Light",
+      "category": "footer",
+      "subcategory": "minimal",
+      "tags": {
+        "industry": [
+          "portfolio",
+          "studio",
+          "brand"
+        ],
+        "tone": [
+          "minimal",
+          "elegant"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function FooterMinimalLight01() {\n  return (\n    <footer className=\"border-t border-slate-200 bg-white px-6 py-10\">\n      <div className=\"mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 text-sm text-slate-500 md:flex-row\">\n        <span className=\"font-semibold text-slate-800\">{{projectName}}</span>\n        <nav className=\"flex gap-6\">\n          <a href=\"#work\" className=\"transition hover:text-slate-900\">Projekte</a>\n          <a href=\"#about\" className=\"transition hover:text-slate-900\">Uber uns</a>\n          <a href=\"#contact\" className=\"transition hover:text-slate-900\">Kontakt</a>\n        </nav>\n        <span>© {new Date().getFullYear()}</span>\n      </div>\n    </footer>\n  );\n}"
+      }
+    },
+    {
+      "id": "footer-dark-newsletter-01",
+      "name": "Footer Dark with Newsletter",
+      "category": "footer",
+      "subcategory": "newsletter",
+      "tags": {
+        "industry": [
+          "saas",
+          "startup",
+          "ecommerce"
+        ],
+        "tone": [
+          "bold",
+          "modern"
+        ],
+        "theme": [
+          "dark"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function FooterDarkNewsletter01() {\n  return (\n    <footer className=\"bg-slate-950 text-slate-300\">\n      {/* Newsletter bar */}\n      <div className=\"border-b border-white/10 px-6 py-10\">\n        <div className=\"mx-auto flex max-w-6xl flex-col items-center gap-6 md:flex-row md:justify-between\">\n          <div>\n            <h3 className=\"text-lg font-bold text-white\">Newsletter abonnieren</h3>\n            <p className=\"mt-1 text-sm text-slate-400\">Produktupdates, Tipps und Insights – direkt in dein Postfach.</p>\n          </div>\n          <div className=\"flex w-full max-w-sm gap-2\">\n            <input\n              className=\"flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none focus:border-violet-500\"\n             \n            />\n            <button className=\"shrink-0 rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-violet-500\">\n              Abonnieren\n            </button>\n          </div>\n        </div>\n      </div>\n\n      {/* Main grid */}\n      <div className=\"mx-auto grid max-w-6xl gap-10 px-6 py-14 md:grid-cols-4\">\n        <div className=\"md:col-span-1\">\n          <h4 className=\"text-base font-bold text-white\">{{projectName}}</h4>\n          <p className=\"mt-3 text-sm text-slate-400\">Die Plattform für Teams die etwas bewegen wollen.</p>\n          <div className=\"mt-5 flex gap-3\">\n            {[\"𝕏\", \"in\", \"gh\"].map((icon) => (\n              <a key={icon} href=\"#\" className=\"flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 text-xs text-slate-400 transition hover:border-white/25 hover:text-white\">\n                {icon}\n              </a>\n            ))}\n          </div>\n        </div>\n        {[\n          { title: \"Produkt\", links: [\"Features\", \"Preise\", \"Changelog\", \"Roadmap\"] },\n          { title: \"Ressourcen\", links: [\"Dokumentation\", \"Guides\", \"Blog\", \"Status\"] },\n          { title: \"Unternehmen\", links: [\"Über uns\", \"Karriere\", \"Datenschutz\", \"Impressum\"] },\n        ].map((col) => (\n          <div key={col.title}>\n            <h4 className=\"text-sm font-semibold text-white\">{col.title}</h4>\n            <ul className=\"mt-4 space-y-2 text-sm\">\n              {col.links.map((link) => (\n                <li key={link}>\n                  <a href=\"#\" className=\"transition hover:text-white\">{link}</a>\n                </li>\n              ))}\n            </ul>\n          </div>\n        ))}\n      </div>\n\n      <div className=\"border-t border-white/5 px-6 py-5\">\n        <p className=\"text-center text-xs text-slate-600\">\n          © {new Date().getFullYear()} {{projectName}} GmbH. Alle Rechte vorbehalten.\n        </p>\n      </div>\n    </footer>\n  );\n}"
+      }
+    },
+    {
+      "id": "footer-simple-gradient-01",
+      "name": "Footer Simple Gradient Light",
+      "category": "footer",
+      "subcategory": "simple",
+      "tags": {
+        "industry": [
+          "portfolio",
+          "studio",
+          "brand"
+        ],
+        "tone": [
+          "minimal",
+          "elegant"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function FooterSimpleGradient01() {\n  return (\n    <footer className=\"border-t border-slate-100 bg-gradient-to-b from-white to-slate-50 px-6 py-12\">\n      <div className=\"mx-auto max-w-4xl text-center\">\n        <p className=\"text-2xl font-black text-slate-900\">{{projectName}}</p>\n        <nav className=\"mt-6 flex flex-wrap justify-center gap-6 text-sm text-slate-500\">\n          {[\"Projekte\", \"Über uns\", \"Blog\", \"Kontakt\", \"Impressum\"].map((l) => (\n            <a key={l} href=\"#\" className=\"transition hover:text-slate-900\">{l}</a>\n          ))}\n        </nav>\n        <p className=\"mt-8 text-xs text-slate-400\">© {new Date().getFullYear()} {{projectName}}. Made with ♥ in Germany.</p>\n      </div>\n    </footer>\n  );\n}"
+      }
+    },
+    {
+      "id": "corp-footer-light-01",
+      "name": "FooterLightCorporate01",
+      "category": "footer",
+      "subcategory": "multi-column-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function FooterLightCorporate01() {\n  return (\n    <footer className=\"border-t border-slate-200 bg-white px-6 py-10\">\n      <div className=\"mx-auto flex max-w-6xl flex-col gap-3 text-sm text-slate-600 md:flex-row md:items-center md:justify-between\">\n        <div className=\"font-semibold text-slate-900\">{{projectName}}</div>\n        <p>Built with a clean corporate design language.</p>\n      </div>\n    </footer>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-footer-light-02",
+      "name": "FooterLightCorporate02",
+      "category": "footer",
+      "subcategory": "minimal-legal",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function FooterLightCorporate02() {\n  return (\n    <footer className=\"border-t border-slate-200 bg-white px-6 py-10\">\n      <div className=\"mx-auto flex max-w-6xl flex-col gap-3 text-sm text-slate-600 md:flex-row md:items-center md:justify-between\">\n        <div className=\"font-semibold text-slate-900\">{{projectName}}</div>\n        <p>Built with a clean corporate design language.</p>\n      </div>\n    </footer>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-footer-light-03",
+      "name": "FooterLightCorporate03",
+      "category": "footer",
+      "subcategory": "cta-footer",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function FooterLightCorporate03() {\n  return (\n    <footer className=\"border-t border-slate-200 bg-white px-6 py-10\">\n      <div className=\"mx-auto flex max-w-6xl flex-col gap-3 text-sm text-slate-600 md:flex-row md:items-center md:justify-between\">\n        <div className=\"font-semibold text-slate-900\">{{projectName}}</div>\n        <p>Built with a clean corporate design language.</p>\n      </div>\n    </footer>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-footer-light-04",
+      "name": "FooterLightCorporate04",
+      "category": "footer",
+      "subcategory": "multi-column-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function FooterLightCorporate04() {\n  return (\n    <footer className=\"border-t border-slate-200 bg-white px-6 py-10\">\n      <div className=\"mx-auto flex max-w-6xl flex-col gap-3 text-sm text-slate-600 md:flex-row md:items-center md:justify-between\">\n        <div className=\"font-semibold text-slate-900\">{{projectName}}</div>\n        <p>Built with a clean corporate design language.</p>\n      </div>\n    </footer>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-footer-light-05",
+      "name": "FooterLightCorporate05",
+      "category": "footer",
+      "subcategory": "minimal-legal",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function FooterLightCorporate05() {\n  return (\n    <footer className=\"border-t border-slate-200 bg-white px-6 py-10\">\n      <div className=\"mx-auto flex max-w-6xl flex-col gap-3 text-sm text-slate-600 md:flex-row md:items-center md:justify-between\">\n        <div className=\"font-semibold text-slate-900\">{{projectName}}</div>\n        <p>Built with a clean corporate design language.</p>\n      </div>\n    </footer>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-footer-light-06",
+      "name": "FooterLightCorporate06",
+      "category": "footer",
+      "subcategory": "cta-footer",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function FooterLightCorporate06() {\n  return (\n    <footer className=\"border-t border-slate-200 bg-white px-6 py-10\">\n      <div className=\"mx-auto flex max-w-6xl flex-col gap-3 text-sm text-slate-600 md:flex-row md:items-center md:justify-between\">\n        <div className=\"font-semibold text-slate-900\">{{projectName}}</div>\n        <p>Built with a clean corporate design language.</p>\n      </div>\n    </footer>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-footer-light-07",
+      "name": "FooterLightCorporate07",
+      "category": "footer",
+      "subcategory": "multi-column-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function FooterLightCorporate07() {\n  return (\n    <footer className=\"border-t border-slate-200 bg-white px-6 py-10\">\n      <div className=\"mx-auto flex max-w-6xl flex-col gap-3 text-sm text-slate-600 md:flex-row md:items-center md:justify-between\">\n        <div className=\"font-semibold text-slate-900\">{{projectName}}</div>\n        <p>Built with a clean corporate design language.</p>\n      </div>\n    </footer>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-footer-light-08",
+      "name": "FooterLightCorporate08",
+      "category": "footer",
+      "subcategory": "minimal-legal",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function FooterLightCorporate08() {\n  return (\n    <footer className=\"border-t border-slate-200 bg-white px-6 py-10\">\n      <div className=\"mx-auto flex max-w-6xl flex-col gap-3 text-sm text-slate-600 md:flex-row md:items-center md:justify-between\">\n        <div className=\"font-semibold text-slate-900\">{{projectName}}</div>\n        <p>Built with a clean corporate design language.</p>\n      </div>\n    </footer>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-footer-light-09",
+      "name": "FooterLightCorporate09",
+      "category": "footer",
+      "subcategory": "cta-footer",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function FooterLightCorporate09() {\n  return (\n    <footer className=\"border-t border-slate-200 bg-white px-6 py-10\">\n      <div className=\"mx-auto flex max-w-6xl flex-col gap-3 text-sm text-slate-600 md:flex-row md:items-center md:justify-between\">\n        <div className=\"font-semibold text-slate-900\">{{projectName}}</div>\n        <p>Built with a clean corporate design language.</p>\n      </div>\n    </footer>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-footer-light-10",
+      "name": "FooterLightCorporate10",
+      "category": "footer",
+      "subcategory": "multi-column-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function FooterLightCorporate10() {\n  return (\n    <footer className=\"border-t border-slate-200 bg-white px-6 py-10\">\n      <div className=\"mx-auto flex max-w-6xl flex-col gap-3 text-sm text-slate-600 md:flex-row md:items-center md:justify-between\">\n        <div className=\"font-semibold text-slate-900\">{{projectName}}</div>\n        <p>Built with a clean corporate design language.</p>\n      </div>\n    </footer>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-footer-light-11",
+      "name": "FooterLightCorporate11",
+      "category": "footer",
+      "subcategory": "minimal-legal",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function FooterLightCorporate11() {\n  return (\n    <footer className=\"border-t border-slate-200 bg-white px-6 py-10\">\n      <div className=\"mx-auto flex max-w-6xl flex-col gap-3 text-sm text-slate-600 md:flex-row md:items-center md:justify-between\">\n        <div className=\"font-semibold text-slate-900\">{{projectName}}</div>\n        <p>Built with a clean corporate design language.</p>\n      </div>\n    </footer>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-footer-light-12",
+      "name": "FooterLightCorporate12",
+      "category": "footer",
+      "subcategory": "cta-footer",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function FooterLightCorporate12() {\n  return (\n    <footer className=\"border-t border-slate-200 bg-white px-6 py-10\">\n      <div className=\"mx-auto flex max-w-6xl flex-col gap-3 text-sm text-slate-600 md:flex-row md:items-center md:justify-between\">\n        <div className=\"font-semibold text-slate-900\">{{projectName}}</div>\n        <p>Built with a clean corporate design language.</p>\n      </div>\n    </footer>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-footer-light-13",
+      "name": "FooterLightCorporate13",
+      "category": "footer",
+      "subcategory": "multi-column-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function FooterLightCorporate13() {\n  return (\n    <footer className=\"border-t border-slate-200 bg-white px-6 py-10\">\n      <div className=\"mx-auto flex max-w-6xl flex-col gap-3 text-sm text-slate-600 md:flex-row md:items-center md:justify-between\">\n        <div className=\"font-semibold text-slate-900\">{{projectName}}</div>\n        <p>Built with a clean corporate design language.</p>\n      </div>\n    </footer>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-footer-light-14",
+      "name": "FooterLightCorporate14",
+      "category": "footer",
+      "subcategory": "minimal-legal",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function FooterLightCorporate14() {\n  return (\n    <footer className=\"border-t border-slate-200 bg-white px-6 py-10\">\n      <div className=\"mx-auto flex max-w-6xl flex-col gap-3 text-sm text-slate-600 md:flex-row md:items-center md:justify-between\">\n        <div className=\"font-semibold text-slate-900\">{{projectName}}</div>\n        <p>Built with a clean corporate design language.</p>\n      </div>\n    </footer>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-footer-light-15",
+      "name": "FooterLightCorporate15",
+      "category": "footer",
+      "subcategory": "cta-footer",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function FooterLightCorporate15() {\n  return (\n    <footer className=\"border-t border-slate-200 bg-white px-6 py-10\">\n      <div className=\"mx-auto flex max-w-6xl flex-col gap-3 text-sm text-slate-600 md:flex-row md:items-center md:justify-between\">\n        <div className=\"font-semibold text-slate-900\">{{projectName}}</div>\n        <p>Built with a clean corporate design language.</p>\n      </div>\n    </footer>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-footer-light-16",
+      "name": "FooterLightCorporate16",
+      "category": "footer",
+      "subcategory": "multi-column-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function FooterLightCorporate16() {\n  return (\n    <footer className=\"border-t border-slate-200 bg-white px-6 py-10\">\n      <div className=\"mx-auto flex max-w-6xl flex-col gap-3 text-sm text-slate-600 md:flex-row md:items-center md:justify-between\">\n        <div className=\"font-semibold text-slate-900\">{{projectName}}</div>\n        <p>Built with a clean corporate design language.</p>\n      </div>\n    </footer>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-footer-light-17",
+      "name": "FooterLightCorporate17",
+      "category": "footer",
+      "subcategory": "minimal-legal",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function FooterLightCorporate17() {\n  return (\n    <footer className=\"border-t border-slate-200 bg-white px-6 py-10\">\n      <div className=\"mx-auto flex max-w-6xl flex-col gap-3 text-sm text-slate-600 md:flex-row md:items-center md:justify-between\">\n        <div className=\"font-semibold text-slate-900\">{{projectName}}</div>\n        <p>Built with a clean corporate design language.</p>\n      </div>\n    </footer>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-footer-light-18",
+      "name": "FooterLightCorporate18",
+      "category": "footer",
+      "subcategory": "cta-footer",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function FooterLightCorporate18() {\n  return (\n    <footer className=\"border-t border-slate-200 bg-white px-6 py-10\">\n      <div className=\"mx-auto flex max-w-6xl flex-col gap-3 text-sm text-slate-600 md:flex-row md:items-center md:justify-between\">\n        <div className=\"font-semibold text-slate-900\">{{projectName}}</div>\n        <p>Built with a clean corporate design language.</p>\n      </div>\n    </footer>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-footer-light-19",
+      "name": "FooterLightCorporate19",
+      "category": "footer",
+      "subcategory": "multi-column-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function FooterLightCorporate19() {\n  return (\n    <footer className=\"border-t border-slate-200 bg-white px-6 py-10\">\n      <div className=\"mx-auto flex max-w-6xl flex-col gap-3 text-sm text-slate-600 md:flex-row md:items-center md:justify-between\">\n        <div className=\"font-semibold text-slate-900\">{{projectName}}</div>\n        <p>Built with a clean corporate design language.</p>\n      </div>\n    </footer>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-footer-light-20",
+      "name": "FooterLightCorporate20",
+      "category": "footer",
+      "subcategory": "minimal-legal",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function FooterLightCorporate20() {\n  return (\n    <footer className=\"border-t border-slate-200 bg-white px-6 py-10\">\n      <div className=\"mx-auto flex max-w-6xl flex-col gap-3 text-sm text-slate-600 md:flex-row md:items-center md:justify-between\">\n        <div className=\"font-semibold text-slate-900\">{{projectName}}</div>\n        <p>Built with a clean corporate design language.</p>\n      </div>\n    </footer>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-footer-light-21",
+      "name": "FooterLightCorporate21",
+      "category": "footer",
+      "subcategory": "cta-footer",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function FooterLightCorporate21() {\n  return (\n    <footer className=\"border-t border-slate-200 bg-white px-6 py-10\">\n      <div className=\"mx-auto flex max-w-6xl flex-col gap-3 text-sm text-slate-600 md:flex-row md:items-center md:justify-between\">\n        <div className=\"font-semibold text-slate-900\">{{projectName}}</div>\n        <p>Built with a clean corporate design language.</p>\n      </div>\n    </footer>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-footer-light-22",
+      "name": "FooterLightCorporate22",
+      "category": "footer",
+      "subcategory": "multi-column-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function FooterLightCorporate22() {\n  return (\n    <footer className=\"border-t border-slate-200 bg-white px-6 py-10\">\n      <div className=\"mx-auto flex max-w-6xl flex-col gap-3 text-sm text-slate-600 md:flex-row md:items-center md:justify-between\">\n        <div className=\"font-semibold text-slate-900\">{{projectName}}</div>\n        <p>Built with a clean corporate design language.</p>\n      </div>\n    </footer>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-footer-light-23",
+      "name": "FooterLightCorporate23",
+      "category": "footer",
+      "subcategory": "minimal-legal",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function FooterLightCorporate23() {\n  return (\n    <footer className=\"border-t border-slate-200 bg-white px-6 py-10\">\n      <div className=\"mx-auto flex max-w-6xl flex-col gap-3 text-sm text-slate-600 md:flex-row md:items-center md:justify-between\">\n        <div className=\"font-semibold text-slate-900\">{{projectName}}</div>\n        <p>Built with a clean corporate design language.</p>\n      </div>\n    </footer>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-footer-light-24",
+      "name": "FooterLightCorporate24",
+      "category": "footer",
+      "subcategory": "cta-footer",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function FooterLightCorporate24() {\n  return (\n    <footer className=\"border-t border-slate-200 bg-white px-6 py-10\">\n      <div className=\"mx-auto flex max-w-6xl flex-col gap-3 text-sm text-slate-600 md:flex-row md:items-center md:justify-between\">\n        <div className=\"font-semibold text-slate-900\">{{projectName}}</div>\n        <p>Built with a clean corporate design language.</p>\n      </div>\n    </footer>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-footer-light-25",
+      "name": "FooterLightCorporate25",
+      "category": "footer",
+      "subcategory": "multi-column-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function FooterLightCorporate25() {\n  return (\n    <footer className=\"border-t border-slate-200 bg-white px-6 py-10\">\n      <div className=\"mx-auto flex max-w-6xl flex-col gap-3 text-sm text-slate-600 md:flex-row md:items-center md:justify-between\">\n        <div className=\"font-semibold text-slate-900\">{{projectName}}</div>\n        <p>Built with a clean corporate design language.</p>\n      </div>\n    </footer>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-footer-light-26",
+      "name": "FooterLightCorporate26",
+      "category": "footer",
+      "subcategory": "minimal-legal",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function FooterLightCorporate26() {\n  return (\n    <footer className=\"border-t border-slate-200 bg-white px-6 py-10\">\n      <div className=\"mx-auto flex max-w-6xl flex-col gap-3 text-sm text-slate-600 md:flex-row md:items-center md:justify-between\">\n        <div className=\"font-semibold text-slate-900\">{{projectName}}</div>\n        <p>Built with a clean corporate design language.</p>\n      </div>\n    </footer>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-footer-light-27",
+      "name": "FooterLightCorporate27",
+      "category": "footer",
+      "subcategory": "cta-footer",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function FooterLightCorporate27() {\n  return (\n    <footer className=\"border-t border-slate-200 bg-white px-6 py-10\">\n      <div className=\"mx-auto flex max-w-6xl flex-col gap-3 text-sm text-slate-600 md:flex-row md:items-center md:justify-between\">\n        <div className=\"font-semibold text-slate-900\">{{projectName}}</div>\n        <p>Built with a clean corporate design language.</p>\n      </div>\n    </footer>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-footer-light-28",
+      "name": "FooterLightCorporate28",
+      "category": "footer",
+      "subcategory": "multi-column-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function FooterLightCorporate28() {\n  return (\n    <footer className=\"border-t border-slate-200 bg-white px-6 py-10\">\n      <div className=\"mx-auto flex max-w-6xl flex-col gap-3 text-sm text-slate-600 md:flex-row md:items-center md:justify-between\">\n        <div className=\"font-semibold text-slate-900\">{{projectName}}</div>\n        <p>Built with a clean corporate design language.</p>\n      </div>\n    </footer>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-footer-light-29",
+      "name": "FooterLightCorporate29",
+      "category": "footer",
+      "subcategory": "minimal-legal",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function FooterLightCorporate29() {\n  return (\n    <footer className=\"border-t border-slate-200 bg-white px-6 py-10\">\n      <div className=\"mx-auto flex max-w-6xl flex-col gap-3 text-sm text-slate-600 md:flex-row md:items-center md:justify-between\">\n        <div className=\"font-semibold text-slate-900\">{{projectName}}</div>\n        <p>Built with a clean corporate design language.</p>\n      </div>\n    </footer>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-footer-light-30",
+      "name": "FooterLightCorporate30",
+      "category": "footer",
+      "subcategory": "cta-footer",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function FooterLightCorporate30() {\n  return (\n    <footer className=\"border-t border-slate-200 bg-white px-6 py-10\">\n      <div className=\"mx-auto flex max-w-6xl flex-col gap-3 text-sm text-slate-600 md:flex-row md:items-center md:justify-between\">\n        <div className=\"font-semibold text-slate-900\">{{projectName}}</div>\n        <p>Built with a clean corporate design language.</p>\n      </div>\n    </footer>\n  );\n}\n"
+      }
+    }
+  ]
+}

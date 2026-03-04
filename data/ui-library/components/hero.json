@@ -1,0 +1,977 @@
+{
+  "category": "hero",
+  "components": [
+    {
+      "id": "hero-saas-glass-01",
+      "name": "SaaS Hero Glass Gradient",
+      "category": "hero",
+      "subcategory": "saas",
+      "tags": {
+        "industry": [
+          "saas",
+          "startup",
+          "tech"
+        ],
+        "tone": [
+          "modern",
+          "premium",
+          "bold"
+        ],
+        "theme": [
+          "dark"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function HeroSaasGlass01() {\n  return (\n    <section id=\"hero\" className=\"relative overflow-hidden px-6 py-24 sm:py-28\">\n      <div className=\"pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(56,189,248,0.22),transparent_40%),radial-gradient(circle_at_80%_0%,rgba(168,85,247,0.2),transparent_45%)]\" />\n      <div className=\"relative mx-auto max-w-6xl rounded-3xl border border-white/10 bg-slate-900/60 p-8 backdrop-blur-xl md:p-14\">\n        <p className=\"inline-flex rounded-full border border-cyan-300/30 bg-cyan-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-cyan-200\">AI-first workflow</p>\n        <h1 className=\"mt-6 max-w-3xl text-4xl font-bold leading-tight text-white md:text-6xl\">Build beautiful digital products in record time.</h1>\n        <p className=\"mt-5 max-w-2xl text-base text-slate-200/90 md:text-lg\">Combine curated sections, polished typography and enterprise-ready structure without rebuilding from scratch.</p>\n        <div className=\"mt-8 flex flex-wrap gap-3\">\n          <button className=\"rounded-xl bg-cyan-400 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300\">Start free</button>\n          <button className=\"rounded-xl border border-white/25 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10\">Watch demo</button>\n        </div>\n      </div>\n    </section>\n  );\n}"
+      }
+    },
+    {
+      "id": "hero-editorial-gold-01",
+      "name": "Editorial Hero Gold Luxe",
+      "category": "hero",
+      "subcategory": "editorial",
+      "tags": {
+        "industry": [
+          "agency",
+          "studio",
+          "portfolio"
+        ],
+        "tone": [
+          "elegant",
+          "premium",
+          "minimal"
+        ],
+        "theme": [
+          "dark"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function HeroEditorialGold01() {\n  return (\n    <section id=\"hero\" className=\"relative overflow-hidden px-6 py-24 sm:py-28\">\n      <div className=\"absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(250,204,21,0.18),transparent_38%)]\" />\n      <div className=\"relative mx-auto max-w-6xl\">\n        <p className=\"text-sm uppercase tracking-[0.35em] text-amber-300\">Willkommen</p>\n        <h1 className=\"mt-6 max-w-4xl text-5xl font-black leading-[0.95] text-white sm:text-6xl lg:text-7xl\">Kreativitat ohne Grenzen</h1>\n        <p className=\"mt-6 max-w-2xl text-lg text-slate-300\">Modernes Design, klare Markenfuhrung und starke visuelle Wirkung auf allen Endgeraten.</p>\n        <div className=\"mt-10 flex flex-wrap gap-3\">\n          <button className=\"rounded-2xl bg-amber-400 px-7 py-3 text-sm font-semibold text-slate-900 transition hover:bg-amber-300\">Entdecken</button>\n          <button className=\"rounded-2xl border border-amber-300/30 px-7 py-3 text-sm font-semibold text-amber-100 transition hover:bg-amber-300/10\">Kontakt</button>\n        </div>\n      </div>\n    </section>\n  );\n}"
+      }
+    },
+    {
+      "id": "hero-light-indigo-01",
+      "name": "Hero Light Indigo Split",
+      "category": "hero",
+      "subcategory": "split",
+      "tags": {
+        "industry": [
+          "saas",
+          "startup",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "conversion"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function HeroLightIndigo01() {\n  return (\n    <section id=\"hero\" className=\"bg-white px-6 py-20\">\n      <div className=\"mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-2\">\n        <div>\n          <span className=\"inline-block rounded-full bg-indigo-100 px-3 py-1 text-xs font-semibold text-indigo-700\">Neu — Version 2.0</span>\n          <h1 className=\"mt-4 text-4xl font-extrabold leading-tight text-slate-900 sm:text-5xl\">\n            Das smarte Tool fur moderne Teams\n          </h1>\n          <p className=\"mt-5 text-lg text-slate-500\">Weniger Aufwand, mehr Wirkung. Verwalte Projekte, automatisiere Workflows und liefere schneller.</p>\n          <div className=\"mt-8 flex flex-wrap gap-3\">\n            <button className=\"rounded-xl bg-indigo-600 px-7 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-indigo-500\">Kostenlos starten</button>\n            <button className=\"rounded-xl border border-slate-300 px-7 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50\">Demo anfordern</button>\n          </div>\n        </div>\n        <div className=\"flex items-center justify-center\">\n          <div className=\"w-full rounded-3xl border border-slate-200 bg-gradient-to-br from-indigo-50 to-slate-100 p-8 shadow-xl\">\n            <div className=\"space-y-3\">\n              {[\"Schritt 1: Onboarding abschließen\", \"Schritt 2: Team einladen\", \"Schritt 3: Ersten Flow aktivieren\"].map((s) => (\n                <div key={s} className=\"flex items-center gap-3 rounded-xl bg-white p-4 shadow-sm\">\n                  <span className=\"flex h-5 w-5 items-center justify-center rounded-full bg-indigo-600 text-[10px] text-white\">✓</span>\n                  <p className=\"text-sm font-medium text-slate-700\">{s}</p>\n                </div>\n              ))}\n            </div>\n          </div>\n        </div>\n      </div>\n    </section>\n  );\n}"
+      }
+    },
+    {
+      "id": "hero-mesh-gradient-01",
+      "name": "Hero Mesh Gradient Fullscreen",
+      "category": "hero",
+      "subcategory": "fullscreen",
+      "tags": {
+        "industry": [
+          "tech",
+          "startup",
+          "saas"
+        ],
+        "tone": [
+          "futuristic",
+          "bold",
+          "premium"
+        ],
+        "theme": [
+          "dark"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function HeroMeshGradient01() {\n  return (\n    <section className=\"relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-slate-950 px-6 text-center\">\n      {/* Mesh blobs */}\n      <div className=\"pointer-events-none absolute -left-32 -top-32 h-[500px] w-[500px] rounded-full bg-violet-600/20 blur-[120px]\" />\n      <div className=\"pointer-events-none absolute -right-32 top-1/3 h-[400px] w-[400px] rounded-full bg-fuchsia-500/20 blur-[100px]\" />\n      <div className=\"pointer-events-none absolute bottom-0 left-1/2 h-[300px] w-[500px] -translate-x-1/2 rounded-full bg-cyan-500/10 blur-[80px]\" />\n\n      <div className=\"relative z-10 max-w-4xl\">\n        <div className=\"mb-5 inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/10 px-4 py-1.5 text-xs font-semibold text-violet-300\">\n          <span className=\"h-1.5 w-1.5 rounded-full bg-violet-400 animate-pulse\" />\n          Jetzt in der Public Beta\n        </div>\n        <h1 className=\"bg-gradient-to-b from-white via-white to-slate-400 bg-clip-text text-5xl font-black leading-[1.05] text-transparent sm:text-6xl lg:text-7xl\">\n          Die Plattform die<br />sich selbst denkt\n        </h1>\n        <p className=\"mx-auto mt-6 max-w-2xl text-lg text-slate-400\">\n          Automatisierte Prozesse, KI-gestützte Entscheidungen und nahtlose Integrationen – alles in einer Oberfläche.\n        </p>\n        <div className=\"mt-10 flex flex-col items-center gap-3 sm:flex-row sm:justify-center\">\n          <button className=\"w-full rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-8 py-3.5 text-sm font-bold text-white shadow-lg shadow-violet-500/25 transition hover:opacity-90 sm:w-auto\">\n            Kostenlos starten\n          </button>\n          <button className=\"w-full rounded-2xl border border-white/15 px-8 py-3.5 text-sm font-semibold text-slate-300 transition hover:bg-white/5 sm:w-auto\">\n            Live-Demo ansehen →\n          </button>\n        </div>\n        <p className=\"mt-5 text-xs text-slate-600\">Keine Kreditkarte · 14 Tage kostenlos · Jederzeit kündbar</p>\n      </div>\n    </section>\n  );\n}"
+      }
+    },
+    {
+      "id": "hero-split-video-01",
+      "name": "Hero Split Video Mockup",
+      "category": "hero",
+      "subcategory": "split",
+      "tags": {
+        "industry": [
+          "saas",
+          "services",
+          "ecommerce"
+        ],
+        "tone": [
+          "modern",
+          "clean",
+          "conversion"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function HeroSplitVideo01() {\n  return (\n    <section className=\"bg-white\">\n      <div className=\"mx-auto grid max-w-7xl items-stretch min-h-[90vh] lg:grid-cols-2\">\n        {/* Left – Copy */}\n        <div className=\"flex flex-col justify-center px-8 py-20 lg:px-16\">\n          <span className=\"mb-4 inline-block rounded-lg bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700\">\n            #1 Tool für Remote-Teams\n          </span>\n          <h1 className=\"text-4xl font-extrabold leading-tight text-slate-900 sm:text-5xl\">\n            Schluss mit dem<br />\n            <span className=\"text-emerald-600\">Chaos.</span> Hallo Flow.\n          </h1>\n          <p className=\"mt-5 max-w-lg text-lg text-slate-500\">\n            Verbinde dein Team, strukturiere Aufgaben und behalte den Überblick – von überall aus, auf jedem Gerät.\n          </p>\n          <div className=\"mt-8 flex flex-wrap gap-4\">\n            <button className=\"rounded-xl bg-slate-900 px-7 py-3 text-sm font-bold text-white transition hover:bg-slate-700\">\n              Gratis testen\n            </button>\n            <button className=\"flex items-center gap-2 rounded-xl border border-slate-200 px-7 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50\">\n              <span className=\"flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-[10px] text-white\">▶</span>\n              Demo (90 Sek.)\n            </button>\n          </div>\n          <div className=\"mt-10 flex items-center gap-4 text-xs text-slate-400\">\n            <span className=\"flex -space-x-2\">\n              {[\"bg-rose-400\",\"bg-amber-400\",\"bg-sky-400\",\"bg-emerald-400\"].map((c) => (\n                <span key={c} className={`h-7 w-7 rounded-full border-2 border-white ${c}`} />\n              ))}\n            </span>\n            <span>Bereits <strong className=\"text-slate-700\">12.000+</strong> Teams aktiv</span>\n          </div>\n        </div>\n        {/* Right – Visual */}\n        <div className=\"hidden items-center justify-center bg-gradient-to-br from-slate-50 to-emerald-50 lg:flex\">\n          <div className=\"w-full max-w-sm space-y-3 rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl\">\n            {[\"Design-Sprint abschließen\",\"Review-Meeting vorbereiten\",\"Deployment planen\"].map((task, i) => (\n              <div key={task} className=\"flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3\">\n                <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] text-white ${i === 0 ? \"bg-emerald-500\" : \"bg-slate-300\"}`}>\n                  {i === 0 ? \"✓\" : \"·\"}\n                </span>\n                <span className={`text-sm ${i === 0 ? \"text-slate-400 line-through\" : \"text-slate-700\"}`}>{task}</span>\n              </div>\n            ))}\n            <button className=\"w-full rounded-xl bg-emerald-600 py-2.5 text-sm font-bold text-white\">\n              + Aufgabe hinzufügen\n            </button>\n          </div>\n        </div>\n      </div>\n    </section>\n  );\n}"
+      }
+    },
+    {
+      "id": "hero-typewriter-dark-01",
+      "name": "Hero Typewriter Dark Centered",
+      "category": "hero",
+      "subcategory": "centered",
+      "tags": {
+        "industry": [
+          "agency",
+          "studio",
+          "brand"
+        ],
+        "tone": [
+          "bold",
+          "elegant",
+          "premium"
+        ],
+        "theme": [
+          "dark"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "import { useEffect, useState } from \"react\";\n\nconst WORDS = [\"Wachstum.\", \"Qualität.\", \"Vertrauen.\", \"Ergebnisse.\"];\n\nexport default function HeroTypewriterDark01() {\n  const [index, setIndex] = useState(0);\n  const [visible, setVisible] = useState(true);\n\n  useEffect(() => {\n    const interval = setInterval(() => {\n      setVisible(false);\n      setTimeout(() => {\n        setIndex((i) => (i + 1) % WORDS.length);\n        setVisible(true);\n      }, 350);\n    }, 2500);\n    return () => clearInterval(interval);\n  }, []);\n\n  return (\n    <section className=\"relative flex min-h-screen items-center justify-center overflow-hidden bg-zinc-950 px-6 text-center\">\n      <div className=\"absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(161,161,170,0.06),transparent_60%)]\" />\n      <div className=\"relative max-w-5xl\">\n        <p className=\"mb-6 text-xs font-bold uppercase tracking-[0.4em] text-zinc-500\">\n          {{projectName}}\n        </p>\n        <h1 className=\"text-5xl font-black leading-tight text-white sm:text-6xl lg:text-8xl\">\n          Wir schaffen <br />\n          <span\n            className=\"transition-opacity duration-300 text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-orange-400\"\n            style={{ opacity: visible ? 1 : 0 }}\n          >\n            {WORDS[index]}\n          </span>\n        </h1>\n        <p className=\"mx-auto mt-8 max-w-xl text-lg text-zinc-400\">\n          Strategie, Design und Code – vollständig integriert, messbar in Ergebnissen.\n        </p>\n        <div className=\"mt-10 flex justify-center gap-4\">\n          <button className=\"rounded-full border border-white/20 bg-white/5 px-8 py-3.5 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/10\">\n            Projekt starten\n          </button>\n        </div>\n      </div>\n    </section>\n  );\n}"
+      }
+    },
+    {
+      "id": "corp-hero-light-01",
+      "name": "HeroLightCorporate01",
+      "category": "hero",
+      "subcategory": "split-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function HeroLightCorporate01() {\n  return (\n    <section className=\"px-6 py-24\">\n      <div className=\"mx-auto max-w-6xl\">\n        <div className=\"max-w-3xl space-y-5\">\n          <span className=\"inline-flex rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600\">Light Corporate</span>\n          <h1 className=\"text-4xl font-bold tracking-tight text-slate-900 md:text-6xl\">Hero Section 01</h1>\n          <p className=\"text-base text-slate-600 md:text-lg\">Designed for clear hierarchy, trust, and conversion-focused messaging.</p>\n          <div className=\"flex gap-3\">\n            <button className=\"rounded-lg bg-slate-600 px-5 py-3 text-sm font-semibold text-white\">Start now</button>\n            <button className=\"rounded-lg border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700\">See details</button>\n          </div>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-hero-light-02",
+      "name": "HeroLightCorporate02",
+      "category": "hero",
+      "subcategory": "center-corporate",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function HeroLightCorporate02() {\n  return (\n    <section className=\"px-6 py-24\">\n      <div className=\"mx-auto max-w-6xl\">\n        <div className=\"max-w-3xl space-y-5\">\n          <span className=\"inline-flex rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600\">Light Corporate</span>\n          <h1 className=\"text-4xl font-bold tracking-tight text-slate-900 md:text-6xl\">Hero Section 02</h1>\n          <p className=\"text-base text-slate-600 md:text-lg\">Designed for clear hierarchy, trust, and conversion-focused messaging.</p>\n          <div className=\"flex gap-3\">\n            <button className=\"rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white\">Start now</button>\n            <button className=\"rounded-lg border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700\">See details</button>\n          </div>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-hero-light-03",
+      "name": "HeroLightCorporate03",
+      "category": "hero",
+      "subcategory": "minimal-gradient",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function HeroLightCorporate03() {\n  return (\n    <section className=\"px-6 py-24\">\n      <div className=\"mx-auto max-w-6xl\">\n        <div className=\"max-w-3xl space-y-5\">\n          <span className=\"inline-flex rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600\">Light Corporate</span>\n          <h1 className=\"text-4xl font-bold tracking-tight text-slate-900 md:text-6xl\">Hero Section 03</h1>\n          <p className=\"text-base text-slate-600 md:text-lg\">Designed for clear hierarchy, trust, and conversion-focused messaging.</p>\n          <div className=\"flex gap-3\">\n            <button className=\"rounded-lg bg-slate-600 px-5 py-3 text-sm font-semibold text-white\">Start now</button>\n            <button className=\"rounded-lg border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700\">See details</button>\n          </div>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-hero-light-04",
+      "name": "HeroLightCorporate04",
+      "category": "hero",
+      "subcategory": "split-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function HeroLightCorporate04() {\n  return (\n    <section className=\"px-6 py-24\">\n      <div className=\"mx-auto max-w-6xl\">\n        <div className=\"max-w-3xl space-y-5\">\n          <span className=\"inline-flex rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600\">Light Corporate</span>\n          <h1 className=\"text-4xl font-bold tracking-tight text-slate-900 md:text-6xl\">Hero Section 04</h1>\n          <p className=\"text-base text-slate-600 md:text-lg\">Designed for clear hierarchy, trust, and conversion-focused messaging.</p>\n          <div className=\"flex gap-3\">\n            <button className=\"rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white\">Start now</button>\n            <button className=\"rounded-lg border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700\">See details</button>\n          </div>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-hero-light-05",
+      "name": "HeroLightCorporate05",
+      "category": "hero",
+      "subcategory": "center-corporate",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function HeroLightCorporate05() {\n  return (\n    <section className=\"px-6 py-24\">\n      <div className=\"mx-auto max-w-6xl\">\n        <div className=\"max-w-3xl space-y-5\">\n          <span className=\"inline-flex rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600\">Light Corporate</span>\n          <h1 className=\"text-4xl font-bold tracking-tight text-slate-900 md:text-6xl\">Hero Section 05</h1>\n          <p className=\"text-base text-slate-600 md:text-lg\">Designed for clear hierarchy, trust, and conversion-focused messaging.</p>\n          <div className=\"flex gap-3\">\n            <button className=\"rounded-lg bg-slate-600 px-5 py-3 text-sm font-semibold text-white\">Start now</button>\n            <button className=\"rounded-lg border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700\">See details</button>\n          </div>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-hero-light-06",
+      "name": "HeroLightCorporate06",
+      "category": "hero",
+      "subcategory": "minimal-gradient",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function HeroLightCorporate06() {\n  return (\n    <section className=\"px-6 py-24\">\n      <div className=\"mx-auto max-w-6xl\">\n        <div className=\"max-w-3xl space-y-5\">\n          <span className=\"inline-flex rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600\">Light Corporate</span>\n          <h1 className=\"text-4xl font-bold tracking-tight text-slate-900 md:text-6xl\">Hero Section 06</h1>\n          <p className=\"text-base text-slate-600 md:text-lg\">Designed for clear hierarchy, trust, and conversion-focused messaging.</p>\n          <div className=\"flex gap-3\">\n            <button className=\"rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white\">Start now</button>\n            <button className=\"rounded-lg border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700\">See details</button>\n          </div>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-hero-light-07",
+      "name": "HeroLightCorporate07",
+      "category": "hero",
+      "subcategory": "split-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function HeroLightCorporate07() {\n  return (\n    <section className=\"px-6 py-24\">\n      <div className=\"mx-auto max-w-6xl\">\n        <div className=\"max-w-3xl space-y-5\">\n          <span className=\"inline-flex rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600\">Light Corporate</span>\n          <h1 className=\"text-4xl font-bold tracking-tight text-slate-900 md:text-6xl\">Hero Section 07</h1>\n          <p className=\"text-base text-slate-600 md:text-lg\">Designed for clear hierarchy, trust, and conversion-focused messaging.</p>\n          <div className=\"flex gap-3\">\n            <button className=\"rounded-lg bg-slate-600 px-5 py-3 text-sm font-semibold text-white\">Start now</button>\n            <button className=\"rounded-lg border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700\">See details</button>\n          </div>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-hero-light-08",
+      "name": "HeroLightCorporate08",
+      "category": "hero",
+      "subcategory": "center-corporate",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function HeroLightCorporate08() {\n  return (\n    <section className=\"px-6 py-24\">\n      <div className=\"mx-auto max-w-6xl\">\n        <div className=\"max-w-3xl space-y-5\">\n          <span className=\"inline-flex rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600\">Light Corporate</span>\n          <h1 className=\"text-4xl font-bold tracking-tight text-slate-900 md:text-6xl\">Hero Section 08</h1>\n          <p className=\"text-base text-slate-600 md:text-lg\">Designed for clear hierarchy, trust, and conversion-focused messaging.</p>\n          <div className=\"flex gap-3\">\n            <button className=\"rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white\">Start now</button>\n            <button className=\"rounded-lg border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700\">See details</button>\n          </div>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-hero-light-09",
+      "name": "HeroLightCorporate09",
+      "category": "hero",
+      "subcategory": "minimal-gradient",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function HeroLightCorporate09() {\n  return (\n    <section className=\"px-6 py-24\">\n      <div className=\"mx-auto max-w-6xl\">\n        <div className=\"max-w-3xl space-y-5\">\n          <span className=\"inline-flex rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600\">Light Corporate</span>\n          <h1 className=\"text-4xl font-bold tracking-tight text-slate-900 md:text-6xl\">Hero Section 09</h1>\n          <p className=\"text-base text-slate-600 md:text-lg\">Designed for clear hierarchy, trust, and conversion-focused messaging.</p>\n          <div className=\"flex gap-3\">\n            <button className=\"rounded-lg bg-slate-600 px-5 py-3 text-sm font-semibold text-white\">Start now</button>\n            <button className=\"rounded-lg border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700\">See details</button>\n          </div>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-hero-light-10",
+      "name": "HeroLightCorporate10",
+      "category": "hero",
+      "subcategory": "split-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function HeroLightCorporate10() {\n  return (\n    <section className=\"px-6 py-24\">\n      <div className=\"mx-auto max-w-6xl\">\n        <div className=\"max-w-3xl space-y-5\">\n          <span className=\"inline-flex rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600\">Light Corporate</span>\n          <h1 className=\"text-4xl font-bold tracking-tight text-slate-900 md:text-6xl\">Hero Section 10</h1>\n          <p className=\"text-base text-slate-600 md:text-lg\">Designed for clear hierarchy, trust, and conversion-focused messaging.</p>\n          <div className=\"flex gap-3\">\n            <button className=\"rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white\">Start now</button>\n            <button className=\"rounded-lg border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700\">See details</button>\n          </div>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-hero-light-11",
+      "name": "HeroLightCorporate11",
+      "category": "hero",
+      "subcategory": "center-corporate",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function HeroLightCorporate11() {\n  return (\n    <section className=\"px-6 py-24\">\n      <div className=\"mx-auto max-w-6xl\">\n        <div className=\"max-w-3xl space-y-5\">\n          <span className=\"inline-flex rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600\">Light Corporate</span>\n          <h1 className=\"text-4xl font-bold tracking-tight text-slate-900 md:text-6xl\">Hero Section 11</h1>\n          <p className=\"text-base text-slate-600 md:text-lg\">Designed for clear hierarchy, trust, and conversion-focused messaging.</p>\n          <div className=\"flex gap-3\">\n            <button className=\"rounded-lg bg-slate-600 px-5 py-3 text-sm font-semibold text-white\">Start now</button>\n            <button className=\"rounded-lg border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700\">See details</button>\n          </div>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-hero-light-12",
+      "name": "HeroLightCorporate12",
+      "category": "hero",
+      "subcategory": "minimal-gradient",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function HeroLightCorporate12() {\n  return (\n    <section className=\"px-6 py-24\">\n      <div className=\"mx-auto max-w-6xl\">\n        <div className=\"max-w-3xl space-y-5\">\n          <span className=\"inline-flex rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600\">Light Corporate</span>\n          <h1 className=\"text-4xl font-bold tracking-tight text-slate-900 md:text-6xl\">Hero Section 12</h1>\n          <p className=\"text-base text-slate-600 md:text-lg\">Designed for clear hierarchy, trust, and conversion-focused messaging.</p>\n          <div className=\"flex gap-3\">\n            <button className=\"rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white\">Start now</button>\n            <button className=\"rounded-lg border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700\">See details</button>\n          </div>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-hero-light-13",
+      "name": "HeroLightCorporate13",
+      "category": "hero",
+      "subcategory": "split-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function HeroLightCorporate13() {\n  return (\n    <section className=\"px-6 py-24\">\n      <div className=\"mx-auto max-w-6xl\">\n        <div className=\"max-w-3xl space-y-5\">\n          <span className=\"inline-flex rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600\">Light Corporate</span>\n          <h1 className=\"text-4xl font-bold tracking-tight text-slate-900 md:text-6xl\">Hero Section 13</h1>\n          <p className=\"text-base text-slate-600 md:text-lg\">Designed for clear hierarchy, trust, and conversion-focused messaging.</p>\n          <div className=\"flex gap-3\">\n            <button className=\"rounded-lg bg-slate-600 px-5 py-3 text-sm font-semibold text-white\">Start now</button>\n            <button className=\"rounded-lg border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700\">See details</button>\n          </div>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-hero-light-14",
+      "name": "HeroLightCorporate14",
+      "category": "hero",
+      "subcategory": "center-corporate",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function HeroLightCorporate14() {\n  return (\n    <section className=\"px-6 py-24\">\n      <div className=\"mx-auto max-w-6xl\">\n        <div className=\"max-w-3xl space-y-5\">\n          <span className=\"inline-flex rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600\">Light Corporate</span>\n          <h1 className=\"text-4xl font-bold tracking-tight text-slate-900 md:text-6xl\">Hero Section 14</h1>\n          <p className=\"text-base text-slate-600 md:text-lg\">Designed for clear hierarchy, trust, and conversion-focused messaging.</p>\n          <div className=\"flex gap-3\">\n            <button className=\"rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white\">Start now</button>\n            <button className=\"rounded-lg border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700\">See details</button>\n          </div>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-hero-light-15",
+      "name": "HeroLightCorporate15",
+      "category": "hero",
+      "subcategory": "minimal-gradient",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function HeroLightCorporate15() {\n  return (\n    <section className=\"px-6 py-24\">\n      <div className=\"mx-auto max-w-6xl\">\n        <div className=\"max-w-3xl space-y-5\">\n          <span className=\"inline-flex rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600\">Light Corporate</span>\n          <h1 className=\"text-4xl font-bold tracking-tight text-slate-900 md:text-6xl\">Hero Section 15</h1>\n          <p className=\"text-base text-slate-600 md:text-lg\">Designed for clear hierarchy, trust, and conversion-focused messaging.</p>\n          <div className=\"flex gap-3\">\n            <button className=\"rounded-lg bg-slate-600 px-5 py-3 text-sm font-semibold text-white\">Start now</button>\n            <button className=\"rounded-lg border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700\">See details</button>\n          </div>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-hero-light-16",
+      "name": "HeroLightCorporate16",
+      "category": "hero",
+      "subcategory": "split-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function HeroLightCorporate16() {\n  return (\n    <section className=\"px-6 py-24\">\n      <div className=\"mx-auto max-w-6xl\">\n        <div className=\"max-w-3xl space-y-5\">\n          <span className=\"inline-flex rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600\">Light Corporate</span>\n          <h1 className=\"text-4xl font-bold tracking-tight text-slate-900 md:text-6xl\">Hero Section 16</h1>\n          <p className=\"text-base text-slate-600 md:text-lg\">Designed for clear hierarchy, trust, and conversion-focused messaging.</p>\n          <div className=\"flex gap-3\">\n            <button className=\"rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white\">Start now</button>\n            <button className=\"rounded-lg border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700\">See details</button>\n          </div>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-hero-light-17",
+      "name": "HeroLightCorporate17",
+      "category": "hero",
+      "subcategory": "center-corporate",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function HeroLightCorporate17() {\n  return (\n    <section className=\"px-6 py-24\">\n      <div className=\"mx-auto max-w-6xl\">\n        <div className=\"max-w-3xl space-y-5\">\n          <span className=\"inline-flex rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600\">Light Corporate</span>\n          <h1 className=\"text-4xl font-bold tracking-tight text-slate-900 md:text-6xl\">Hero Section 17</h1>\n          <p className=\"text-base text-slate-600 md:text-lg\">Designed for clear hierarchy, trust, and conversion-focused messaging.</p>\n          <div className=\"flex gap-3\">\n            <button className=\"rounded-lg bg-slate-600 px-5 py-3 text-sm font-semibold text-white\">Start now</button>\n            <button className=\"rounded-lg border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700\">See details</button>\n          </div>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-hero-light-18",
+      "name": "HeroLightCorporate18",
+      "category": "hero",
+      "subcategory": "minimal-gradient",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function HeroLightCorporate18() {\n  return (\n    <section className=\"px-6 py-24\">\n      <div className=\"mx-auto max-w-6xl\">\n        <div className=\"max-w-3xl space-y-5\">\n          <span className=\"inline-flex rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600\">Light Corporate</span>\n          <h1 className=\"text-4xl font-bold tracking-tight text-slate-900 md:text-6xl\">Hero Section 18</h1>\n          <p className=\"text-base text-slate-600 md:text-lg\">Designed for clear hierarchy, trust, and conversion-focused messaging.</p>\n          <div className=\"flex gap-3\">\n            <button className=\"rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white\">Start now</button>\n            <button className=\"rounded-lg border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700\">See details</button>\n          </div>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-hero-light-19",
+      "name": "HeroLightCorporate19",
+      "category": "hero",
+      "subcategory": "split-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function HeroLightCorporate19() {\n  return (\n    <section className=\"px-6 py-24\">\n      <div className=\"mx-auto max-w-6xl\">\n        <div className=\"max-w-3xl space-y-5\">\n          <span className=\"inline-flex rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600\">Light Corporate</span>\n          <h1 className=\"text-4xl font-bold tracking-tight text-slate-900 md:text-6xl\">Hero Section 19</h1>\n          <p className=\"text-base text-slate-600 md:text-lg\">Designed for clear hierarchy, trust, and conversion-focused messaging.</p>\n          <div className=\"flex gap-3\">\n            <button className=\"rounded-lg bg-slate-600 px-5 py-3 text-sm font-semibold text-white\">Start now</button>\n            <button className=\"rounded-lg border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700\">See details</button>\n          </div>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-hero-light-20",
+      "name": "HeroLightCorporate20",
+      "category": "hero",
+      "subcategory": "center-corporate",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function HeroLightCorporate20() {\n  return (\n    <section className=\"px-6 py-24\">\n      <div className=\"mx-auto max-w-6xl\">\n        <div className=\"max-w-3xl space-y-5\">\n          <span className=\"inline-flex rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600\">Light Corporate</span>\n          <h1 className=\"text-4xl font-bold tracking-tight text-slate-900 md:text-6xl\">Hero Section 20</h1>\n          <p className=\"text-base text-slate-600 md:text-lg\">Designed for clear hierarchy, trust, and conversion-focused messaging.</p>\n          <div className=\"flex gap-3\">\n            <button className=\"rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white\">Start now</button>\n            <button className=\"rounded-lg border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700\">See details</button>\n          </div>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-hero-light-21",
+      "name": "HeroLightCorporate21",
+      "category": "hero",
+      "subcategory": "minimal-gradient",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function HeroLightCorporate21() {\n  return (\n    <section className=\"px-6 py-24\">\n      <div className=\"mx-auto max-w-6xl\">\n        <div className=\"max-w-3xl space-y-5\">\n          <span className=\"inline-flex rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600\">Light Corporate</span>\n          <h1 className=\"text-4xl font-bold tracking-tight text-slate-900 md:text-6xl\">Hero Section 21</h1>\n          <p className=\"text-base text-slate-600 md:text-lg\">Designed for clear hierarchy, trust, and conversion-focused messaging.</p>\n          <div className=\"flex gap-3\">\n            <button className=\"rounded-lg bg-slate-600 px-5 py-3 text-sm font-semibold text-white\">Start now</button>\n            <button className=\"rounded-lg border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700\">See details</button>\n          </div>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-hero-light-22",
+      "name": "HeroLightCorporate22",
+      "category": "hero",
+      "subcategory": "split-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function HeroLightCorporate22() {\n  return (\n    <section className=\"px-6 py-24\">\n      <div className=\"mx-auto max-w-6xl\">\n        <div className=\"max-w-3xl space-y-5\">\n          <span className=\"inline-flex rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600\">Light Corporate</span>\n          <h1 className=\"text-4xl font-bold tracking-tight text-slate-900 md:text-6xl\">Hero Section 22</h1>\n          <p className=\"text-base text-slate-600 md:text-lg\">Designed for clear hierarchy, trust, and conversion-focused messaging.</p>\n          <div className=\"flex gap-3\">\n            <button className=\"rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white\">Start now</button>\n            <button className=\"rounded-lg border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700\">See details</button>\n          </div>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-hero-light-23",
+      "name": "HeroLightCorporate23",
+      "category": "hero",
+      "subcategory": "center-corporate",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function HeroLightCorporate23() {\n  return (\n    <section className=\"px-6 py-24\">\n      <div className=\"mx-auto max-w-6xl\">\n        <div className=\"max-w-3xl space-y-5\">\n          <span className=\"inline-flex rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600\">Light Corporate</span>\n          <h1 className=\"text-4xl font-bold tracking-tight text-slate-900 md:text-6xl\">Hero Section 23</h1>\n          <p className=\"text-base text-slate-600 md:text-lg\">Designed for clear hierarchy, trust, and conversion-focused messaging.</p>\n          <div className=\"flex gap-3\">\n            <button className=\"rounded-lg bg-slate-600 px-5 py-3 text-sm font-semibold text-white\">Start now</button>\n            <button className=\"rounded-lg border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700\">See details</button>\n          </div>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-hero-light-24",
+      "name": "HeroLightCorporate24",
+      "category": "hero",
+      "subcategory": "minimal-gradient",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function HeroLightCorporate24() {\n  return (\n    <section className=\"px-6 py-24\">\n      <div className=\"mx-auto max-w-6xl\">\n        <div className=\"max-w-3xl space-y-5\">\n          <span className=\"inline-flex rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600\">Light Corporate</span>\n          <h1 className=\"text-4xl font-bold tracking-tight text-slate-900 md:text-6xl\">Hero Section 24</h1>\n          <p className=\"text-base text-slate-600 md:text-lg\">Designed for clear hierarchy, trust, and conversion-focused messaging.</p>\n          <div className=\"flex gap-3\">\n            <button className=\"rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white\">Start now</button>\n            <button className=\"rounded-lg border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700\">See details</button>\n          </div>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-hero-light-25",
+      "name": "HeroLightCorporate25",
+      "category": "hero",
+      "subcategory": "split-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function HeroLightCorporate25() {\n  return (\n    <section className=\"px-6 py-24\">\n      <div className=\"mx-auto max-w-6xl\">\n        <div className=\"max-w-3xl space-y-5\">\n          <span className=\"inline-flex rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600\">Light Corporate</span>\n          <h1 className=\"text-4xl font-bold tracking-tight text-slate-900 md:text-6xl\">Hero Section 25</h1>\n          <p className=\"text-base text-slate-600 md:text-lg\">Designed for clear hierarchy, trust, and conversion-focused messaging.</p>\n          <div className=\"flex gap-3\">\n            <button className=\"rounded-lg bg-slate-600 px-5 py-3 text-sm font-semibold text-white\">Start now</button>\n            <button className=\"rounded-lg border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700\">See details</button>\n          </div>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-hero-light-26",
+      "name": "HeroLightCorporate26",
+      "category": "hero",
+      "subcategory": "center-corporate",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function HeroLightCorporate26() {\n  return (\n    <section className=\"px-6 py-24\">\n      <div className=\"mx-auto max-w-6xl\">\n        <div className=\"max-w-3xl space-y-5\">\n          <span className=\"inline-flex rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600\">Light Corporate</span>\n          <h1 className=\"text-4xl font-bold tracking-tight text-slate-900 md:text-6xl\">Hero Section 26</h1>\n          <p className=\"text-base text-slate-600 md:text-lg\">Designed for clear hierarchy, trust, and conversion-focused messaging.</p>\n          <div className=\"flex gap-3\">\n            <button className=\"rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white\">Start now</button>\n            <button className=\"rounded-lg border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700\">See details</button>\n          </div>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-hero-light-27",
+      "name": "HeroLightCorporate27",
+      "category": "hero",
+      "subcategory": "minimal-gradient",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function HeroLightCorporate27() {\n  return (\n    <section className=\"px-6 py-24\">\n      <div className=\"mx-auto max-w-6xl\">\n        <div className=\"max-w-3xl space-y-5\">\n          <span className=\"inline-flex rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600\">Light Corporate</span>\n          <h1 className=\"text-4xl font-bold tracking-tight text-slate-900 md:text-6xl\">Hero Section 27</h1>\n          <p className=\"text-base text-slate-600 md:text-lg\">Designed for clear hierarchy, trust, and conversion-focused messaging.</p>\n          <div className=\"flex gap-3\">\n            <button className=\"rounded-lg bg-slate-600 px-5 py-3 text-sm font-semibold text-white\">Start now</button>\n            <button className=\"rounded-lg border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700\">See details</button>\n          </div>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-hero-light-28",
+      "name": "HeroLightCorporate28",
+      "category": "hero",
+      "subcategory": "split-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function HeroLightCorporate28() {\n  return (\n    <section className=\"px-6 py-24\">\n      <div className=\"mx-auto max-w-6xl\">\n        <div className=\"max-w-3xl space-y-5\">\n          <span className=\"inline-flex rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600\">Light Corporate</span>\n          <h1 className=\"text-4xl font-bold tracking-tight text-slate-900 md:text-6xl\">Hero Section 28</h1>\n          <p className=\"text-base text-slate-600 md:text-lg\">Designed for clear hierarchy, trust, and conversion-focused messaging.</p>\n          <div className=\"flex gap-3\">\n            <button className=\"rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white\">Start now</button>\n            <button className=\"rounded-lg border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700\">See details</button>\n          </div>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-hero-light-29",
+      "name": "HeroLightCorporate29",
+      "category": "hero",
+      "subcategory": "center-corporate",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function HeroLightCorporate29() {\n  return (\n    <section className=\"px-6 py-24\">\n      <div className=\"mx-auto max-w-6xl\">\n        <div className=\"max-w-3xl space-y-5\">\n          <span className=\"inline-flex rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600\">Light Corporate</span>\n          <h1 className=\"text-4xl font-bold tracking-tight text-slate-900 md:text-6xl\">Hero Section 29</h1>\n          <p className=\"text-base text-slate-600 md:text-lg\">Designed for clear hierarchy, trust, and conversion-focused messaging.</p>\n          <div className=\"flex gap-3\">\n            <button className=\"rounded-lg bg-slate-600 px-5 py-3 text-sm font-semibold text-white\">Start now</button>\n            <button className=\"rounded-lg border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700\">See details</button>\n          </div>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-hero-light-30",
+      "name": "HeroLightCorporate30",
+      "category": "hero",
+      "subcategory": "minimal-gradient",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function HeroLightCorporate30() {\n  return (\n    <section className=\"px-6 py-24\">\n      <div className=\"mx-auto max-w-6xl\">\n        <div className=\"max-w-3xl space-y-5\">\n          <span className=\"inline-flex rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600\">Light Corporate</span>\n          <h1 className=\"text-4xl font-bold tracking-tight text-slate-900 md:text-6xl\">Hero Section 30</h1>\n          <p className=\"text-base text-slate-600 md:text-lg\">Designed for clear hierarchy, trust, and conversion-focused messaging.</p>\n          <div className=\"flex gap-3\">\n            <button className=\"rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white\">Start now</button>\n            <button className=\"rounded-lg border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700\">See details</button>\n          </div>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    }
+  ]
+}

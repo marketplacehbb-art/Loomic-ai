@@ -17,7 +17,20 @@ export interface AssembleProjectInput {
 }
 
 function normalizePath(path: string): string {
-  return path.replace(/\\/g, '/').replace(/^\.?\//, '');
+  const raw = (path || '').replace(/\\/g, '/').replace(/^\.?\//, '');
+  const parts = raw.split('/');
+  const stack: string[] = [];
+
+  for (const part of parts) {
+    if (!part || part === '.') continue;
+    if (part === '..') {
+      if (stack.length > 0) stack.pop();
+      continue;
+    }
+    stack.push(part);
+  }
+
+  return stack.join('/');
 }
 
 function normalizeGeneratedPath(path: string): string {
@@ -32,6 +45,18 @@ function normalizeGeneratedPath(path: string): string {
 function isRuntimeModulePath(path: string): boolean {
   const normalized = normalizeGeneratedPath(path || '');
   return /\.(tsx|ts|jsx|js)$/.test(normalized);
+}
+
+function dirname(path: string): string {
+  const normalized = normalizeGeneratedPath(path);
+  const index = normalized.lastIndexOf('/');
+  return index >= 0 ? normalized.slice(0, index) : '';
+}
+
+function joinPath(base: string, target: string): string {
+  if (target.startsWith('/')) return normalizePath(target.slice(1));
+  if (!base) return normalizePath(target);
+  return normalizePath(`${base}/${target}`);
 }
 
 function looksLikeFullHtmlDocument(code: string): boolean {
@@ -66,6 +91,111 @@ function inferPlaceholder(path: string): string {
   }
 
   return '';
+}
+
+const IMPORT_PATTERNS = [
+  /\bimport\s+[^'"\n]+?\s+from\s+['"]([^'"]+)['"]/g,
+  /\bimport\s+['"]([^'"]+)['"]/g,
+  /\bexport\s+[^'"\n]+?\s+from\s+['"]([^'"]+)['"]/g,
+  /\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
+];
+
+const RESOLVABLE_EXTENSIONS = ['.tsx', '.ts', '.jsx', '.js', '.css', '.json'];
+
+function stripQueryAndHash(specifier: string): string {
+  return specifier.split('?')[0].split('#')[0];
+}
+
+function getRelativeSpecifiers(content: string): string[] {
+  const specifiers = new Set<string>();
+  for (const pattern of IMPORT_PATTERNS) {
+    pattern.lastIndex = 0;
+    for (const match of content.matchAll(pattern)) {
+      const raw = (match[1] || '').trim();
+      if (!raw) continue;
+      if (!raw.startsWith('.') && !raw.startsWith('/')) continue;
+      specifiers.add(stripQueryAndHash(raw));
+    }
+  }
+  return [...specifiers];
+}
+
+function resolveFromAssembledPaths(candidate: string, files: Record<string, string>): string | null {
+  const normalized = normalizePath(candidate);
+  const alternatives = new Set<string>([normalized]);
+
+  if (normalized.startsWith('src/')) {
+    alternatives.add(normalized.slice(4));
+  } else {
+    alternatives.add(`src/${normalized}`);
+  }
+
+  for (const alt of alternatives) {
+    if (files[alt] !== undefined) return alt;
+  }
+
+  const hasKnownExtension = /\.[a-z0-9]+$/i.test(normalized);
+  if (!hasKnownExtension) {
+    for (const alt of alternatives) {
+      for (const extension of RESOLVABLE_EXTENSIONS) {
+        const withExt = `${alt}${extension}`;
+        if (files[withExt] !== undefined) return withExt;
+      }
+      for (const extension of RESOLVABLE_EXTENSIONS) {
+        const asIndex = `${alt}/index${extension}`;
+        if (files[asIndex] !== undefined) return asIndex;
+      }
+    }
+  }
+
+  return null;
+}
+
+function inferMissingImportPath(importerPath: string, specifier: string): string {
+  const importerDir = dirname(importerPath);
+  const baseCandidate = specifier.startsWith('/')
+    ? normalizePath(specifier.slice(1))
+    : joinPath(importerDir, specifier);
+
+  if (/\.[a-z0-9]+$/i.test(baseCandidate)) {
+    return normalizeGeneratedPath(baseCandidate);
+  }
+
+  const runtimeDefaultExt = importerPath.endsWith('.ts') ? '.ts' : '.tsx';
+  if (baseCandidate.endsWith('/')) {
+    return normalizeGeneratedPath(`${baseCandidate}index${runtimeDefaultExt}`);
+  }
+  return normalizeGeneratedPath(`${baseCandidate}${runtimeDefaultExt}`);
+}
+
+function ensureReferencedLocalFiles(files: Record<string, string>): void {
+  const importerPaths = Object.keys(files).filter((path) => /\.(tsx|ts|jsx|js)$/.test(path));
+
+  for (const importerPath of importerPaths) {
+    const source = files[importerPath];
+    if (typeof source !== 'string' || !source.trim()) continue;
+
+    const relativeSpecifiers = getRelativeSpecifiers(source);
+    for (const specifier of relativeSpecifiers) {
+      if (resolveFromAssembledPaths(joinPath(dirname(importerPath), specifier), files)) {
+        continue;
+      }
+      const missingPath = inferMissingImportPath(importerPath, specifier);
+      if (!missingPath) continue;
+      if (files[missingPath] !== undefined) continue;
+      files[missingPath] = inferPlaceholder(missingPath);
+    }
+  }
+}
+
+export function hydrateMissingLocalImports(files: Record<string, string>): { files: Record<string, string>; addedPaths: string[] } {
+  const snapshot = new Set(Object.keys(files));
+  ensureReferencedLocalFiles(files);
+  const addedPaths = Object.keys(files).filter((path) => !snapshot.has(path));
+  return {
+    files,
+    addedPaths,
+  };
 }
 
 function mergeDependenciesIntoPackageJson(
@@ -143,6 +273,8 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   if (assembled['package.json']) {
     assembled['package.json'] = mergeDependenciesIntoPackageJson(assembled['package.json'], input.dependencies);
   }
+
+  ensureReferencedLocalFiles(assembled);
 
   return assembled;
 }

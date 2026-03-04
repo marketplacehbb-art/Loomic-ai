@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { bundleCode } from '../lib/bundler';
+import { getDefaultImportMap, getEsmUrlForDependency } from '../config/dependencies';
 
 interface LocalPreviewProps {
   code: string;
@@ -9,6 +10,16 @@ interface LocalPreviewProps {
   previewPath?: string;
   refreshToken?: number;
   onPreviewDocument?: (html: string) => void;
+  onPreviewIssue?: (issue: {
+    type: 'bundler' | 'runtime';
+    message: string;
+    stack?: string;
+    source?: string;
+    category?: string;
+    fingerprint?: string;
+    routePath?: string;
+    timestamp: number;
+  }) => void;
 }
 
 const isBareSpecifier = (specifier: string): boolean => {
@@ -103,11 +114,22 @@ const LocalPreview: React.FC<LocalPreviewProps> = ({
   dependencies = {},
   previewPath = '/',
   refreshToken = 0,
-  onPreviewDocument
+  onPreviewDocument,
+  onPreviewIssue
 }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const onPreviewDocumentRef = useRef(onPreviewDocument);
+  const onPreviewIssueRef = useRef(onPreviewIssue);
   const [error, setError] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
+
+  useEffect(() => {
+    onPreviewDocumentRef.current = onPreviewDocument;
+  }, [onPreviewDocument]);
+
+  useEffect(() => {
+    onPreviewIssueRef.current = onPreviewIssue;
+  }, [onPreviewIssue]);
 
   useEffect(() => {
     const updatePreview = async () => {
@@ -117,17 +139,7 @@ const LocalPreview: React.FC<LocalPreviewProps> = ({
         const compiled = await bundleCode(code, { files, entryPath });
         const routerSignals = detectRouterRequirements(code, files);
 
-        const defaultImports = {
-          "react": "https://esm.sh/react@18.3.1",
-          "react/jsx-runtime": "https://esm.sh/react@18.3.1/jsx-runtime",
-          "react/jsx-dev-runtime": "https://esm.sh/react@18.3.1/jsx-runtime",
-          "react-dom": "https://esm.sh/react-dom@18.3.1",
-          "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
-          "lucide-react": "https://esm.sh/lucide-react@0.564.0?external=react",
-          "framer-motion": "https://esm.sh/framer-motion@11.0.8?external=react",
-          "react-router-dom": "https://esm.sh/react-router-dom@6.30.3?external=react",
-          "@heroicons/react": "https://esm.sh/@heroicons/react@2.0.18?external=react"
-        };
+        const defaultImports = getDefaultImportMap();
 
         // Process dependencies to ensure they are valid URLs for the import map
         const processedDependencies: Record<string, string> = {};
@@ -136,14 +148,13 @@ const LocalPreview: React.FC<LocalPreviewProps> = ({
           // Skip if it's already in defaultImports (to preserve carefully crafted URLs with ?external=react)
           if (defaultImports.hasOwnProperty(pkg)) return;
 
+          const versionValue = typeof version === 'string' ? version.trim() : '';
+
           // If it looks like a URL, use it as is
-          if (version.startsWith('http') || version.startsWith('/')) {
+          if (versionValue.startsWith('http') || versionValue.startsWith('/')) {
             processedDependencies[pkg] = version;
           } else {
-            // Otherwise construct an esm.sh URL
-            // Remove ^ or ~ from version
-            const cleanVersion = version.replace(/[\^~]/g, '');
-            processedDependencies[pkg] = `https://esm.sh/${pkg}@${cleanVersion}`;
+            processedDependencies[pkg] = getEsmUrlForDependency(pkg, versionValue);
           }
         });
 
@@ -152,7 +163,7 @@ const LocalPreview: React.FC<LocalPreviewProps> = ({
         for (const specifier of collectBareImportSpecifiers(compiled)) {
           if (defaultImports.hasOwnProperty(specifier)) continue;
           if (processedDependencies.hasOwnProperty(specifier)) continue;
-          processedDependencies[specifier] = `https://esm.sh/${specifier}`;
+          processedDependencies[specifier] = getEsmUrlForDependency(specifier);
         }
 
         const finalImports = { ...defaultImports, ...processedDependencies };
@@ -173,6 +184,23 @@ const LocalPreview: React.FC<LocalPreviewProps> = ({
                 html, body { margin: 0; width: 100%; min-height: 100%; overscroll-behavior: contain; }
                 body { background: white; font-family: sans-serif; height: 100vh; width: 100vw; overflow-x: hidden; touch-action: pan-x pan-y; }
                 #root { width: 100%; min-height: 100%; display: flex; flex-direction: column; }
+                #bundle-error-overlay {
+                  position: fixed;
+                  left: 12px;
+                  right: 12px;
+                  top: 12px;
+                  z-index: 99999;
+                  display: none;
+                  max-height: 40vh;
+                  overflow: auto;
+                  border: 1px solid rgba(220, 38, 38, 0.45);
+                  border-radius: 10px;
+                  background: rgba(127, 29, 29, 0.95);
+                  color: #fecaca;
+                  padding: 10px 12px;
+                  font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+                  white-space: pre-wrap;
+                }
                 
                 /* Inspector Styles */
                 .ai-builder-inspect-active * {
@@ -192,6 +220,7 @@ const LocalPreview: React.FC<LocalPreviewProps> = ({
               </style>
             </head>
             <body>
+              <div id="bundle-error-overlay"></div>
               <div id="root"></div>
               <script type="module">
                 import React from 'react';
@@ -221,6 +250,58 @@ const LocalPreview: React.FC<LocalPreviewProps> = ({
                   }
                 })();
 
+                // In sandboxed srcdoc environments localStorage may throw SecurityError.
+                // Provide a deterministic in-memory fallback to keep stateful demos working.
+                (() => {
+                  const makeStorage = () => {
+                    const store = new Map();
+                    return {
+                      getItem(key) {
+                        const value = store.get(String(key));
+                        return value === undefined ? null : value;
+                      },
+                      setItem(key, value) {
+                        store.set(String(key), String(value));
+                      },
+                      removeItem(key) {
+                        store.delete(String(key));
+                      },
+                      clear() {
+                        store.clear();
+                      },
+                      key(index) {
+                        const keys = Array.from(store.keys());
+                        return typeof index === 'number' && index >= 0 && index < keys.length ? keys[index] : null;
+                      },
+                      get length() {
+                        return store.size;
+                      }
+                    };
+                  };
+
+                  const ensureSafeStorage = (storageName) => {
+                    try {
+                      const probe = '__ai_builder_probe__';
+                      window[storageName].setItem(probe, '1');
+                      window[storageName].removeItem(probe);
+                    } catch (_error) {
+                      try {
+                        Object.defineProperty(window, storageName, {
+                          configurable: true,
+                          enumerable: false,
+                          writable: false,
+                          value: makeStorage(),
+                        });
+                      } catch {
+                        // Ignore when host disallows descriptor overrides.
+                      }
+                    }
+                  };
+
+                  ensureSafeStorage('localStorage');
+                  ensureSafeStorage('sessionStorage');
+                })();
+
                 // --- Inspector Logic ---
                 let isInspectMode = false;
                 let currentHighlight = null;
@@ -231,9 +312,30 @@ const LocalPreview: React.FC<LocalPreviewProps> = ({
                 const INITIAL_PREVIEW_PATH = ${JSON.stringify(previewPath)};
                 let lastInternalPreviewPath = null;
                 const PARENT_ORIGIN = ${JSON.stringify(window.location.origin)};
+                const MAX_RUNTIME_ERROR_REPORTS = 8;
+                let runtimeErrorReportCount = 0;
+                const reportedRuntimeFingerprints = new Set();
+                const errorOverlayElement = document.getElementById('bundle-error-overlay');
                 const SHOULD_WRAP_IN_HASH_ROUTER = ${JSON.stringify(
-                  routerSignals.needsRouterContext && !routerSignals.hasRouterProvider
-                )};
+          routerSignals.needsRouterContext && !routerSignals.hasRouterProvider
+        )};
+
+                function renderBundleErrorOverlay(message) {
+                  const normalized = typeof message === 'string' ? message.trim() : '';
+                  window.__BUNDLE_ERROR__ = normalized;
+                  if (!errorOverlayElement) return;
+                  if (!normalized) {
+                    errorOverlayElement.style.display = 'none';
+                    errorOverlayElement.textContent = '';
+                    return;
+                  }
+                  errorOverlayElement.style.display = 'block';
+                  errorOverlayElement.textContent = normalized;
+                }
+
+                if (typeof window.__BUNDLE_ERROR__ === 'string' && window.__BUNDLE_ERROR__) {
+                  renderBundleErrorOverlay(window.__BUNDLE_ERROR__);
+                }
 
                 function normalizePreviewPathInput(value) {
                   if (!value) return '/';
@@ -267,6 +369,55 @@ const LocalPreview: React.FC<LocalPreviewProps> = ({
                   window.parent.postMessage({
                     type: 'PREVIEW_PATH_CHANGED',
                     payload: { path: normalizedPath }
+                  }, PARENT_ORIGIN);
+                }
+
+                function normalizeIssueMessage(value) {
+                  if (!value) return 'Unknown runtime error';
+                  if (typeof value === 'string') return value;
+                  if (value && typeof value.message === 'string') return value.message;
+                  try {
+                    return String(value);
+                  } catch {
+                    return 'Unknown runtime error';
+                  }
+                }
+
+                function deriveIssueCategory(message) {
+                  const lower = String(message || '').toLowerCase();
+                  if (/failed to resolve module specifier|cannot find module|module not found/.test(lower)) return 'missing-module';
+                  if (/does not provide an export named/.test(lower)) return 'invalid-export';
+                  if (/cannot destructure property 'basename'|cannot read properties of null \\(reading 'usecontext'\\)/.test(lower)) return 'router-context';
+                  if (/is not defined/.test(lower)) return 'undefined-symbol';
+                  if (/cannot read properties of null|cannot read properties of undefined/.test(lower)) return 'null-access';
+                  return 'runtime';
+                }
+
+                function reportRuntimeIssue(rawIssue) {
+                  const message = normalizeIssueMessage(rawIssue?.message || rawIssue);
+                  renderBundleErrorOverlay(message);
+                  const stack = typeof rawIssue?.stack === 'string' ? rawIssue.stack : '';
+                  const source = typeof rawIssue?.source === 'string' ? rawIssue.source : 'runtime';
+                  const routePath = getCurrentPreviewRoutePath();
+                  const fingerprint = [message, stack.split('\\n')[0] || '', source, routePath].join(' | ').slice(0, 600);
+
+                  if (reportedRuntimeFingerprints.has(fingerprint)) return;
+                  if (runtimeErrorReportCount >= MAX_RUNTIME_ERROR_REPORTS) return;
+
+                  reportedRuntimeFingerprints.add(fingerprint);
+                  runtimeErrorReportCount += 1;
+
+                  window.parent.postMessage({
+                    type: 'PREVIEW_RUNTIME_ERROR',
+                    payload: {
+                      message,
+                      stack: stack || undefined,
+                      source,
+                      category: deriveIssueCategory(message),
+                      fingerprint,
+                      routePath,
+                      timestamp: Date.now(),
+                    },
                   }, PARENT_ORIGIN);
                 }
 
@@ -843,6 +994,23 @@ const LocalPreview: React.FC<LocalPreviewProps> = ({
                   postPreviewPath(currentHash);
                 });
 
+                window.addEventListener('error', (event) => {
+                  reportRuntimeIssue({
+                    message: event?.error?.message || event?.message || 'Window error',
+                    stack: event?.error?.stack || '',
+                    source: 'window.error',
+                  });
+                });
+
+                window.addEventListener('unhandledrejection', (event) => {
+                  const reason = event?.reason;
+                  reportRuntimeIssue({
+                    message: reason?.message || normalizeIssueMessage(reason),
+                    stack: reason?.stack || '',
+                    source: 'window.unhandledrejection',
+                  });
+                });
+
                 // Block zoom interactions inside preview iframe.
                 document.addEventListener('wheel', (event) => {
                   if (event.ctrlKey || event.metaKey) {
@@ -1032,8 +1200,54 @@ const LocalPreview: React.FC<LocalPreviewProps> = ({
 
                 async function init() {
                   const rootElement = document.getElementById('root');
-                  const root = createRoot(rootElement);
+                  if (!rootElement) {
+                    throw new Error('Preview root element not found.');
+                  }
                   let blobUrl = null;
+
+                  const hasRenderedPreviewContent = () => {
+                    if (rootElement.children.length > 0) return true;
+                    const textContent = (rootElement.textContent || '').trim();
+                    return textContent.length > 0;
+                  };
+
+                  const annotatePreviewTree = () => {
+                    requestAnimationFrame(() => {
+                      const rootElement = document.getElementById('root');
+                      if (!rootElement) return;
+                      const walk = (element, path) => {
+                        if (!(element instanceof Element)) return;
+                        if (element !== rootElement) {
+                          element.setAttribute('data-ai-node-id', 'n-' + path);
+                        }
+                        Array.from(element.children).forEach((child, index) => {
+                          const childPath = path ? (path + '.' + index) : String(index);
+                          walk(child, childPath);
+                        });
+                      };
+                      walk(rootElement, '0');
+                    });
+                  };
+
+                  const reportRuntimeOk = () => {
+                    renderBundleErrorOverlay('');
+                    window.parent.postMessage({
+                      type: 'PREVIEW_RUNTIME_OK',
+                      payload: {
+                        routePath: getCurrentPreviewRoutePath(),
+                        timestamp: Date.now(),
+                      },
+                    }, PARENT_ORIGIN);
+                    annotatePreviewTree();
+                  };
+
+                  const renderMissingComponentError = () => {
+                    rootElement.innerHTML = '';
+                    const container = document.createElement('div');
+                    container.className = 'p-8 text-red-500 font-bold bg-red-50 rounded-lg m-4 border border-red-200';
+                    container.textContent = 'Fehler: Keine React-Komponente (default export oder "App") im generierten Code gefunden.';
+                    rootElement.appendChild(container);
+                  };
 
                   try {
                     applyPreviewPath(INITIAL_PREVIEW_PATH, true);
@@ -1050,39 +1264,43 @@ const LocalPreview: React.FC<LocalPreviewProps> = ({
                     const MainComponent = AppModule.default || AppModule.App || Object.values(AppModule).find(v => typeof v === 'function');
 
                     if (MainComponent) {
+                      const root = createRoot(rootElement);
                       const appElement = React.createElement(MainComponent);
                       const renderElement = SHOULD_WRAP_IN_HASH_ROUTER
                         ? React.createElement(HashRouter, null, appElement)
                         : appElement;
                       root.render(renderElement);
-                      requestAnimationFrame(() => {
-                        const rootElement = document.getElementById('root');
-                        if (!rootElement) return;
-                        const walk = (element, path) => {
-                          if (!(element instanceof Element)) return;
-                          if (element !== rootElement) {
-                            element.setAttribute('data-ai-node-id', 'n-' + path);
-                          }
-                          Array.from(element.children).forEach((child, index) => {
-                            const childPath = path ? (path + '.' + index) : String(index);
-                            walk(child, childPath);
-                          });
-                        };
-                        walk(rootElement, '0');
-                      });
+                      reportRuntimeOk();
                     } else {
-                      root.render(React.createElement('div', { 
-                        className: 'p-8 text-red-500 font-bold bg-red-50 rounded-lg m-4 border border-red-200' 
-                      }, 'Fehler: Keine React-Komponente (default export oder "App") im generierten Code gefunden.'));
+                      if (!hasRenderedPreviewContent()) {
+                        await new Promise((resolve) => setTimeout(resolve, 500));
+                      }
+                      if (hasRenderedPreviewContent()) {
+                        reportRuntimeOk();
+                      } else {
+                        renderMissingComponentError();
+                      }
                     }
                   } catch (e) {
                     console.error('Render Error:', e);
-                    root.render(
-                      React.createElement('div', { className: 'p-4 bg-red-50 border border-red-200 m-4 rounded' },
-                        React.createElement('h2', { className: 'text-red-700 font-bold mb-2' }, 'Render-Fehler'),
-                        React.createElement('pre', { className: 'text-red-600 text-xs overflow-auto' }, e.stack || e.message)
-                      )
-                    );
+                    renderBundleErrorOverlay(e?.stack || e?.message || 'Render error');
+                    reportRuntimeIssue({
+                      message: e?.message || 'Render error',
+                      stack: e?.stack || '',
+                      source: 'render.catch',
+                    });
+                    rootElement.innerHTML = '';
+                    const container = document.createElement('div');
+                    container.className = 'p-4 bg-red-50 border border-red-200 m-4 rounded';
+                    const title = document.createElement('h2');
+                    title.className = 'text-red-700 font-bold mb-2';
+                    title.textContent = 'Render-Fehler';
+                    const pre = document.createElement('pre');
+                    pre.className = 'text-red-600 text-xs overflow-auto';
+                    pre.textContent = e?.stack || e?.message || 'Render error';
+                    container.appendChild(title);
+                    container.appendChild(pre);
+                    rootElement.appendChild(container);
                   } finally {
                     // Always revoke blob URL to prevent memory leaks
                     if (blobUrl) {
@@ -1097,8 +1315,8 @@ const LocalPreview: React.FC<LocalPreviewProps> = ({
           </html>
         `;
 
-        if (onPreviewDocument) {
-          onPreviewDocument(html);
+        if (onPreviewDocumentRef.current) {
+          onPreviewDocumentRef.current(html);
         }
 
         if (iframeRef.current) {
@@ -1106,6 +1324,14 @@ const LocalPreview: React.FC<LocalPreviewProps> = ({
         }
       } catch (err: any) {
         setError(err.message);
+        onPreviewIssueRef.current?.({
+          type: 'bundler',
+          message: err?.message || 'Bundling error',
+          stack: err?.stack,
+          source: 'local-preview.bundler',
+          category: 'bundler',
+          timestamp: Date.now(),
+        });
       } finally {
         setIsUpdating(false);
       }
@@ -1113,7 +1339,7 @@ const LocalPreview: React.FC<LocalPreviewProps> = ({
 
     const timer = setTimeout(updatePreview, 800); // Debounce - increased for better performance
     return () => clearTimeout(timer);
-  }, [code, files, entryPath, dependencies, refreshToken, onPreviewDocument]);
+  }, [code, files, entryPath, dependencies, refreshToken]);
 
   useEffect(() => {
     if (iframeRef.current?.contentWindow) {

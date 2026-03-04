@@ -1,6 +1,7 @@
 /**
  * Environment Configuration
  */
+import { getGeminiApiKey } from './env-security.js';
 
 export const config = {
   // App
@@ -8,7 +9,7 @@ export const config = {
   nodeEnv: process.env.NODE_ENV || 'development',
 
   // LLM
-  geminiApiKey: process.env.VITE_GEMINI_API_KEY || '',
+  geminiApiKey: getGeminiApiKey() || '',
 
   // Supabase (Legacy)
   supabaseUrl: process.env.SUPABASE_URL || '',
@@ -37,7 +38,7 @@ export function validateConfig(): string[] {
   const errors: string[] = [];
 
   if (!config.geminiApiKey) {
-    errors.push('VITE_GEMINI_API_KEY is not configured');
+    errors.push('GEMINI_API_KEY is not configured');
   }
 
   return errors;

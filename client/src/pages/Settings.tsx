@@ -4,6 +4,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import Sidebar from '../components/Sidebar';
 import { api, UserProfile } from '../lib/api';
 import { supabase } from '../lib/supabase';
+import { resolveImageWithFallback } from '../lib/assets';
 
 export default function Settings() {
     const { user, profile, loading: authLoading, refreshProfile } = useAuth();
@@ -296,7 +297,10 @@ export default function Settings() {
                                         <img
                                             alt="Avatar"
                                             className="w-24 h-24 rounded-full bg-slate-100 dark:bg-slate-800 object-cover border-4 border-slate-50 dark:border-[#1e1e1e]"
-                                            src={formData.avatar_url || `https://ui-avatars.com/api/?name=${user?.email}&background=random`}
+                                            src={resolveImageWithFallback(formData.avatar_url || `https://ui-avatars.com/api/?name=${user?.email}&background=random`)}
+                                            onError={(event) => {
+                                                event.currentTarget.src = resolveImageWithFallback(null);
+                                            }}
                                         />
                                         <button
                                             type="button"

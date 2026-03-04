@@ -1,4 +1,5 @@
 import { llmManager, LLMRequest } from '../llm/manager.js';
+import { parseJsonWithSchema, z } from './json-contract.js';
 
 /**
  * Spec Pass - Phase 1 Component 1
@@ -16,11 +17,40 @@ export interface SpecResult {
   estimatedComplexity: 'simple' | 'medium' | 'complex';
 }
 
+const specSchema = z.object({
+  components: z.array(z.string()).default([]),
+  features: z.array(z.string()).default([]),
+  constraints: z.array(z.string()).default([]),
+  uiElements: z.array(z.string()).default([]),
+  dataFlow: z.union([z.array(z.string()), z.string()]).optional(),
+  implicitRequirements: z.array(z.string()).default([]),
+  priority: z.enum(['high', 'medium', 'low']).default('medium'),
+  estimatedComplexity: z.enum(['simple', 'medium', 'complex']).default('medium'),
+});
+type ParsedSpec = z.infer<typeof specSchema>;
+
+function isAbortError(error: unknown): boolean {
+  if (!error) return false;
+  const name = String((error as any)?.name || '');
+  const message = String((error as any)?.message || '');
+  return name === 'AbortError' || /aborted|aborterror/i.test(message);
+}
+
 export class SpecPass {
+  private readonly specSchema = specSchema;
+
   /**
    * Analyze prompt and extract structured specifications
    */
-  async analyze(prompt: string, context?: string): Promise<SpecResult> {
+  async analyze(
+    prompt: string,
+    context?: string,
+    options?: {
+      provider?: 'gemini' | 'groq' | 'openai' | 'nvidia';
+      maxTokens?: number;
+      signal?: AbortSignal;
+    }
+  ): Promise<SpecResult> {
     const systemPrompt = `Du bist ein erfahrener Requirements-Analyst.
 Dein Ziel: Analysiere den User-Prompt und extrahiere strukturierte Spezifikationen.
 
@@ -45,28 +75,52 @@ ${context ? `\nKontext:\n${context}` : ''}
 Erstelle ein strukturiertes Spec-Objekt.`;
 
     try {
+      const analysisMaxTokens = Math.max(
+        256,
+        Math.min(800, Math.floor(typeof options?.maxTokens === 'number' ? options.maxTokens : 600))
+      );
       const response = await llmManager.generate({
-        provider: 'gemini', // Use default provider
+        provider: options?.provider || 'gemini',
         prompt: analysisPrompt,
         systemPrompt,
         temperature: 0.3, // Lower temperature for more consistent analysis
-        maxTokens: 2000,
+        maxTokens: analysisMaxTokens,
+        signal: options?.signal,
       });
 
-      // Parse JSON from response
       const responseText = typeof response === 'string'
         ? response
         : ((response as any)?.content || '');
-      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-      
-      if (jsonMatch) {
-        const spec = JSON.parse(jsonMatch[0]);
-        return this.normalizeSpec(spec);
+      const parsed = parseJsonWithSchema(responseText, this.specSchema);
+      if (parsed.data) {
+        return this.normalizeSpec(parsed.data);
       }
 
-      // Fallback: Create basic spec from prompt analysis
+      const strictRetryPrompt = `${analysisPrompt}
+
+Return STRICT JSON only. No markdown, no prose, no code fences.
+Required keys: components, features, constraints, uiElements, dataFlow, implicitRequirements, priority, estimatedComplexity.`;
+      const retry = await llmManager.generate({
+        provider: options?.provider || 'gemini',
+        prompt: strictRetryPrompt,
+        systemPrompt,
+        temperature: 0,
+        maxTokens: Math.max(256, Math.min(600, analysisMaxTokens)),
+        signal: options?.signal,
+      });
+      const retryText = typeof retry === 'string'
+        ? retry
+        : ((retry as any)?.content || '');
+      const retryParsed = parseJsonWithSchema(retryText, this.specSchema);
+      if (retryParsed.data) {
+        return this.normalizeSpec(retryParsed.data);
+      }
+
       return this.createFallbackSpec(prompt);
     } catch (error: any) {
+      if (isAbortError(error) || options?.signal?.aborted) {
+        throw error;
+      }
       console.warn('[SpecPass] Failed to analyze prompt, using fallback:', error.message);
       return this.createFallbackSpec(prompt);
     }
@@ -75,18 +129,20 @@ Erstelle ein strukturiertes Spec-Objekt.`;
   /**
    * Normalize spec object to ensure all fields are present
    */
-  private normalizeSpec(spec: any): SpecResult {
+  private normalizeSpec(spec: ParsedSpec): SpecResult {
+    const normalizedDataFlow = Array.isArray(spec.dataFlow)
+      ? spec.dataFlow
+      : (typeof spec.dataFlow === 'string' ? [spec.dataFlow] : []);
+
     return {
-      components: Array.isArray(spec.components) ? spec.components : [],
-      features: Array.isArray(spec.features) ? spec.features : [],
-      constraints: Array.isArray(spec.constraints) ? spec.constraints : [],
-      uiElements: Array.isArray(spec.uiElements) ? spec.uiElements : [],
-      dataFlow: Array.isArray(spec.dataFlow) ? spec.dataFlow : [spec.dataFlow || ''],
-      implicitRequirements: Array.isArray(spec.implicitRequirements) ? spec.implicitRequirements : [],
-      priority: ['high', 'medium', 'low'].includes(spec.priority) ? spec.priority : 'medium',
-      estimatedComplexity: ['simple', 'medium', 'complex'].includes(spec.estimatedComplexity) 
-        ? spec.estimatedComplexity 
-        : 'medium',
+      components: spec.components,
+      features: spec.features,
+      constraints: spec.constraints,
+      uiElements: spec.uiElements,
+      dataFlow: normalizedDataFlow,
+      implicitRequirements: spec.implicitRequirements,
+      priority: spec.priority,
+      estimatedComplexity: spec.estimatedComplexity,
     };
   }
 

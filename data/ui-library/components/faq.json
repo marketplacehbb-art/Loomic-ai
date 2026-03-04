@@ -1,0 +1,841 @@
+{
+  "category": "faq",
+  "components": [
+    {
+      "id": "faq-accordion-01",
+      "name": "FAQ Accordion",
+      "category": "faq",
+      "subcategory": "accordion",
+      "tags": {
+        "industry": [
+          "saas",
+          "ecommerce",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "import { useState } from \"react\";\n\nconst FAQS = [\n  { q: \"Gibt es eine kostenlose Testphase?\", a: \"Ja, du kannst {{projectName}} 14 Tage lang vollständig kostenlos testen – ohne Kreditkarte und ohne Einschränkungen.\" },\n  { q: \"Wie funktioniert die Abrechnung?\", a: \"Wir rechnen monatlich oder jährlich ab. Bei jährlicher Zahlung erhältst du zwei Monate gratis. Du kannst jederzeit kündigen.\" },\n  { q: \"Kann ich meinen Plan wechseln?\", a: \"Ja, jederzeit. Upgrades werden sofort wirksam und anteilig abgerechnet. Downgrades greifen zum nächsten Abrechnungszeitraum.\" },\n  { q: \"Wo werden meine Daten gespeichert?\", a: \"Alle Daten werden ausschließlich auf Servern in der EU gespeichert. Wir sind DSGVO-konform und führen regelmäßige Audits durch.\" },\n  { q: \"Bietet ihr einen dedizierten Support?\", a: \"Im Enterprise-Plan erhältst du einen persönlichen Ansprechpartner. Alle anderen Pläne haben Zugang zu unserem Priority-Support-Team.\" },\n];\n\nexport default function FaqAccordion01() {\n  const [open, setOpen] = useState<number | null>(null);\n  return (\n    <section id=\"faq\" className=\"bg-slate-50 px-6 py-24\">\n      <div className=\"mx-auto max-w-3xl\">\n        <h2 className=\"text-center text-3xl font-extrabold text-slate-900\">Häufige Fragen</h2>\n        <p className=\"mt-3 text-center text-slate-500\">Nicht dabei? Schreib uns – wir helfen gerne.</p>\n        <div className=\"mt-10 space-y-3\">\n          {FAQS.map((faq, i) => (\n            <div\n              key={i}\n              className=\"overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm\"\n            >\n              <button\n                className=\"flex w-full items-center justify-between px-6 py-4 text-left text-sm font-semibold text-slate-900 hover:bg-slate-50\"\n                onClick={() => setOpen(open === i ? null : i)}\n              >\n                <span>{faq.q}</span>\n                <span className={`text-slate-400 transition-transform duration-300 ${open === i ? \"rotate-45\" : \"\"}`}>+</span>\n              </button>\n              {open === i && (\n                <div className=\"px-6 pb-5 text-sm text-slate-600 leading-relaxed border-t border-slate-100 pt-3\">\n                  {faq.a.replace(\"{{projectName}}\", \"{{projectName}}\")}\n                </div>\n              )}\n            </div>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}"
+      }
+    },
+    {
+      "id": "corp-faq-light-01",
+      "name": "FaqLightCorporate01",
+      "category": "faq",
+      "subcategory": "accordion-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "support"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { q: 'How long is onboarding?', a: 'Most teams are live in less than one week.' },\n  { q: 'Can we customize modules?', a: 'Yes, all sections are modular and composable.' },\n  { q: 'Is governance supported?', a: 'Yes, role-based access and audit-ready flows are supported.' }\n];\n\nexport default function FaqLightCorporate01() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Faq Section 01</h2>\n        <div className=\"mt-8 space-y-3\">\n          {ITEMS.map((item) => (\n            <details key={item.q} className=\"rounded-xl border border-slate-200 bg-white p-4\">\n              <summary className=\"cursor-pointer text-sm font-semibold text-slate-900\">{item.q}</summary>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.a}</p>\n            </details>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-faq-light-02",
+      "name": "FaqLightCorporate02",
+      "category": "faq",
+      "subcategory": "list-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "support"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { q: 'How long is onboarding?', a: 'Most teams are live in less than one week.' },\n  { q: 'Can we customize modules?', a: 'Yes, all sections are modular and composable.' },\n  { q: 'Is governance supported?', a: 'Yes, role-based access and audit-ready flows are supported.' }\n];\n\nexport default function FaqLightCorporate02() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Faq Section 02</h2>\n        <div className=\"mt-8 space-y-3\">\n          {ITEMS.map((item) => (\n            <details key={item.q} className=\"rounded-xl border border-slate-200 bg-white p-4\">\n              <summary className=\"cursor-pointer text-sm font-semibold text-slate-900\">{item.q}</summary>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.a}</p>\n            </details>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-faq-light-03",
+      "name": "FaqLightCorporate03",
+      "category": "faq",
+      "subcategory": "support-faq",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "support"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { q: 'How long is onboarding?', a: 'Most teams are live in less than one week.' },\n  { q: 'Can we customize modules?', a: 'Yes, all sections are modular and composable.' },\n  { q: 'Is governance supported?', a: 'Yes, role-based access and audit-ready flows are supported.' }\n];\n\nexport default function FaqLightCorporate03() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Faq Section 03</h2>\n        <div className=\"mt-8 space-y-3\">\n          {ITEMS.map((item) => (\n            <details key={item.q} className=\"rounded-xl border border-slate-200 bg-white p-4\">\n              <summary className=\"cursor-pointer text-sm font-semibold text-slate-900\">{item.q}</summary>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.a}</p>\n            </details>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-faq-light-04",
+      "name": "FaqLightCorporate04",
+      "category": "faq",
+      "subcategory": "accordion-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "support"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { q: 'How long is onboarding?', a: 'Most teams are live in less than one week.' },\n  { q: 'Can we customize modules?', a: 'Yes, all sections are modular and composable.' },\n  { q: 'Is governance supported?', a: 'Yes, role-based access and audit-ready flows are supported.' }\n];\n\nexport default function FaqLightCorporate04() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Faq Section 04</h2>\n        <div className=\"mt-8 space-y-3\">\n          {ITEMS.map((item) => (\n            <details key={item.q} className=\"rounded-xl border border-slate-200 bg-white p-4\">\n              <summary className=\"cursor-pointer text-sm font-semibold text-slate-900\">{item.q}</summary>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.a}</p>\n            </details>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-faq-light-05",
+      "name": "FaqLightCorporate05",
+      "category": "faq",
+      "subcategory": "list-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "support"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { q: 'How long is onboarding?', a: 'Most teams are live in less than one week.' },\n  { q: 'Can we customize modules?', a: 'Yes, all sections are modular and composable.' },\n  { q: 'Is governance supported?', a: 'Yes, role-based access and audit-ready flows are supported.' }\n];\n\nexport default function FaqLightCorporate05() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Faq Section 05</h2>\n        <div className=\"mt-8 space-y-3\">\n          {ITEMS.map((item) => (\n            <details key={item.q} className=\"rounded-xl border border-slate-200 bg-white p-4\">\n              <summary className=\"cursor-pointer text-sm font-semibold text-slate-900\">{item.q}</summary>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.a}</p>\n            </details>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-faq-light-06",
+      "name": "FaqLightCorporate06",
+      "category": "faq",
+      "subcategory": "support-faq",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "support"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { q: 'How long is onboarding?', a: 'Most teams are live in less than one week.' },\n  { q: 'Can we customize modules?', a: 'Yes, all sections are modular and composable.' },\n  { q: 'Is governance supported?', a: 'Yes, role-based access and audit-ready flows are supported.' }\n];\n\nexport default function FaqLightCorporate06() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Faq Section 06</h2>\n        <div className=\"mt-8 space-y-3\">\n          {ITEMS.map((item) => (\n            <details key={item.q} className=\"rounded-xl border border-slate-200 bg-white p-4\">\n              <summary className=\"cursor-pointer text-sm font-semibold text-slate-900\">{item.q}</summary>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.a}</p>\n            </details>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-faq-light-07",
+      "name": "FaqLightCorporate07",
+      "category": "faq",
+      "subcategory": "accordion-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "support"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { q: 'How long is onboarding?', a: 'Most teams are live in less than one week.' },\n  { q: 'Can we customize modules?', a: 'Yes, all sections are modular and composable.' },\n  { q: 'Is governance supported?', a: 'Yes, role-based access and audit-ready flows are supported.' }\n];\n\nexport default function FaqLightCorporate07() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Faq Section 07</h2>\n        <div className=\"mt-8 space-y-3\">\n          {ITEMS.map((item) => (\n            <details key={item.q} className=\"rounded-xl border border-slate-200 bg-white p-4\">\n              <summary className=\"cursor-pointer text-sm font-semibold text-slate-900\">{item.q}</summary>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.a}</p>\n            </details>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-faq-light-08",
+      "name": "FaqLightCorporate08",
+      "category": "faq",
+      "subcategory": "list-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "support"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { q: 'How long is onboarding?', a: 'Most teams are live in less than one week.' },\n  { q: 'Can we customize modules?', a: 'Yes, all sections are modular and composable.' },\n  { q: 'Is governance supported?', a: 'Yes, role-based access and audit-ready flows are supported.' }\n];\n\nexport default function FaqLightCorporate08() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Faq Section 08</h2>\n        <div className=\"mt-8 space-y-3\">\n          {ITEMS.map((item) => (\n            <details key={item.q} className=\"rounded-xl border border-slate-200 bg-white p-4\">\n              <summary className=\"cursor-pointer text-sm font-semibold text-slate-900\">{item.q}</summary>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.a}</p>\n            </details>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-faq-light-09",
+      "name": "FaqLightCorporate09",
+      "category": "faq",
+      "subcategory": "support-faq",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "support"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { q: 'How long is onboarding?', a: 'Most teams are live in less than one week.' },\n  { q: 'Can we customize modules?', a: 'Yes, all sections are modular and composable.' },\n  { q: 'Is governance supported?', a: 'Yes, role-based access and audit-ready flows are supported.' }\n];\n\nexport default function FaqLightCorporate09() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Faq Section 09</h2>\n        <div className=\"mt-8 space-y-3\">\n          {ITEMS.map((item) => (\n            <details key={item.q} className=\"rounded-xl border border-slate-200 bg-white p-4\">\n              <summary className=\"cursor-pointer text-sm font-semibold text-slate-900\">{item.q}</summary>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.a}</p>\n            </details>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-faq-light-10",
+      "name": "FaqLightCorporate10",
+      "category": "faq",
+      "subcategory": "accordion-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "support"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { q: 'How long is onboarding?', a: 'Most teams are live in less than one week.' },\n  { q: 'Can we customize modules?', a: 'Yes, all sections are modular and composable.' },\n  { q: 'Is governance supported?', a: 'Yes, role-based access and audit-ready flows are supported.' }\n];\n\nexport default function FaqLightCorporate10() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Faq Section 10</h2>\n        <div className=\"mt-8 space-y-3\">\n          {ITEMS.map((item) => (\n            <details key={item.q} className=\"rounded-xl border border-slate-200 bg-white p-4\">\n              <summary className=\"cursor-pointer text-sm font-semibold text-slate-900\">{item.q}</summary>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.a}</p>\n            </details>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-faq-light-11",
+      "name": "FaqLightCorporate11",
+      "category": "faq",
+      "subcategory": "list-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "support"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { q: 'How long is onboarding?', a: 'Most teams are live in less than one week.' },\n  { q: 'Can we customize modules?', a: 'Yes, all sections are modular and composable.' },\n  { q: 'Is governance supported?', a: 'Yes, role-based access and audit-ready flows are supported.' }\n];\n\nexport default function FaqLightCorporate11() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Faq Section 11</h2>\n        <div className=\"mt-8 space-y-3\">\n          {ITEMS.map((item) => (\n            <details key={item.q} className=\"rounded-xl border border-slate-200 bg-white p-4\">\n              <summary className=\"cursor-pointer text-sm font-semibold text-slate-900\">{item.q}</summary>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.a}</p>\n            </details>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-faq-light-12",
+      "name": "FaqLightCorporate12",
+      "category": "faq",
+      "subcategory": "support-faq",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "support"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { q: 'How long is onboarding?', a: 'Most teams are live in less than one week.' },\n  { q: 'Can we customize modules?', a: 'Yes, all sections are modular and composable.' },\n  { q: 'Is governance supported?', a: 'Yes, role-based access and audit-ready flows are supported.' }\n];\n\nexport default function FaqLightCorporate12() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Faq Section 12</h2>\n        <div className=\"mt-8 space-y-3\">\n          {ITEMS.map((item) => (\n            <details key={item.q} className=\"rounded-xl border border-slate-200 bg-white p-4\">\n              <summary className=\"cursor-pointer text-sm font-semibold text-slate-900\">{item.q}</summary>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.a}</p>\n            </details>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-faq-light-13",
+      "name": "FaqLightCorporate13",
+      "category": "faq",
+      "subcategory": "accordion-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "support"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { q: 'How long is onboarding?', a: 'Most teams are live in less than one week.' },\n  { q: 'Can we customize modules?', a: 'Yes, all sections are modular and composable.' },\n  { q: 'Is governance supported?', a: 'Yes, role-based access and audit-ready flows are supported.' }\n];\n\nexport default function FaqLightCorporate13() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Faq Section 13</h2>\n        <div className=\"mt-8 space-y-3\">\n          {ITEMS.map((item) => (\n            <details key={item.q} className=\"rounded-xl border border-slate-200 bg-white p-4\">\n              <summary className=\"cursor-pointer text-sm font-semibold text-slate-900\">{item.q}</summary>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.a}</p>\n            </details>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-faq-light-14",
+      "name": "FaqLightCorporate14",
+      "category": "faq",
+      "subcategory": "list-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "support"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { q: 'How long is onboarding?', a: 'Most teams are live in less than one week.' },\n  { q: 'Can we customize modules?', a: 'Yes, all sections are modular and composable.' },\n  { q: 'Is governance supported?', a: 'Yes, role-based access and audit-ready flows are supported.' }\n];\n\nexport default function FaqLightCorporate14() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Faq Section 14</h2>\n        <div className=\"mt-8 space-y-3\">\n          {ITEMS.map((item) => (\n            <details key={item.q} className=\"rounded-xl border border-slate-200 bg-white p-4\">\n              <summary className=\"cursor-pointer text-sm font-semibold text-slate-900\">{item.q}</summary>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.a}</p>\n            </details>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-faq-light-15",
+      "name": "FaqLightCorporate15",
+      "category": "faq",
+      "subcategory": "support-faq",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "support"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { q: 'How long is onboarding?', a: 'Most teams are live in less than one week.' },\n  { q: 'Can we customize modules?', a: 'Yes, all sections are modular and composable.' },\n  { q: 'Is governance supported?', a: 'Yes, role-based access and audit-ready flows are supported.' }\n];\n\nexport default function FaqLightCorporate15() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Faq Section 15</h2>\n        <div className=\"mt-8 space-y-3\">\n          {ITEMS.map((item) => (\n            <details key={item.q} className=\"rounded-xl border border-slate-200 bg-white p-4\">\n              <summary className=\"cursor-pointer text-sm font-semibold text-slate-900\">{item.q}</summary>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.a}</p>\n            </details>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-faq-light-16",
+      "name": "FaqLightCorporate16",
+      "category": "faq",
+      "subcategory": "accordion-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "support"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { q: 'How long is onboarding?', a: 'Most teams are live in less than one week.' },\n  { q: 'Can we customize modules?', a: 'Yes, all sections are modular and composable.' },\n  { q: 'Is governance supported?', a: 'Yes, role-based access and audit-ready flows are supported.' }\n];\n\nexport default function FaqLightCorporate16() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Faq Section 16</h2>\n        <div className=\"mt-8 space-y-3\">\n          {ITEMS.map((item) => (\n            <details key={item.q} className=\"rounded-xl border border-slate-200 bg-white p-4\">\n              <summary className=\"cursor-pointer text-sm font-semibold text-slate-900\">{item.q}</summary>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.a}</p>\n            </details>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-faq-light-17",
+      "name": "FaqLightCorporate17",
+      "category": "faq",
+      "subcategory": "list-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "support"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { q: 'How long is onboarding?', a: 'Most teams are live in less than one week.' },\n  { q: 'Can we customize modules?', a: 'Yes, all sections are modular and composable.' },\n  { q: 'Is governance supported?', a: 'Yes, role-based access and audit-ready flows are supported.' }\n];\n\nexport default function FaqLightCorporate17() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Faq Section 17</h2>\n        <div className=\"mt-8 space-y-3\">\n          {ITEMS.map((item) => (\n            <details key={item.q} className=\"rounded-xl border border-slate-200 bg-white p-4\">\n              <summary className=\"cursor-pointer text-sm font-semibold text-slate-900\">{item.q}</summary>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.a}</p>\n            </details>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-faq-light-18",
+      "name": "FaqLightCorporate18",
+      "category": "faq",
+      "subcategory": "support-faq",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "support"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { q: 'How long is onboarding?', a: 'Most teams are live in less than one week.' },\n  { q: 'Can we customize modules?', a: 'Yes, all sections are modular and composable.' },\n  { q: 'Is governance supported?', a: 'Yes, role-based access and audit-ready flows are supported.' }\n];\n\nexport default function FaqLightCorporate18() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Faq Section 18</h2>\n        <div className=\"mt-8 space-y-3\">\n          {ITEMS.map((item) => (\n            <details key={item.q} className=\"rounded-xl border border-slate-200 bg-white p-4\">\n              <summary className=\"cursor-pointer text-sm font-semibold text-slate-900\">{item.q}</summary>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.a}</p>\n            </details>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-faq-light-19",
+      "name": "FaqLightCorporate19",
+      "category": "faq",
+      "subcategory": "accordion-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "support"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { q: 'How long is onboarding?', a: 'Most teams are live in less than one week.' },\n  { q: 'Can we customize modules?', a: 'Yes, all sections are modular and composable.' },\n  { q: 'Is governance supported?', a: 'Yes, role-based access and audit-ready flows are supported.' }\n];\n\nexport default function FaqLightCorporate19() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Faq Section 19</h2>\n        <div className=\"mt-8 space-y-3\">\n          {ITEMS.map((item) => (\n            <details key={item.q} className=\"rounded-xl border border-slate-200 bg-white p-4\">\n              <summary className=\"cursor-pointer text-sm font-semibold text-slate-900\">{item.q}</summary>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.a}</p>\n            </details>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-faq-light-20",
+      "name": "FaqLightCorporate20",
+      "category": "faq",
+      "subcategory": "list-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "support"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { q: 'How long is onboarding?', a: 'Most teams are live in less than one week.' },\n  { q: 'Can we customize modules?', a: 'Yes, all sections are modular and composable.' },\n  { q: 'Is governance supported?', a: 'Yes, role-based access and audit-ready flows are supported.' }\n];\n\nexport default function FaqLightCorporate20() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Faq Section 20</h2>\n        <div className=\"mt-8 space-y-3\">\n          {ITEMS.map((item) => (\n            <details key={item.q} className=\"rounded-xl border border-slate-200 bg-white p-4\">\n              <summary className=\"cursor-pointer text-sm font-semibold text-slate-900\">{item.q}</summary>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.a}</p>\n            </details>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-faq-light-21",
+      "name": "FaqLightCorporate21",
+      "category": "faq",
+      "subcategory": "support-faq",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "support"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { q: 'How long is onboarding?', a: 'Most teams are live in less than one week.' },\n  { q: 'Can we customize modules?', a: 'Yes, all sections are modular and composable.' },\n  { q: 'Is governance supported?', a: 'Yes, role-based access and audit-ready flows are supported.' }\n];\n\nexport default function FaqLightCorporate21() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Faq Section 21</h2>\n        <div className=\"mt-8 space-y-3\">\n          {ITEMS.map((item) => (\n            <details key={item.q} className=\"rounded-xl border border-slate-200 bg-white p-4\">\n              <summary className=\"cursor-pointer text-sm font-semibold text-slate-900\">{item.q}</summary>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.a}</p>\n            </details>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-faq-light-22",
+      "name": "FaqLightCorporate22",
+      "category": "faq",
+      "subcategory": "accordion-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "support"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { q: 'How long is onboarding?', a: 'Most teams are live in less than one week.' },\n  { q: 'Can we customize modules?', a: 'Yes, all sections are modular and composable.' },\n  { q: 'Is governance supported?', a: 'Yes, role-based access and audit-ready flows are supported.' }\n];\n\nexport default function FaqLightCorporate22() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Faq Section 22</h2>\n        <div className=\"mt-8 space-y-3\">\n          {ITEMS.map((item) => (\n            <details key={item.q} className=\"rounded-xl border border-slate-200 bg-white p-4\">\n              <summary className=\"cursor-pointer text-sm font-semibold text-slate-900\">{item.q}</summary>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.a}</p>\n            </details>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-faq-light-23",
+      "name": "FaqLightCorporate23",
+      "category": "faq",
+      "subcategory": "list-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "support"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { q: 'How long is onboarding?', a: 'Most teams are live in less than one week.' },\n  { q: 'Can we customize modules?', a: 'Yes, all sections are modular and composable.' },\n  { q: 'Is governance supported?', a: 'Yes, role-based access and audit-ready flows are supported.' }\n];\n\nexport default function FaqLightCorporate23() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Faq Section 23</h2>\n        <div className=\"mt-8 space-y-3\">\n          {ITEMS.map((item) => (\n            <details key={item.q} className=\"rounded-xl border border-slate-200 bg-white p-4\">\n              <summary className=\"cursor-pointer text-sm font-semibold text-slate-900\">{item.q}</summary>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.a}</p>\n            </details>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-faq-light-24",
+      "name": "FaqLightCorporate24",
+      "category": "faq",
+      "subcategory": "support-faq",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "support"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { q: 'How long is onboarding?', a: 'Most teams are live in less than one week.' },\n  { q: 'Can we customize modules?', a: 'Yes, all sections are modular and composable.' },\n  { q: 'Is governance supported?', a: 'Yes, role-based access and audit-ready flows are supported.' }\n];\n\nexport default function FaqLightCorporate24() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Faq Section 24</h2>\n        <div className=\"mt-8 space-y-3\">\n          {ITEMS.map((item) => (\n            <details key={item.q} className=\"rounded-xl border border-slate-200 bg-white p-4\">\n              <summary className=\"cursor-pointer text-sm font-semibold text-slate-900\">{item.q}</summary>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.a}</p>\n            </details>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-faq-light-25",
+      "name": "FaqLightCorporate25",
+      "category": "faq",
+      "subcategory": "accordion-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "support"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { q: 'How long is onboarding?', a: 'Most teams are live in less than one week.' },\n  { q: 'Can we customize modules?', a: 'Yes, all sections are modular and composable.' },\n  { q: 'Is governance supported?', a: 'Yes, role-based access and audit-ready flows are supported.' }\n];\n\nexport default function FaqLightCorporate25() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Faq Section 25</h2>\n        <div className=\"mt-8 space-y-3\">\n          {ITEMS.map((item) => (\n            <details key={item.q} className=\"rounded-xl border border-slate-200 bg-white p-4\">\n              <summary className=\"cursor-pointer text-sm font-semibold text-slate-900\">{item.q}</summary>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.a}</p>\n            </details>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-faq-light-26",
+      "name": "FaqLightCorporate26",
+      "category": "faq",
+      "subcategory": "list-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "support"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { q: 'How long is onboarding?', a: 'Most teams are live in less than one week.' },\n  { q: 'Can we customize modules?', a: 'Yes, all sections are modular and composable.' },\n  { q: 'Is governance supported?', a: 'Yes, role-based access and audit-ready flows are supported.' }\n];\n\nexport default function FaqLightCorporate26() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Faq Section 26</h2>\n        <div className=\"mt-8 space-y-3\">\n          {ITEMS.map((item) => (\n            <details key={item.q} className=\"rounded-xl border border-slate-200 bg-white p-4\">\n              <summary className=\"cursor-pointer text-sm font-semibold text-slate-900\">{item.q}</summary>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.a}</p>\n            </details>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-faq-light-27",
+      "name": "FaqLightCorporate27",
+      "category": "faq",
+      "subcategory": "support-faq",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "support"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { q: 'How long is onboarding?', a: 'Most teams are live in less than one week.' },\n  { q: 'Can we customize modules?', a: 'Yes, all sections are modular and composable.' },\n  { q: 'Is governance supported?', a: 'Yes, role-based access and audit-ready flows are supported.' }\n];\n\nexport default function FaqLightCorporate27() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Faq Section 27</h2>\n        <div className=\"mt-8 space-y-3\">\n          {ITEMS.map((item) => (\n            <details key={item.q} className=\"rounded-xl border border-slate-200 bg-white p-4\">\n              <summary className=\"cursor-pointer text-sm font-semibold text-slate-900\">{item.q}</summary>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.a}</p>\n            </details>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-faq-light-28",
+      "name": "FaqLightCorporate28",
+      "category": "faq",
+      "subcategory": "accordion-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "support"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { q: 'How long is onboarding?', a: 'Most teams are live in less than one week.' },\n  { q: 'Can we customize modules?', a: 'Yes, all sections are modular and composable.' },\n  { q: 'Is governance supported?', a: 'Yes, role-based access and audit-ready flows are supported.' }\n];\n\nexport default function FaqLightCorporate28() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Faq Section 28</h2>\n        <div className=\"mt-8 space-y-3\">\n          {ITEMS.map((item) => (\n            <details key={item.q} className=\"rounded-xl border border-slate-200 bg-white p-4\">\n              <summary className=\"cursor-pointer text-sm font-semibold text-slate-900\">{item.q}</summary>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.a}</p>\n            </details>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-faq-light-29",
+      "name": "FaqLightCorporate29",
+      "category": "faq",
+      "subcategory": "list-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "support"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { q: 'How long is onboarding?', a: 'Most teams are live in less than one week.' },\n  { q: 'Can we customize modules?', a: 'Yes, all sections are modular and composable.' },\n  { q: 'Is governance supported?', a: 'Yes, role-based access and audit-ready flows are supported.' }\n];\n\nexport default function FaqLightCorporate29() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Faq Section 29</h2>\n        <div className=\"mt-8 space-y-3\">\n          {ITEMS.map((item) => (\n            <details key={item.q} className=\"rounded-xl border border-slate-200 bg-white p-4\">\n              <summary className=\"cursor-pointer text-sm font-semibold text-slate-900\">{item.q}</summary>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.a}</p>\n            </details>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-faq-light-30",
+      "name": "FaqLightCorporate30",
+      "category": "faq",
+      "subcategory": "support-faq",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "support"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { q: 'How long is onboarding?', a: 'Most teams are live in less than one week.' },\n  { q: 'Can we customize modules?', a: 'Yes, all sections are modular and composable.' },\n  { q: 'Is governance supported?', a: 'Yes, role-based access and audit-ready flows are supported.' }\n];\n\nexport default function FaqLightCorporate30() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Faq Section 30</h2>\n        <div className=\"mt-8 space-y-3\">\n          {ITEMS.map((item) => (\n            <details key={item.q} className=\"rounded-xl border border-slate-200 bg-white p-4\">\n              <summary className=\"cursor-pointer text-sm font-semibold text-slate-900\">{item.q}</summary>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.a}</p>\n            </details>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    }
+  ]
+}

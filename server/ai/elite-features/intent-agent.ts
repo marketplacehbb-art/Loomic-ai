@@ -19,11 +19,22 @@ export interface IntentResult {
   strategy: string; // Suggested generation strategy
 }
 
+function isAbortError(error: unknown): boolean {
+  if (!error) return false;
+  const name = String((error as any)?.name || '');
+  const message = String((error as any)?.message || '');
+  return name === 'AbortError' || /aborted|aborterror/i.test(message);
+}
+
 export class IntentAgent {
   /**
    * Detect intent from prompt
    */
-  async detectIntent(prompt: string, existingFiles?: Record<string, string>): Promise<IntentResult> {
+  async detectIntent(
+    prompt: string,
+    existingFiles?: Record<string, string>,
+    signal?: AbortSignal
+  ): Promise<IntentResult> {
     const hasExistingCode = !!existingFiles && Object.keys(existingFiles).length > 0;
     const lowerPrompt = prompt.toLowerCase();
 
@@ -37,8 +48,11 @@ export class IntentAgent {
 
     // Otherwise, use LLM for more accurate detection
     try {
-      return await this.llmDetection(prompt, hasExistingCode);
+      return await this.llmDetection(prompt, hasExistingCode, signal);
     } catch (error: any) {
+      if (isAbortError(error) || signal?.aborted) {
+        throw error;
+      }
       console.warn('[IntentAgent] LLM detection failed, using heuristic:', error.message);
       return heuristicIntent;
     }
@@ -163,7 +177,11 @@ export class IntentAgent {
   /**
    * LLM-based intent detection (more accurate)
    */
-  private async llmDetection(prompt: string, hasExistingCode: boolean): Promise<IntentResult> {
+  private async llmDetection(
+    prompt: string,
+    hasExistingCode: boolean,
+    signal?: AbortSignal
+  ): Promise<IntentResult> {
     const systemPrompt = `Du bist ein Intent-Analyse-Agent.
 Analysiere den User-Prompt und bestimme die Intention.
 
@@ -192,6 +210,7 @@ Bestimme die Intention und gib ein JSON-Objekt zurück.`;
         systemPrompt,
         temperature: 0.2,
         maxTokens: 500,
+        signal,
       });
 
       const responseText = typeof response === 'string'
@@ -214,6 +233,9 @@ Bestimme die Intention und gib ein JSON-Objekt zurück.`;
         };
       }
     } catch (error) {
+      if (isAbortError(error) || signal?.aborted) {
+        throw error;
+      }
       // Fall through to heuristic
     }
 

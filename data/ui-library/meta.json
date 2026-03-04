@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "ui-component-library-v1",
+  "title": "UI Component Library Import Template",
+  "description": "Merged imports from ui-architect.zip + ui-architect-v2.zip",
+  "version": "1.0.0",
+  "library": {
+    "name": "UI Architect Imported Library",
+    "description": "Merged TypeScript block libraries (v1 + v2)",
+    "created": "2026-02-21",
+    "author": "Imported by AI Architect"
+  },
+  "generatedFrom": "ui-component-library-schema.json",
+  "splitAt": "2026-02-28T04:13:06.531Z",
+  "counts": {
+    "components": 622,
+    "componentCategories": 19,
+    "styleKits": 10,
+    "animationPresets": 18
+  }
+}

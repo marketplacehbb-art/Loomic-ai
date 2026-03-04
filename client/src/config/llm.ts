@@ -9,16 +9,22 @@ export const LLM_PROVIDERS = {
     description: 'Google\'s latest model',
     icon: '*'
   },
-  deepseek: {
-    name: 'DeepSeek',
-    model: 'deepseek-coder',
-    description: 'Specialized coding model',
+  groq: {
+    name: 'Groq Llama',
+    model: 'meta-llama/llama-4-maverick-17b-128e-instruct',
+    description: 'Ultra-low latency Llama inference',
     icon: '*'
   },
   openai: {
     name: 'OpenAI',
     model: 'gpt-4o',
     description: 'General-purpose flagship model',
+    icon: '*'
+  },
+  nvidia: {
+    name: 'NVIDIA Qwen',
+    model: 'qwen/qwen3.5-397b-a17b',
+    description: 'Large-code-capable Qwen model via NVIDIA NIM',
     icon: '*'
   }
 } as const;

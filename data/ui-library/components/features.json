@@ -1,0 +1,973 @@
+{
+  "category": "features",
+  "components": [
+    {
+      "id": "features-bento-dark-01",
+      "name": "Features Bento Dark",
+      "category": "features",
+      "subcategory": "bento",
+      "tags": {
+        "industry": [
+          "saas",
+          "tech",
+          "startup"
+        ],
+        "tone": [
+          "bold",
+          "premium",
+          "modern"
+        ],
+        "theme": [
+          "dark"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { title: \"Automated workflows\", text: \"Launch faster with reusable structures and deterministic edits.\", span: \"md:col-span-2\" },\n  { title: \"Design DNA\", text: \"Keep brand consistency across all generated pages.\", span: \"\" },\n  { title: \"Quality gates\", text: \"Catch broken imports, invalid icons and weak content before preview.\", span: \"\" },\n  { title: \"Section regeneration\", text: \"Update only the requested block instead of rewriting everything.\", span: \"md:col-span-2\" }\n];\n\nexport default function FeaturesBentoDark01() {\n  return (\n    <section id=\"features\" className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-white\">Warum dieses System schneller liefert</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <article key={item.title} className={`rounded-2xl border border-white/10 bg-slate-900/60 p-6 text-slate-200 backdrop-blur-sm ${item.span}`}>\n              <h3 className=\"text-lg font-semibold text-white\">{item.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-300\">{item.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}"
+      }
+    },
+    {
+      "id": "features-split-media-01",
+      "name": "Features Split Media",
+      "category": "features",
+      "subcategory": "split",
+      "tags": {
+        "industry": [
+          "agency",
+          "saas",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function FeaturesSplitMedia01() {\n  return (\n    <section id=\"features\" className=\"px-6 py-20\">\n      <div className=\"mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-2\">\n        <div>\n          <p className=\"text-xs font-semibold uppercase tracking-[0.2em] text-indigo-500\">Leistung</p>\n          <h2 className=\"mt-3 text-3xl font-bold text-slate-900\">Klare Prozesse fur schnelleres Wachstum</h2>\n          <p className=\"mt-4 text-slate-600\">Von der Ideenphase bis zur finalen Umsetzung bleibt Struktur, Design und Codequalitat konsistent.</p>\n          <ul className=\"mt-6 space-y-3 text-sm text-slate-700\">\n            <li className=\"rounded-lg bg-slate-100 px-4 py-3\">Deterministische Regeneration pro Bereich</li>\n            <li className=\"rounded-lg bg-slate-100 px-4 py-3\">Token-optimierte Mehrstufen-Pipeline</li>\n            <li className=\"rounded-lg bg-slate-100 px-4 py-3\">Automatische Fehlererkennung vor Preview</li>\n          </ul>\n        </div>\n        <div className=\"flex items-center justify-center\">\n          <div className=\"w-full rounded-3xl border border-slate-200 bg-gradient-to-br from-indigo-100 to-cyan-100 p-8\">\n            <div className=\"rounded-2xl border border-white/70 bg-white/70 p-6 text-sm text-slate-700 shadow-sm\">\n              Dieses Layout zeigt, wie Content und visuelle Hierarchie elegant kombiniert werden.\n            </div>\n          </div>\n        </div>\n      </div>\n    </section>\n  );\n}"
+      }
+    },
+    {
+      "id": "features-icon-grid-01",
+      "name": "Features Icon Grid Light",
+      "category": "features",
+      "subcategory": "icon-grid",
+      "tags": {
+        "industry": [
+          "saas",
+          "startup",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "conversion"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const FEATURES = [\n  { icon: \"⚡\", title: \"Blitzschnell\", text: \"Seiten und Komponenten werden in Sekunden generiert.\" },\n  { icon: \"🎨\", title: \"Design-System\", text: \"Konsistente Farben, Schriften und Abstande auf jeder Seite.\" },\n  { icon: \"🔒\", title: \"Sicher by Default\", text: \"Keine sensiblen Daten in generierten Dateien.\" },\n  { icon: \"📦\", title: \"Exportbereit\", text: \"Ein Klick genügt – ZIP oder direkt in dein Repo.\" },\n  { icon: \"🔄\", title: \"Iterativ\", text: \"Einzelne Abschnitte regenerieren ohne alles neu zu schreiben.\" },\n  { icon: \"🌐\", title: \"Multi-Plattform\", text: \"React, Next.js und Vite werden unterstutzt.\" },\n];\n\nexport default function FeaturesIconGrid01() {\n  return (\n    <section id=\"features\" className=\"bg-slate-50 px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <p className=\"text-center text-xs font-semibold uppercase tracking-[0.2em] text-indigo-500\">Funktionen</p>\n        <h2 className=\"mt-3 text-center text-3xl font-bold text-slate-900\">Alles was du brauchst</h2>\n        <div className=\"mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3\">\n          {FEATURES.map((f) => (\n            <article key={f.title} className=\"rounded-2xl border border-slate-200 bg-white p-6 shadow-sm\">\n              <span className=\"text-3xl\">{f.icon}</span>\n              <h3 className=\"mt-4 font-semibold text-slate-900\">{f.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-500\">{f.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}"
+      }
+    },
+    {
+      "id": "features-tabs-animated-01",
+      "name": "Features Animated Tabs",
+      "category": "features",
+      "subcategory": "tabs",
+      "tags": {
+        "industry": [
+          "saas",
+          "tech",
+          "startup"
+        ],
+        "tone": [
+          "modern",
+          "clean"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "import { useState } from \"react\";\n\nconst TABS = [\n  {\n    label: \"Automatisierung\",\n    icon: \"⚡\",\n    heading: \"Workflows die sich selbst steuern\",\n    body: \"Definiere Trigger, Bedingungen und Aktionen – dein Team fokussiert sich auf das Wesentliche.\",\n    items: [\"If/Then-Logik ohne Code\", \"1.000+ App-Konnektoren\", \"Fehlertolerante Ausführung\"],\n  },\n  {\n    label: \"Kollaboration\",\n    icon: \"🤝\",\n    heading: \"Echtzeit-Zusammenarbeit\",\n    body: \"Gemeinsam bearbeiten, kommentieren und freigeben – synchron oder asynchron.\",\n    items: [\"Live-Cursor aller Mitglieder\", \"Kommentar-Threads\", \"Rollen & Berechtigungen\"],\n  },\n  {\n    label: \"Analytics\",\n    icon: \"📊\",\n    heading: \"Daten die Entscheidungen treffen\",\n    body: \"Interaktive Dashboards, automatische Reports und Anomalie-Erkennung in Echtzeit.\",\n    items: [\"Benutzerdefinierte KPIs\", \"Automatische Anomalie-Alerts\", \"CSV / PDF Export\"],\n  },\n];\n\nexport default function FeaturesTabsAnimated01() {\n  const [active, setActive] = useState(0);\n  const tab = TABS[active];\n\n  return (\n    <section id=\"features\" className=\"bg-slate-50 px-6 py-24\">\n      <div className=\"mx-auto max-w-6xl\">\n        <p className=\"text-center text-xs font-bold uppercase tracking-[0.25em] text-violet-600\">Funktionen</p>\n        <h2 className=\"mt-3 text-center text-3xl font-extrabold text-slate-900\">Alles aus einer Hand</h2>\n\n        {/* Tab buttons */}\n        <div className=\"mt-10 flex flex-wrap justify-center gap-2\">\n          {TABS.map((t, i) => (\n            <button\n              key={t.label}\n              onClick={() => setActive(i)}\n              className={`flex items-center gap-2 rounded-full border px-5 py-2 text-sm font-semibold transition ${active === i ? \"border-violet-600 bg-violet-600 text-white\" : \"border-slate-200 bg-white text-slate-600 hover:border-violet-300\"}`}\n            >\n              <span>{t.icon}</span>{t.label}\n            </button>\n          ))}\n        </div>\n\n        {/* Panel */}\n        <div className=\"mt-8 grid items-center gap-10 rounded-3xl border border-slate-200 bg-white p-8 shadow-sm lg:grid-cols-2\">\n          <div>\n            <h3 className=\"text-2xl font-bold text-slate-900\">{tab.heading}</h3>\n            <p className=\"mt-3 text-slate-500\">{tab.body}</p>\n            <ul className=\"mt-6 space-y-2\">\n              {tab.items.map((item) => (\n                <li key={item} className=\"flex items-center gap-3 text-sm text-slate-700\">\n                  <span className=\"flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-100 text-[10px] text-violet-700\">✓</span>\n                  {item}\n                </li>\n              ))}\n            </ul>\n          </div>\n          <div className=\"flex h-48 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-50 to-indigo-100\">\n            <span className=\"text-6xl\">{tab.icon}</span>\n          </div>\n        </div>\n      </div>\n    </section>\n  );\n}"
+      }
+    },
+    {
+      "id": "features-horizontal-scroll-01",
+      "name": "Features Horizontal Cards Scroll",
+      "category": "features",
+      "subcategory": "horizontal-scroll",
+      "tags": {
+        "industry": [
+          "startup",
+          "agency",
+          "ecommerce"
+        ],
+        "tone": [
+          "modern",
+          "playful"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const CARDS = [\n  { emoji: \"🎯\", color: \"from-rose-50 border-rose-200\", title: \"Zielgenaue Segmentierung\", body: \"Sprich genau die richtigen Nutzer zur richtigen Zeit an.\" },\n  { emoji: \"🚀\", color: \"from-amber-50 border-amber-200\", title: \"Deployment in Sekunden\", body: \"One-Click-Releases ohne Downtime – wann immer du bereit bist.\" },\n  { emoji: \"🔐\", color: \"from-emerald-50 border-emerald-200\", title: \"Enterprise Security\", body: \"SOC2 Type II, GDPR-konform, verschlüsselt at rest & in transit.\" },\n  { emoji: \"🧩\", color: \"from-sky-50 border-sky-200\", title: \"Plugin-Ökosystem\", body: \"Über 500 Integrationen – nativ oder per Webhook.\" },\n  { emoji: \"📈\", color: \"from-violet-50 border-violet-200\", title: \"Skaliert mit dir\", body: \"Von 10 auf 10.000 Nutzer ohne Architekturanpassungen.\" },\n];\n\nexport default function FeaturesHorizontalScroll01() {\n  return (\n    <section id=\"features\" className=\"overflow-hidden py-20\">\n      <div className=\"px-6 mb-8\">\n        <h2 className=\"text-3xl font-extrabold text-slate-900\">Mehr als ein Tool</h2>\n        <p className=\"mt-2 text-slate-500\">Gebaut für Teams die wachsen wollen.</p>\n      </div>\n      <div className=\"flex gap-4 overflow-x-auto scroll-smooth px-6 pb-4 [scrollbar-width:none]\">\n        {CARDS.map((card) => (\n          <article\n            key={card.title}\n            className={`flex w-72 shrink-0 flex-col rounded-3xl border bg-gradient-to-b ${card.color} p-6`}\n          >\n            <span className=\"text-4xl\">{card.emoji}</span>\n            <h3 className=\"mt-4 font-bold text-slate-900\">{card.title}</h3>\n            <p className=\"mt-2 text-sm text-slate-600\">{card.body}</p>\n          </article>\n        ))}\n      </div>\n    </section>\n  );\n}"
+      }
+    },
+    {
+      "id": "features-comparison-table-01",
+      "name": "Features Comparison Table",
+      "category": "features",
+      "subcategory": "comparison",
+      "tags": {
+        "industry": [
+          "saas",
+          "finance",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "enterprise"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ROWS = [\n  { feature: \"Projekte\", starter: \"3\", pro: \"Unbegrenzt\", enterprise: \"Unbegrenzt\" },\n  { feature: \"Team-Mitglieder\", starter: \"5\", pro: \"25\", enterprise: \"Unbegrenzt\" },\n  { feature: \"Speicher\", starter: \"5 GB\", pro: \"100 GB\", enterprise: \"1 TB\" },\n  { feature: \"API-Zugang\", starter: \"—\", pro: \"✓\", enterprise: \"✓\" },\n  { feature: \"SSO / SAML\", starter: \"—\", pro: \"—\", enterprise: \"✓\" },\n  { feature: \"SLA 99.99%\", starter: \"—\", pro: \"—\", enterprise: \"✓\" },\n  { feature: \"Dedizierter Support\", starter: \"—\", pro: \"—\", enterprise: \"✓\" },\n];\n\nexport default function FeaturesComparisonTable01() {\n  return (\n    <section id=\"features\" className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl\">\n        <h2 className=\"text-center text-3xl font-extrabold text-slate-900\">Plan-Vergleich</h2>\n        <div className=\"mt-10 overflow-x-auto rounded-2xl border border-slate-200 shadow-sm\">\n          <table className=\"w-full text-sm\">\n            <thead className=\"bg-slate-50\">\n              <tr>\n                <th className=\"py-4 pl-6 text-left font-semibold text-slate-700\">Funktion</th>\n                {[\"Starter\", \"Pro\", \"Enterprise\"].map((h) => (\n                  <th key={h} className={`py-4 px-6 text-center font-bold ${h === \"Pro\" ? \"text-violet-600\" : \"text-slate-700\"}`}>{h}</th>\n                ))}\n              </tr>\n            </thead>\n            <tbody className=\"divide-y divide-slate-100 bg-white\">\n              {ROWS.map((row) => (\n                <tr key={row.feature} className=\"hover:bg-slate-50\">\n                  <td className=\"py-3 pl-6 text-slate-600\">{row.feature}</td>\n                  {[row.starter, row.pro, row.enterprise].map((val, i) => (\n                    <td key={i} className={`py-3 px-6 text-center ${val === \"—\" ? \"text-slate-300\" : val === \"✓\" ? \"text-emerald-600 font-bold\" : \"text-slate-800 font-medium\"}`}>\n                      {val}\n                    </td>\n                  ))}\n                </tr>\n              ))}\n            </tbody>\n          </table>\n        </div>\n      </div>\n    </section>\n  );\n}"
+      }
+    },
+    {
+      "id": "corp-features-light-01",
+      "name": "FeaturesLightCorporate01",
+      "category": "features",
+      "subcategory": "grid-cards",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "platform"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { title: 'Fast onboarding', text: 'Clear IA and focused content blocks for business users.' },\n  { title: 'Reliable scale', text: 'Composable sections for multi-page growth.' },\n  { title: 'Governed style', text: 'Consistent spacing, typography and interaction states.' }\n];\n\nexport default function FeaturesLightCorporate01() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Features Section 01</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <article key={item.title} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{item.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-features-light-02",
+      "name": "FeaturesLightCorporate02",
+      "category": "features",
+      "subcategory": "two-column",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "platform"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { title: 'Fast onboarding', text: 'Clear IA and focused content blocks for business users.' },\n  { title: 'Reliable scale', text: 'Composable sections for multi-page growth.' },\n  { title: 'Governed style', text: 'Consistent spacing, typography and interaction states.' }\n];\n\nexport default function FeaturesLightCorporate02() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Features Section 02</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <article key={item.title} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{item.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-features-light-03",
+      "name": "FeaturesLightCorporate03",
+      "category": "features",
+      "subcategory": "list-checks",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "platform"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { title: 'Fast onboarding', text: 'Clear IA and focused content blocks for business users.' },\n  { title: 'Reliable scale', text: 'Composable sections for multi-page growth.' },\n  { title: 'Governed style', text: 'Consistent spacing, typography and interaction states.' }\n];\n\nexport default function FeaturesLightCorporate03() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Features Section 03</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <article key={item.title} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{item.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-features-light-04",
+      "name": "FeaturesLightCorporate04",
+      "category": "features",
+      "subcategory": "grid-cards",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "platform"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { title: 'Fast onboarding', text: 'Clear IA and focused content blocks for business users.' },\n  { title: 'Reliable scale', text: 'Composable sections for multi-page growth.' },\n  { title: 'Governed style', text: 'Consistent spacing, typography and interaction states.' }\n];\n\nexport default function FeaturesLightCorporate04() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Features Section 04</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <article key={item.title} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{item.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-features-light-05",
+      "name": "FeaturesLightCorporate05",
+      "category": "features",
+      "subcategory": "two-column",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "platform"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { title: 'Fast onboarding', text: 'Clear IA and focused content blocks for business users.' },\n  { title: 'Reliable scale', text: 'Composable sections for multi-page growth.' },\n  { title: 'Governed style', text: 'Consistent spacing, typography and interaction states.' }\n];\n\nexport default function FeaturesLightCorporate05() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Features Section 05</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <article key={item.title} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{item.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-features-light-06",
+      "name": "FeaturesLightCorporate06",
+      "category": "features",
+      "subcategory": "list-checks",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "platform"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { title: 'Fast onboarding', text: 'Clear IA and focused content blocks for business users.' },\n  { title: 'Reliable scale', text: 'Composable sections for multi-page growth.' },\n  { title: 'Governed style', text: 'Consistent spacing, typography and interaction states.' }\n];\n\nexport default function FeaturesLightCorporate06() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Features Section 06</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <article key={item.title} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{item.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-features-light-07",
+      "name": "FeaturesLightCorporate07",
+      "category": "features",
+      "subcategory": "grid-cards",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "platform"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { title: 'Fast onboarding', text: 'Clear IA and focused content blocks for business users.' },\n  { title: 'Reliable scale', text: 'Composable sections for multi-page growth.' },\n  { title: 'Governed style', text: 'Consistent spacing, typography and interaction states.' }\n];\n\nexport default function FeaturesLightCorporate07() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Features Section 07</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <article key={item.title} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{item.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-features-light-08",
+      "name": "FeaturesLightCorporate08",
+      "category": "features",
+      "subcategory": "two-column",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "platform"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { title: 'Fast onboarding', text: 'Clear IA and focused content blocks for business users.' },\n  { title: 'Reliable scale', text: 'Composable sections for multi-page growth.' },\n  { title: 'Governed style', text: 'Consistent spacing, typography and interaction states.' }\n];\n\nexport default function FeaturesLightCorporate08() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Features Section 08</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <article key={item.title} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{item.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-features-light-09",
+      "name": "FeaturesLightCorporate09",
+      "category": "features",
+      "subcategory": "list-checks",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "platform"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { title: 'Fast onboarding', text: 'Clear IA and focused content blocks for business users.' },\n  { title: 'Reliable scale', text: 'Composable sections for multi-page growth.' },\n  { title: 'Governed style', text: 'Consistent spacing, typography and interaction states.' }\n];\n\nexport default function FeaturesLightCorporate09() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Features Section 09</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <article key={item.title} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{item.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-features-light-10",
+      "name": "FeaturesLightCorporate10",
+      "category": "features",
+      "subcategory": "grid-cards",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "platform"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { title: 'Fast onboarding', text: 'Clear IA and focused content blocks for business users.' },\n  { title: 'Reliable scale', text: 'Composable sections for multi-page growth.' },\n  { title: 'Governed style', text: 'Consistent spacing, typography and interaction states.' }\n];\n\nexport default function FeaturesLightCorporate10() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Features Section 10</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <article key={item.title} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{item.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-features-light-11",
+      "name": "FeaturesLightCorporate11",
+      "category": "features",
+      "subcategory": "two-column",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "platform"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { title: 'Fast onboarding', text: 'Clear IA and focused content blocks for business users.' },\n  { title: 'Reliable scale', text: 'Composable sections for multi-page growth.' },\n  { title: 'Governed style', text: 'Consistent spacing, typography and interaction states.' }\n];\n\nexport default function FeaturesLightCorporate11() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Features Section 11</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <article key={item.title} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{item.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-features-light-12",
+      "name": "FeaturesLightCorporate12",
+      "category": "features",
+      "subcategory": "list-checks",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "platform"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { title: 'Fast onboarding', text: 'Clear IA and focused content blocks for business users.' },\n  { title: 'Reliable scale', text: 'Composable sections for multi-page growth.' },\n  { title: 'Governed style', text: 'Consistent spacing, typography and interaction states.' }\n];\n\nexport default function FeaturesLightCorporate12() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Features Section 12</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <article key={item.title} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{item.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-features-light-13",
+      "name": "FeaturesLightCorporate13",
+      "category": "features",
+      "subcategory": "grid-cards",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "platform"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { title: 'Fast onboarding', text: 'Clear IA and focused content blocks for business users.' },\n  { title: 'Reliable scale', text: 'Composable sections for multi-page growth.' },\n  { title: 'Governed style', text: 'Consistent spacing, typography and interaction states.' }\n];\n\nexport default function FeaturesLightCorporate13() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Features Section 13</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <article key={item.title} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{item.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-features-light-14",
+      "name": "FeaturesLightCorporate14",
+      "category": "features",
+      "subcategory": "two-column",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "platform"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { title: 'Fast onboarding', text: 'Clear IA and focused content blocks for business users.' },\n  { title: 'Reliable scale', text: 'Composable sections for multi-page growth.' },\n  { title: 'Governed style', text: 'Consistent spacing, typography and interaction states.' }\n];\n\nexport default function FeaturesLightCorporate14() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Features Section 14</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <article key={item.title} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{item.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-features-light-15",
+      "name": "FeaturesLightCorporate15",
+      "category": "features",
+      "subcategory": "list-checks",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "platform"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { title: 'Fast onboarding', text: 'Clear IA and focused content blocks for business users.' },\n  { title: 'Reliable scale', text: 'Composable sections for multi-page growth.' },\n  { title: 'Governed style', text: 'Consistent spacing, typography and interaction states.' }\n];\n\nexport default function FeaturesLightCorporate15() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Features Section 15</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <article key={item.title} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{item.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-features-light-16",
+      "name": "FeaturesLightCorporate16",
+      "category": "features",
+      "subcategory": "grid-cards",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "platform"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { title: 'Fast onboarding', text: 'Clear IA and focused content blocks for business users.' },\n  { title: 'Reliable scale', text: 'Composable sections for multi-page growth.' },\n  { title: 'Governed style', text: 'Consistent spacing, typography and interaction states.' }\n];\n\nexport default function FeaturesLightCorporate16() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Features Section 16</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <article key={item.title} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{item.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-features-light-17",
+      "name": "FeaturesLightCorporate17",
+      "category": "features",
+      "subcategory": "two-column",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "platform"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { title: 'Fast onboarding', text: 'Clear IA and focused content blocks for business users.' },\n  { title: 'Reliable scale', text: 'Composable sections for multi-page growth.' },\n  { title: 'Governed style', text: 'Consistent spacing, typography and interaction states.' }\n];\n\nexport default function FeaturesLightCorporate17() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Features Section 17</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <article key={item.title} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{item.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-features-light-18",
+      "name": "FeaturesLightCorporate18",
+      "category": "features",
+      "subcategory": "list-checks",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "platform"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { title: 'Fast onboarding', text: 'Clear IA and focused content blocks for business users.' },\n  { title: 'Reliable scale', text: 'Composable sections for multi-page growth.' },\n  { title: 'Governed style', text: 'Consistent spacing, typography and interaction states.' }\n];\n\nexport default function FeaturesLightCorporate18() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Features Section 18</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <article key={item.title} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{item.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-features-light-19",
+      "name": "FeaturesLightCorporate19",
+      "category": "features",
+      "subcategory": "grid-cards",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "platform"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { title: 'Fast onboarding', text: 'Clear IA and focused content blocks for business users.' },\n  { title: 'Reliable scale', text: 'Composable sections for multi-page growth.' },\n  { title: 'Governed style', text: 'Consistent spacing, typography and interaction states.' }\n];\n\nexport default function FeaturesLightCorporate19() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Features Section 19</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <article key={item.title} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{item.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-features-light-20",
+      "name": "FeaturesLightCorporate20",
+      "category": "features",
+      "subcategory": "two-column",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "platform"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { title: 'Fast onboarding', text: 'Clear IA and focused content blocks for business users.' },\n  { title: 'Reliable scale', text: 'Composable sections for multi-page growth.' },\n  { title: 'Governed style', text: 'Consistent spacing, typography and interaction states.' }\n];\n\nexport default function FeaturesLightCorporate20() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Features Section 20</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <article key={item.title} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{item.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-features-light-21",
+      "name": "FeaturesLightCorporate21",
+      "category": "features",
+      "subcategory": "list-checks",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "platform"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { title: 'Fast onboarding', text: 'Clear IA and focused content blocks for business users.' },\n  { title: 'Reliable scale', text: 'Composable sections for multi-page growth.' },\n  { title: 'Governed style', text: 'Consistent spacing, typography and interaction states.' }\n];\n\nexport default function FeaturesLightCorporate21() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Features Section 21</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <article key={item.title} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{item.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-features-light-22",
+      "name": "FeaturesLightCorporate22",
+      "category": "features",
+      "subcategory": "grid-cards",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "platform"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { title: 'Fast onboarding', text: 'Clear IA and focused content blocks for business users.' },\n  { title: 'Reliable scale', text: 'Composable sections for multi-page growth.' },\n  { title: 'Governed style', text: 'Consistent spacing, typography and interaction states.' }\n];\n\nexport default function FeaturesLightCorporate22() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Features Section 22</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <article key={item.title} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{item.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-features-light-23",
+      "name": "FeaturesLightCorporate23",
+      "category": "features",
+      "subcategory": "two-column",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "platform"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { title: 'Fast onboarding', text: 'Clear IA and focused content blocks for business users.' },\n  { title: 'Reliable scale', text: 'Composable sections for multi-page growth.' },\n  { title: 'Governed style', text: 'Consistent spacing, typography and interaction states.' }\n];\n\nexport default function FeaturesLightCorporate23() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Features Section 23</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <article key={item.title} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{item.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-features-light-24",
+      "name": "FeaturesLightCorporate24",
+      "category": "features",
+      "subcategory": "list-checks",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "platform"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { title: 'Fast onboarding', text: 'Clear IA and focused content blocks for business users.' },\n  { title: 'Reliable scale', text: 'Composable sections for multi-page growth.' },\n  { title: 'Governed style', text: 'Consistent spacing, typography and interaction states.' }\n];\n\nexport default function FeaturesLightCorporate24() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Features Section 24</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <article key={item.title} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{item.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-features-light-25",
+      "name": "FeaturesLightCorporate25",
+      "category": "features",
+      "subcategory": "grid-cards",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "platform"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { title: 'Fast onboarding', text: 'Clear IA and focused content blocks for business users.' },\n  { title: 'Reliable scale', text: 'Composable sections for multi-page growth.' },\n  { title: 'Governed style', text: 'Consistent spacing, typography and interaction states.' }\n];\n\nexport default function FeaturesLightCorporate25() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Features Section 25</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <article key={item.title} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{item.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-features-light-26",
+      "name": "FeaturesLightCorporate26",
+      "category": "features",
+      "subcategory": "two-column",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "platform"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { title: 'Fast onboarding', text: 'Clear IA and focused content blocks for business users.' },\n  { title: 'Reliable scale', text: 'Composable sections for multi-page growth.' },\n  { title: 'Governed style', text: 'Consistent spacing, typography and interaction states.' }\n];\n\nexport default function FeaturesLightCorporate26() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Features Section 26</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <article key={item.title} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{item.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-features-light-27",
+      "name": "FeaturesLightCorporate27",
+      "category": "features",
+      "subcategory": "list-checks",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "platform"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { title: 'Fast onboarding', text: 'Clear IA and focused content blocks for business users.' },\n  { title: 'Reliable scale', text: 'Composable sections for multi-page growth.' },\n  { title: 'Governed style', text: 'Consistent spacing, typography and interaction states.' }\n];\n\nexport default function FeaturesLightCorporate27() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Features Section 27</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <article key={item.title} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{item.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-features-light-28",
+      "name": "FeaturesLightCorporate28",
+      "category": "features",
+      "subcategory": "grid-cards",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "platform"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { title: 'Fast onboarding', text: 'Clear IA and focused content blocks for business users.' },\n  { title: 'Reliable scale', text: 'Composable sections for multi-page growth.' },\n  { title: 'Governed style', text: 'Consistent spacing, typography and interaction states.' }\n];\n\nexport default function FeaturesLightCorporate28() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Features Section 28</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <article key={item.title} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{item.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-features-light-29",
+      "name": "FeaturesLightCorporate29",
+      "category": "features",
+      "subcategory": "two-column",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "platform"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { title: 'Fast onboarding', text: 'Clear IA and focused content blocks for business users.' },\n  { title: 'Reliable scale', text: 'Composable sections for multi-page growth.' },\n  { title: 'Governed style', text: 'Consistent spacing, typography and interaction states.' }\n];\n\nexport default function FeaturesLightCorporate29() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Features Section 29</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <article key={item.title} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{item.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-features-light-30",
+      "name": "FeaturesLightCorporate30",
+      "category": "features",
+      "subcategory": "list-checks",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "platform"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { title: 'Fast onboarding', text: 'Clear IA and focused content blocks for business users.' },\n  { title: 'Reliable scale', text: 'Composable sections for multi-page growth.' },\n  { title: 'Governed style', text: 'Consistent spacing, typography and interaction states.' }\n];\n\nexport default function FeaturesLightCorporate30() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Features Section 30</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <article key={item.title} className=\"rounded-xl border border-slate-200 bg-white p-6\">\n              <h3 className=\"text-base font-semibold text-slate-900\">{item.title}</h3>\n              <p className=\"mt-2 text-sm text-slate-600\">{item.text}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    }
+  ]
+}

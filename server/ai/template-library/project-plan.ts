@@ -10,7 +10,7 @@ import type { BlockCategory, TemplateAnimationPreset, TemplatePreset } from './t
 
 type PlanMode = TemplatePreset['mode'];
 type PlanLanguage = 'de' | 'en';
-type PlanProjectType = 'saas' | 'landing' | 'dashboard' | 'auth';
+type PlanProjectType = 'saas' | 'landing' | 'dashboard' | 'auth' | 'tool' | 'data-app' | 'workspace';
 type PlanPageType = 'landing' | 'app' | 'auth';
 type PlanGenerationMode = 'new' | 'edit';
 
@@ -92,9 +92,21 @@ const FEATURE_KEYWORDS: Record<string, string[]> = {
   auth: ['auth', 'login', 'register', 'signup', 'signin', 'konto', 'anmeldung'],
   dashboard: ['dashboard', 'admin', 'analytics', 'kpi', 'metrics'],
   pricing: ['pricing', 'plan', 'subscription', 'abo', 'preise'],
-  chart: ['chart', 'graph', 'diagram', 'report', 'reports'],
+  chart: ['chart', 'graph', 'diagram', 'report', 'reports', 'preisverlauf', 'price trend', 'price history', 'line chart'],
   modal: ['modal', 'dialog', 'confirm', 'confirmation'],
   cart: ['cart', 'shopping cart', 'basket', 'checkout', 'warenkorb', 'waren korb', 'einkaufswagen', 'einkaufskorb', 'einkaufskorb', 'korb'],
+  kanban: ['kanban', 'trello', 'board', 'to do', 'doing', 'done'],
+  dnd: ['drag and drop', 'drag-and-drop', '@dnd-kit', 'react-beautiful-dnd', 'sortable'],
+  search: ['search', 'suche', 'filter', 'realtime filter', 'echtzeit'],
+  persistence: ['localstorage', 'local storage', 'persist', 'speichern', 'refresh'],
+  calculator: ['calculator', 'rechner', 'split bill', 'split-bill', 'trinkgeld', 'tip'],
+  pathfinding: ['pathfinding', 'dijkstra', 'a*', 'grid', 'raster', 'shortest path'],
+  inventory: ['inventory', 'lagerbestand', 'bestand', 'stock'],
+  invoice: ['invoice', 'rechnung', 'billing', 'invoicing'],
+  pdf: ['pdf', 'react-pdf', '@react-pdf/renderer', 'print styling'],
+  toast: ['toast', 'popup', 'notification', 'warnung', 'warning'],
+  tabs: ['tabs', 'tab', 'sidebar navigation'],
+  table: ['table', 'tabelle', 'sortier', 'sort'],
 };
 
 const MULTI_PAGE_SIGNALS = [
@@ -139,7 +151,7 @@ const DESIGN_REFRESH_SIGNALS = [
 
 const MODE_HINT_KEYWORDS: Record<PlanMode, string[]> = {
   landing: ['landing', 'landingpage', 'homepage', 'website', 'webseite', 'seite', 'hero', 'marketing', 'shop', 'store'],
-  dashboard: ['dashboard', 'admin', 'analytics', 'kpi', 'metrics', 'operations', 'monitoring'],
+  dashboard: ['dashboard', 'admin', 'analytics', 'kpi', 'metrics', 'operations', 'monitoring', 'kanban', 'trello', 'pathfinding', 'dijkstra', 'inventory', 'invoice', 'split-bill', 'split bill', 'calculator', 'visualizer', 'tool', 'workspace'],
   auth: ['auth', 'login', 'register', 'signup', 'signin', 'anmeldung'],
 };
 
@@ -154,6 +166,9 @@ const PROMPT_STYLE_KEYWORDS: Record<string, string[]> = {
 
 const PAGE_HINTS: Array<{ keywords: string[]; path: string; type: PlanPageType; sections: BlockCategory[] }> = [
   { keywords: ['dashboard', 'admin panel', 'admin'], path: '/dashboard', type: 'app', sections: ['sidebar', 'dashboard', 'stats'] },
+  { keywords: ['kanban', 'trello', 'board'], path: '/board', type: 'app', sections: ['sidebar', 'dashboard', 'stats'] },
+  { keywords: ['inventory', 'produkte', 'product management'], path: '/inventory', type: 'app', sections: ['sidebar', 'dashboard', 'stats'] },
+  { keywords: ['invoice', 'rechnung', 'billing'], path: '/invoices', type: 'app', sections: ['sidebar', 'dashboard', 'stats'] },
   { keywords: ['login', 'signin', 'anmelden'], path: '/login', type: 'auth', sections: ['auth', 'footer'] },
   { keywords: ['register', 'signup'], path: '/register', type: 'auth', sections: ['auth', 'footer'] },
   { keywords: ['products', 'product page', 'shop', 'store', 'produkte'], path: '/products', type: 'landing', sections: ['navbar', 'ecommerce', 'footer'] },
@@ -411,14 +426,30 @@ function sanitizeRoutePath(rawPath: string): string {
   return normalizePath(sanitized || '/');
 }
 
+function escapeKeywordForRegex(keyword: string): string {
+  return keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function matchesPromptKeyword(lowerPrompt: string, keyword: string): boolean {
+  const normalizedKeyword = String(keyword || '').trim().toLowerCase();
+  if (!normalizedKeyword) return false;
+  const escaped = escapeKeywordForRegex(normalizedKeyword);
+  const pattern = new RegExp(`(^|[^a-z0-9])${escaped}(?=$|[^a-z0-9])`, 'i');
+  return pattern.test(lowerPrompt);
+}
+
 function extractRequestedPages(prompt: string): ProjectPlanPage[] {
   const lower = prompt.toLowerCase();
   const pages: ProjectPlanPage[] = [];
-  const explicitPathMatches = lower.match(/\/[a-z0-9/_-]+/g) || [];
+  const explicitPathMatches = Array.from(
+    lower.matchAll(/(?:^|[\s,(])\/[a-z0-9][a-z0-9/_-]*/g)
+  )
+    .map((match) => String(match[0] || '').trim())
+    .filter(Boolean);
   const multiPage = hasMultiPageIntent(prompt);
 
   PAGE_HINTS.forEach((hint) => {
-    const hasMatch = hint.keywords.some((keyword) => lower.includes(keyword));
+    const hasMatch = hint.keywords.some((keyword) => matchesPromptKeyword(lower, keyword));
     if (!hasMatch) return;
     pages.push({
       path: hint.path,
@@ -430,6 +461,7 @@ function extractRequestedPages(prompt: string): ProjectPlanPage[] {
   explicitPathMatches.forEach((path) => {
     const normalized = sanitizeRoutePath(path);
     if (normalized === '/') return;
+    if (normalized.startsWith('/api/')) return;
     pages.push({
       path: normalized,
       type: normalized === '/dashboard' ? 'app' : (normalized === '/login' || normalized === '/register' ? 'auth' : 'landing'),
@@ -494,7 +526,7 @@ function extractFeatures(prompt: string, mode: PlanMode): string[] {
   const features = new Set<string>();
 
   Object.entries(FEATURE_KEYWORDS).forEach(([feature, keywords]) => {
-    if (keywords.some((keyword) => lower.includes(keyword))) {
+    if (keywords.some((keyword) => matchesPromptKeyword(lower, keyword))) {
       features.add(feature);
     }
   });
@@ -579,6 +611,8 @@ function choosePlanPreset(input: ResolvePlanInput): TemplatePreset {
     if (/creative|bold|neon|vibrant|fashion|gaming/.test(lower) && preset.tags.some((tag) => ['bold', 'creative'].includes(tag))) score += 5;
     if (/auth|login|register|signup|signin/.test(lower) && preset.mode === 'auth') score += 6;
     if (/dashboard|analytics|admin|kpi|metrics|operations|monitoring/.test(lower) && preset.mode === 'dashboard') score += 6;
+    if (/kanban|trello|pathfinding|dijkstra|inventory|invoice|split-bill|split bill|calculator|visualizer/.test(lower) && preset.mode === 'dashboard') score += 10;
+    if (/kanban|trello|pathfinding|dijkstra|inventory|invoice|split-bill|split bill|calculator|visualizer/.test(lower) && preset.mode === 'landing') score -= 8;
 
     return score;
   };
@@ -607,6 +641,9 @@ function inferProjectType(mode: PlanMode, prompt: string, features: string[]): P
   if (mode === 'dashboard') return 'dashboard';
   if (mode === 'auth') return 'auth';
   const lower = prompt.toLowerCase();
+  if (features.includes('kanban')) return 'workspace';
+  if (features.includes('pathfinding') || features.includes('calculator')) return 'tool';
+  if (features.includes('inventory') || features.includes('invoice') || features.includes('pdf')) return 'data-app';
   if (features.includes('pricing') || /saas|startup|ai|product/.test(lower)) {
     return 'saas';
   }
@@ -619,9 +656,19 @@ function hasCommerceIntent(prompt: string): boolean {
 }
 
 function inferInitialSections(mode: PlanMode, features: string[]): BlockCategory[] {
+  const needsInteractiveAppShell = ['kanban', 'pathfinding', 'inventory', 'invoice', 'calculator']
+    .some((feature) => features.includes(feature));
+
+  if (mode === 'landing' && needsInteractiveAppShell) {
+    const sections: BlockCategory[] = ['navbar', 'dashboard', 'stats'];
+    if (features.includes('chart') || features.includes('pathfinding')) sections.push('chart');
+    return sections;
+  }
+
   if (mode === 'dashboard') {
     const sections: BlockCategory[] = ['sidebar', 'dashboard', 'stats'];
     if (features.includes('chart')) sections.push('chart');
+    if (features.includes('pathfinding')) sections.push('chart');
     return sections;
   }
   if (mode === 'auth') {
@@ -661,6 +708,37 @@ function createDraftPlan(input: ResolvePlanInput): ProjectPlan {
       type: 'app',
       sections: ['sidebar', 'dashboard', 'stats', ...(features.includes('chart') ? ['chart'] as BlockCategory[] : [])],
     });
+  }
+
+  if (features.includes('kanban')) {
+    pages.push({
+      path: '/board',
+      type: 'app',
+      sections: ['sidebar', 'dashboard', 'stats'],
+    });
+  }
+
+  if (features.includes('pathfinding')) {
+    pages.push({
+      path: '/visualizer',
+      type: 'app',
+      sections: ['sidebar', 'dashboard', 'chart', 'stats'],
+    });
+  }
+
+  if (features.includes('calculator')) {
+    pages.push({
+      path: '/tool',
+      type: 'app',
+      sections: ['sidebar', 'dashboard', 'stats'],
+    });
+  }
+
+  if (features.includes('inventory') || features.includes('invoice')) {
+    pages.push(
+      { path: '/inventory', type: 'app', sections: ['sidebar', 'dashboard', 'stats'] },
+      { path: '/invoices', type: 'app', sections: ['sidebar', 'dashboard', 'stats'] }
+    );
   }
 
   if (features.includes('auth') && mode !== 'auth') {
@@ -936,6 +1014,69 @@ function expandDependencies(plan: ProjectPlan): { expandedPlan: ProjectPlan; exp
     addFiles(['src/components/charts/AnalyticsChart.tsx']);
   }
 
+  if (expandedPlan.features.includes('kanban')) {
+    addDependency('kanban-workspace');
+    addDependency('drag-drop');
+    addFiles([
+      'src/pages/Board.tsx',
+      'src/components/kanban/KanbanBoard.tsx',
+      'src/lib/kanban-store.ts',
+    ]);
+  }
+
+  if (expandedPlan.features.includes('pathfinding')) {
+    addDependency('pathfinding-visualizer');
+    addFiles([
+      'src/pages/Visualizer.tsx',
+      'src/components/pathfinding/PathfindingGrid.tsx',
+      'src/lib/pathfinding/dijkstra.ts',
+    ]);
+    expandedPlan.pages = upsertPage(expandedPlan.pages, {
+      path: '/visualizer',
+      type: 'app',
+      sections: ['sidebar', 'dashboard', 'chart', 'stats'],
+    });
+  }
+
+  if (expandedPlan.features.includes('calculator')) {
+    addDependency('calculator-state');
+    addFiles([
+      'src/components/tools/SplitBillCalculator.tsx',
+      'src/lib/split-bill.ts',
+    ]);
+  }
+
+  if (expandedPlan.features.includes('inventory') || expandedPlan.features.includes('invoice')) {
+    addDependency('inventory-invoice-flow');
+    addFiles([
+      'src/pages/Inventory.tsx',
+      'src/pages/Invoices.tsx',
+      'src/components/inventory/ProductTable.tsx',
+      'src/components/invoice/InvoiceBuilder.tsx',
+      'src/lib/inventory-store.ts',
+    ]);
+    expandedPlan.pages = upsertPage(expandedPlan.pages, {
+      path: '/inventory',
+      type: 'app',
+      sections: ['sidebar', 'dashboard', 'stats'],
+    });
+    expandedPlan.pages = upsertPage(expandedPlan.pages, {
+      path: '/invoices',
+      type: 'app',
+      sections: ['sidebar', 'dashboard', 'stats'],
+    });
+  }
+
+  if (expandedPlan.features.includes('pdf')) {
+    addDependency('pdf-output');
+    addFiles(['src/lib/pdf/invoice-pdf.tsx']);
+  }
+
+  if (expandedPlan.features.includes('toast')) {
+    addDependency('toast-feedback');
+    addFiles(['src/components/ui/ToastProvider.tsx']);
+  }
+
   if (expandedPlan.features.includes('pricing') || expandedPlan.pages.some((page) => page.sections.includes('pricing'))) {
     addDependency('pricing-flow');
     addFiles(['src/components/sections/Pricing.tsx']);
@@ -1170,11 +1311,29 @@ function buildPlanContextPrompt(plan: ProjectPlan, blockIds: string[], expandedD
   const animationDirective = selectedAnimations.length > 0
     ? `Prefer these motion presets when relevant: ${selectedAnimations.map((preset) => `${preset.id} (${preset.trigger})`).join(', ')}.`
     : 'Use subtle, meaningful motion only when it improves hierarchy and usability.';
+  const featureDirective = [
+    plan.features.includes('kanban')
+      ? 'Kanban requirement: support column/card moves with @dnd-kit when available; if unavailable, provide deterministic fallback interactions without breaking UX.'
+      : null,
+    plan.features.includes('pathfinding')
+      ? 'Pathfinding requirement: implement deterministic algorithm state (visited nodes, path reconstruction, animation loop) and avoid random/no-op placeholders.'
+      : null,
+    plan.features.includes('inventory') || plan.features.includes('invoice')
+      ? 'Inventory/Invoice requirement: keep stock mutations and invoice totals as single source of truth; avoid duplicated unsynced state.'
+      : null,
+    plan.features.includes('pdf')
+      ? 'PDF requirement: use @react-pdf/renderer when dependency is available, else provide print-friendly invoice fallback via CSS.'
+      : null,
+    plan.features.includes('toast')
+      ? 'Toast requirement: use one consistent notification layer (sonner or react-hot-toast) and wire low-stock warnings.'
+      : null,
+  ].filter(Boolean).join('\n');
 
   return `Use this validated plan as source of truth. Do not redesign structure outside this plan.
 ${routingInstruction}
 ${styleDirective}
 ${animationDirective}
+${featureDirective}
 ${JSON.stringify(planSummary, null, 2)}
 Only adjust copy, minor styles and interactions while keeping section boundaries stable.
 Avoid generic fallback names like "BuilderKit". Keep brand consistent with plan.brand.

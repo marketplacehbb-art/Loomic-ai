@@ -77,6 +77,19 @@ export interface VisualPatchApplyResponse {
 
 export type SupabaseIntegrationEnvironment = 'test' | 'live';
 
+export interface SupabaseModuleLinks {
+    dashboard: string;
+    database: string;
+    sqlEditor: string;
+    usersAuth: string;
+    storage: string;
+    edgeFunctions: string;
+    ai: string;
+    secrets: string;
+    logs: string;
+    customEmails: string;
+}
+
 export interface SupabaseIntegrationEnvStatus {
     environment: SupabaseIntegrationEnvironment;
     connected: boolean;
@@ -86,6 +99,7 @@ export interface SupabaseIntegrationEnvStatus {
     tokenExpiresAt?: string | null;
     updatedAt?: string | null;
     mode?: 'db' | 'memory';
+    links?: SupabaseModuleLinks | null;
 }
 
 export interface SupabaseIntegrationStatusResponse {
@@ -94,7 +108,248 @@ export interface SupabaseIntegrationStatusResponse {
     error?: string;
 }
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+export interface SupabaseIntegrationLinksResponse {
+    success: boolean;
+    environment: SupabaseIntegrationEnvironment;
+    connected: boolean;
+    projectRef?: string | null;
+    requiredIds?: {
+        projectId: string;
+        projectRef?: string | null;
+    };
+    links?: SupabaseModuleLinks | null;
+    modules?: Array<{ key: string; label: string; url: string | null }>;
+    connectCta?: boolean;
+    error?: string;
+}
+
+export interface SupabaseIntegrationHealthResponse {
+    success: boolean;
+    environment?: SupabaseIntegrationEnvironment;
+    connected?: boolean;
+    degraded?: boolean;
+    status?: string;
+    upstreamStatus?: number | null;
+    upstreamError?: string | null;
+    checkedAt?: string;
+    projectRef?: string | null;
+    lastError?: {
+        timestamp: string;
+        message: string;
+        environment?: SupabaseIntegrationEnvironment;
+        code?: string;
+    } | null;
+    error?: string;
+}
+
+export interface SupabaseIntegrationLastErrorResponse {
+    success: boolean;
+    environment?: SupabaseIntegrationEnvironment | null;
+    lastError?: {
+        timestamp: string;
+        message: string;
+        environment?: SupabaseIntegrationEnvironment;
+        code?: string;
+    } | null;
+    recentAudit?: Array<{
+        timestamp: string;
+        action: string;
+        environment?: SupabaseIntegrationEnvironment;
+        metadata?: Record<string, any>;
+    }>;
+    error?: string;
+}
+
+export interface CloudState {
+    projectId: string;
+    enabled: boolean;
+    enabledAt?: string | null;
+    updatedAt?: string | null;
+    lastActionSource?: string | null;
+    mode?: 'db' | 'memory';
+}
+
+export interface CloudStateResponse {
+    success: boolean;
+    state?: CloudState;
+    error?: string;
+}
+
+export interface CloudOverviewModule {
+    id: string;
+    label: string;
+    description: string;
+    countLabel?: string | null;
+    count?: number | null;
+    emptyMessage?: string;
+    url?: string | null;
+}
+
+export interface CloudOverviewResponse {
+    success: boolean;
+    projectId?: string;
+    cloud?: CloudState;
+    supabase?: {
+        connected: boolean;
+        environment?: SupabaseIntegrationEnvironment | null;
+        projectRef?: string | null;
+    };
+    links?: SupabaseModuleLinks | null;
+    modules?: CloudOverviewModule[];
+    error?: string;
+}
+
+export type PublishStatus = 'draft' | 'publishing' | 'published' | 'failed';
+export type PublishAccess = 'public' | 'unlisted' | 'private';
+
+export interface ProjectPublication {
+    projectId: string;
+    status: PublishStatus;
+    slug: string;
+    access: PublishAccess;
+    publishedUrl?: string | null;
+    siteTitle?: string | null;
+    siteDescription?: string | null;
+    releaseVersion?: number;
+    publishedAt?: string | null;
+    lastError?: string | null;
+    mode?: 'db' | 'memory';
+    updatedAt?: string | null;
+}
+
+export interface PublishStatusResponse {
+    success: boolean;
+    publication?: ProjectPublication;
+    error?: string;
+}
+
+export type SecurityFindingSeverity = 'low' | 'medium' | 'high' | 'critical';
+export type SecurityFindingCategory = 'rls' | 'auth' | 'policy' | 'edge' | 'secrets';
+
+export interface SecurityFinding {
+    severity: SecurityFindingSeverity;
+    category: SecurityFindingCategory;
+    resource: string;
+    evidence: string;
+    fixSuggestion: string;
+    autofixPossible: boolean;
+}
+
+export interface SecurityScanSnapshot {
+    timestamp: string;
+    score: number;
+    findings: SecurityFinding[];
+}
+
+export interface SecurityScanResponse {
+    success: boolean;
+    projectId?: string;
+    environment?: SupabaseIntegrationEnvironment;
+    timestamp?: string;
+    score?: number;
+    findings?: SecurityFinding[];
+    summary?: {
+        total: number;
+        critical: number;
+        high: number;
+        medium: number;
+        low: number;
+    };
+    previous?: SecurityScanSnapshot | null;
+    boundaries?: {
+        staticOnly: boolean;
+        runtimeTrafficScanning: boolean;
+        fullCodeAnalysis: boolean;
+    };
+    error?: string;
+}
+
+export interface SecurityScanHistoryResponse {
+    success: boolean;
+    projectId?: string;
+    history?: SecurityScanSnapshot[];
+    error?: string;
+}
+
+export interface GenerateObservabilityMetrics {
+    windowStartMs: number;
+    windowEndMs: number;
+    totalRequests: number;
+    successCount: number;
+    failureCount: number;
+    successRate: number;
+    fallbackRate: number;
+    avgDurationMs: number;
+    p50DurationMs: number;
+    p95DurationMs: number;
+    avgProcessingTimeMs: number;
+    totalInputTokens: number;
+    totalOutputTokens: number;
+    totalTokens: number;
+    estimatedCostUsd: number;
+    providers: Record<string, {
+        requests: number;
+        successRate: number;
+        avgDurationMs: number;
+        inputTokens: number;
+        outputTokens: number;
+        totalTokens: number;
+        estimatedCostUsd: number;
+    }>;
+    errorCategories: Record<string, number>;
+    generationModes: Record<string, number>;
+    costPerRequestUsd: number;
+    thresholds: {
+        minSampleSize: number;
+        maxP95DurationMs: number;
+        minSuccessRate: number;
+        maxFallbackRate: number;
+        maxCostPerRequestUsd: number;
+    };
+    alerts: Array<{
+        id: 'p95_latency' | 'success_rate' | 'fallback_rate' | 'cost_per_request';
+        severity: 'warning' | 'critical';
+        title: string;
+        message: string;
+        value: number;
+        threshold: number;
+    }>;
+}
+
+export interface GenerateObservabilityResponse {
+    success: boolean;
+    metrics?: GenerateObservabilityMetrics;
+    error?: string;
+}
+
+export interface GenerateSloStatus {
+    windowStartMs: number;
+    windowEndMs: number;
+    totalRequests: number;
+    minSampleSize: number;
+    status: 'pass' | 'fail' | 'insufficient_data';
+    checks: Array<{
+        id: 'p95_latency' | 'success_rate' | 'fallback_rate' | 'cost_per_request';
+        pass: boolean;
+        value: number;
+        threshold: number;
+        comparator: '<=' | '>=';
+    }>;
+}
+
+export interface GenerateSloResponse {
+    success: boolean;
+    slo?: GenerateSloStatus;
+    error?: string;
+}
+
+const normalizeApiBaseUrl = (value?: string): string => {
+    const trimmed = String(value || '').trim().replace(/\/+$/, '');
+    if (!trimmed) return '';
+    return trimmed.endsWith('/api') ? trimmed.slice(0, -4) : trimmed;
+};
+
+const API_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_URL);
 
 const getAccessToken = async (): Promise<string | null> => {
     const { data } = await supabase.auth.getSession();
@@ -126,6 +381,18 @@ export const api = {
 
         if (error) throw error;
         return { data: data as Project[], count };
+    },
+
+    async getProjectStats() {
+        const { count: publishedCount, error } = await supabase
+            .from('projects')
+            .select('id', { count: 'exact', head: true })
+            .eq('is_public', true);
+
+        if (error) throw error;
+        return {
+            publishedCount: publishedCount || 0,
+        };
     },
 
     async getProject(id: string) {
@@ -316,8 +583,26 @@ export const api = {
         if (error) throw error;
         return data.map(log => ({
             created_at: log.created_at,
-            ...((log.details as any) || {})
+            details: (log.details as any) || {}
         }));
+    },
+
+    async getGenerateObservability(windowMs = 3_600_000): Promise<GenerateObservabilityResponse> {
+        const query = new URLSearchParams({ windowMs: String(windowMs) }).toString();
+        const response = await fetch(`${API_URL}/api/generate/observability?${query}`, {
+            method: 'GET',
+            headers: await buildAuthHeaders(false),
+        });
+        return response.json() as Promise<GenerateObservabilityResponse>;
+    },
+
+    async getGenerateSlo(windowMs = 3_600_000): Promise<GenerateSloResponse> {
+        const query = new URLSearchParams({ windowMs: String(windowMs) }).toString();
+        const response = await fetch(`${API_URL}/api/generate/slo?${query}`, {
+            method: 'GET',
+            headers: await buildAuthHeaders(false),
+        });
+        return response.json() as Promise<GenerateSloResponse>;
     },
 
     // Deterministic visual edits via AST patch pipeline
@@ -383,6 +668,134 @@ export const api = {
             body: JSON.stringify(input),
         });
         return response.json();
+    },
+
+    async getSupabaseIntegrationLinks(
+        projectId: string,
+        environment?: SupabaseIntegrationEnvironment
+    ): Promise<SupabaseIntegrationLinksResponse> {
+        const query = new URLSearchParams({ projectId });
+        if (environment) query.set('environment', environment);
+        const response = await fetch(`${API_URL}/api/integrations/supabase/links?${query.toString()}`, {
+            method: 'GET',
+            headers: await buildAuthHeaders(false),
+        });
+        return response.json() as Promise<SupabaseIntegrationLinksResponse>;
+    },
+
+    async getSupabaseIntegrationHealth(
+        projectId: string,
+        environment?: SupabaseIntegrationEnvironment
+    ): Promise<SupabaseIntegrationHealthResponse> {
+        const query = new URLSearchParams({ projectId });
+        if (environment) query.set('environment', environment);
+        const response = await fetch(`${API_URL}/api/integrations/supabase/health?${query.toString()}`, {
+            method: 'GET',
+            headers: await buildAuthHeaders(false),
+        });
+        return response.json() as Promise<SupabaseIntegrationHealthResponse>;
+    },
+
+    async getSupabaseIntegrationLastError(
+        projectId: string,
+        environment?: SupabaseIntegrationEnvironment
+    ): Promise<SupabaseIntegrationLastErrorResponse> {
+        const query = new URLSearchParams({ projectId });
+        if (environment) query.set('environment', environment);
+        const response = await fetch(`${API_URL}/api/integrations/supabase/last-error?${query.toString()}`, {
+            method: 'GET',
+            headers: await buildAuthHeaders(false),
+        });
+        return response.json() as Promise<SupabaseIntegrationLastErrorResponse>;
+    },
+
+    async getCloudState(projectId: string): Promise<CloudStateResponse> {
+        const query = new URLSearchParams({ projectId }).toString();
+        const response = await fetch(`${API_URL}/api/cloud/state?${query}`, {
+            method: 'GET',
+            headers: await buildAuthHeaders(false),
+        });
+        return response.json() as Promise<CloudStateResponse>;
+    },
+
+    async enableCloud(input: {
+        projectId: string;
+        source?: string;
+    }): Promise<CloudStateResponse> {
+        const response = await fetch(`${API_URL}/api/cloud/enable`, {
+            method: 'POST',
+            headers: await buildAuthHeaders(true),
+            body: JSON.stringify(input),
+        });
+        return response.json() as Promise<CloudStateResponse>;
+    },
+
+    async getCloudOverview(
+        projectId: string,
+        environment?: SupabaseIntegrationEnvironment
+    ): Promise<CloudOverviewResponse> {
+        const query = new URLSearchParams({ projectId });
+        if (environment) query.set('environment', environment);
+        const response = await fetch(`${API_URL}/api/cloud/overview?${query.toString()}`, {
+            method: 'GET',
+            headers: await buildAuthHeaders(false),
+        });
+        return response.json() as Promise<CloudOverviewResponse>;
+    },
+
+    async getPublishStatus(projectId: string): Promise<PublishStatusResponse> {
+        const query = new URLSearchParams({ projectId }).toString();
+        const response = await fetch(`${API_URL}/api/publish/status?${query}`, {
+            method: 'GET',
+            headers: await buildAuthHeaders(false),
+        });
+        return response.json() as Promise<PublishStatusResponse>;
+    },
+
+    async publishProject(input: {
+        projectId: string;
+        slug?: string;
+        access?: PublishAccess;
+        siteTitle?: string;
+        siteDescription?: string;
+    }): Promise<PublishStatusResponse> {
+        const response = await fetch(`${API_URL}/api/publish/publish`, {
+            method: 'POST',
+            headers: await buildAuthHeaders(true),
+            body: JSON.stringify(input),
+        });
+        return response.json() as Promise<PublishStatusResponse>;
+    },
+
+    async unpublishProject(input: { projectId: string }): Promise<PublishStatusResponse> {
+        const response = await fetch(`${API_URL}/api/publish/unpublish`, {
+            method: 'POST',
+            headers: await buildAuthHeaders(true),
+            body: JSON.stringify(input),
+        });
+        return response.json() as Promise<PublishStatusResponse>;
+    },
+
+    async runSecurityScan(input: {
+        projectId: string;
+        environment?: SupabaseIntegrationEnvironment;
+        files?: Record<string, string>;
+    }): Promise<SecurityScanResponse> {
+        const response = await fetch(`${API_URL}/api/security/scan`, {
+            method: 'POST',
+            headers: await buildAuthHeaders(true),
+            body: JSON.stringify(input),
+        });
+        return response.json() as Promise<SecurityScanResponse>;
+    },
+
+    async getSecurityScanHistory(projectId: string): Promise<SecurityScanHistoryResponse> {
+        const query = new URLSearchParams({ projectId }).toString();
+        const response = await fetch(`${API_URL}/api/security/history?${query}`, {
+            method: 'GET',
+            headers: await buildAuthHeaders(false),
+        });
+        return response.json() as Promise<SecurityScanHistoryResponse>;
     },
 
     // --- Git integration ---

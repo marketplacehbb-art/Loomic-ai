@@ -2,8 +2,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 
 interface ModelSelectorProps {
-    value: 'gemini' | 'openai' | 'deepseek';
-    onChange: (value: 'gemini' | 'openai' | 'deepseek') => void;
+    value: 'gemini' | 'groq' | 'openai' | 'nvidia';
+    onChange: (value: 'gemini' | 'groq' | 'openai' | 'nvidia') => void;
     disabled?: boolean;
 }
 
@@ -16,6 +16,13 @@ const models = [
         color: 'text-blue-500'
     },
     {
+        id: 'groq',
+        name: 'Llama 4 Maverick (Groq)',
+        icon: 'bolt',
+        description: 'Fastest inference, low latency',
+        color: 'text-orange-500'
+    },
+    {
         id: 'openai',
         name: 'ChatGPT 4o',
         icon: 'auto_awesome',
@@ -23,11 +30,11 @@ const models = [
         color: 'text-green-500'
     },
     {
-        id: 'deepseek',
-        name: 'DeepSeek Coder',
-        icon: 'code',
-        description: 'Specialized for coding tasks',
-        color: 'text-purple-500'
+        id: 'nvidia',
+        name: 'Qwen 3.5 397B (NVIDIA)',
+        icon: 'memory',
+        description: 'NVIDIA NIM (OpenAI-compatible API)',
+        color: 'text-emerald-400'
     }
 ] as const;
 

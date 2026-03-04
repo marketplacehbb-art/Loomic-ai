@@ -1,0 +1,921 @@
+{
+  "category": "dashboard",
+  "components": [
+    {
+      "id": "dashboard-kpi-cards-01",
+      "name": "Dashboard KPI Cards",
+      "category": "dashboard",
+      "subcategory": "kpi-grid",
+      "tags": {
+        "industry": [
+          "analytics",
+          "admin",
+          "saas"
+        ],
+        "tone": [
+          "clean",
+          "modern"
+        ],
+        "theme": [
+          "light",
+          "dark"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const METRICS = [\n  { label: \"Umsatz\", value: \"84.2k\", trend: \"+12%\", up: true },\n  { label: \"Bestellungen\", value: \"1,284\", trend: \"+9%\", up: true },\n  { label: \"Conversion\", value: \"5.8%\", trend: \"+1.4%\", up: true },\n  { label: \"Churn-Rate\", value: \"2.1%\", trend: \"-0.3%\", up: false },\n];\n\nexport default function DashboardKpiCards01() {\n  return (\n    <section className=\"grid gap-4 sm:grid-cols-2 xl:grid-cols-4\">\n      {METRICS.map((metric) => (\n        <article key={metric.label} className=\"rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{metric.label}</p>\n          <p className=\"mt-2 text-2xl font-bold text-slate-900 dark:text-white\">{metric.value}</p>\n          <p className={`mt-1 text-sm font-medium ${metric.up ? \"text-emerald-500\" : \"text-rose-500\"}`}>{metric.trend}</p>\n        </article>\n      ))}\n    </section>\n  );\n}"
+      }
+    },
+    {
+      "id": "dashboard-header-01",
+      "name": "Dashboard Top Bar",
+      "category": "dashboard",
+      "subcategory": "topbar",
+      "tags": {
+        "industry": [
+          "admin",
+          "saas",
+          "analytics"
+        ],
+        "tone": [
+          "enterprise",
+          "clean"
+        ],
+        "theme": [
+          "dark"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function DashboardHeader01() {\n  return (\n    <header className=\"flex h-14 items-center justify-between border-b border-white/10 bg-slate-950 px-6\">\n      <div className=\"flex items-center gap-3\">\n        <span className=\"text-sm font-semibold text-white\">{{projectName}}</span>\n        <span className=\"hidden h-4 w-px bg-white/20 sm:block\" />\n        <span className=\"hidden text-sm text-slate-400 sm:block\">Dashboard</span>\n      </div>\n      <div className=\"flex items-center gap-3\">\n        <button className=\"rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-300 transition hover:bg-white/10\">\n          + Neu\n        </button>\n        <div className=\"flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 text-sm font-bold text-white\">\n          A\n        </div>\n      </div>\n    </header>\n  );\n}"
+      }
+    },
+    {
+      "id": "sidebar-collapsible-01",
+      "name": "Sidebar Collapsible",
+      "category": "dashboard",
+      "subcategory": "sidebar",
+      "tags": {
+        "industry": [
+          "dashboard",
+          "admin",
+          "saas"
+        ],
+        "tone": [
+          "clean",
+          "enterprise"
+        ],
+        "theme": [
+          "dark"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const LINKS = [\n  { label: \"Overview\", icon: \"▦\" },\n  { label: \"Orders\", icon: \"📦\" },\n  { label: \"Customers\", icon: \"👥\" },\n  { label: \"Reports\", icon: \"📊\" },\n  { label: \"Settings\", icon: \"⚙️\" },\n];\n\nexport default function SidebarCollapsible01() {\n  return (\n    <aside className=\"w-64 shrink-0 border-r border-white/10 bg-slate-950 p-4\">\n      <div className=\"mb-6 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white\">\n        {{projectName}}\n      </div>\n      <nav className=\"space-y-1\">\n        {LINKS.map((link) => (\n          <button key={link.label} className=\"flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-slate-300 transition hover:bg-white/10 hover:text-white\">\n            <span>{link.icon}</span>\n            {link.label}\n          </button>\n        ))}\n      </nav>\n    </aside>\n  );\n}"
+      }
+    },
+    {
+      "id": "dashboard-activity-feed-01",
+      "name": "Dashboard Activity Feed",
+      "category": "dashboard",
+      "subcategory": "activity",
+      "tags": {
+        "industry": [
+          "saas",
+          "admin",
+          "analytics"
+        ],
+        "tone": [
+          "clean",
+          "enterprise"
+        ],
+        "theme": [
+          "light",
+          "dark"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const EVENTS = [\n  { type: \"success\", icon: \"✓\", title: \"Deployment abgeschlossen\", sub: \"production · v3.2.1\", time: \"Vor 2 Min.\" },\n  { type: \"info\", icon: \"↑\", title: \"Neues Teammitglied eingeladen\", sub: \"anna@firma.de\", time: \"Vor 14 Min.\" },\n  { type: \"warning\", icon: \"!\", title: \"API-Rate-Limit bei 80 %\", sub: \"Endpunkt /v2/data\", time: \"Vor 1 Std.\" },\n  { type: \"success\", icon: \"✓\", title: \"Backup erstellt\", sub: \"3,2 GB · EU-West-1\", time: \"Vor 3 Std.\" },\n  { type: \"error\", icon: \"✕\", title: \"Webhook fehlgeschlagen\", sub: \"Retry in 15 Min.\", time: \"Vor 5 Std.\" },\n];\n\nconst COLOR: Record<string, string> = {\n  success: \"bg-emerald-100 text-emerald-700\",\n  info: \"bg-sky-100 text-sky-700\",\n  warning: \"bg-amber-100 text-amber-700\",\n  error: \"bg-rose-100 text-rose-700\",\n};\n\nexport default function DashboardActivityFeed01() {\n  return (\n    <section className=\"rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900\">\n      <div className=\"flex items-center justify-between border-b border-slate-100 px-5 py-4 dark:border-slate-800\">\n        <h3 className=\"text-sm font-semibold text-slate-900 dark:text-white\">Aktivitäts-Feed</h3>\n        <button className=\"text-xs font-semibold text-violet-600 hover:underline\">Alle anzeigen</button>\n      </div>\n      <ul className=\"divide-y divide-slate-50 dark:divide-slate-800\">\n        {EVENTS.map((ev) => (\n          <li key={ev.title} className=\"flex items-start gap-4 px-5 py-3\">\n            <span className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${COLOR[ev.type]}`}>\n              {ev.icon}\n            </span>\n            <div className=\"flex-1 min-w-0\">\n              <p className=\"truncate text-sm font-medium text-slate-900 dark:text-white\">{ev.title}</p>\n              <p className=\"text-xs text-slate-400\">{ev.sub}</p>\n            </div>\n            <span className=\"shrink-0 text-xs text-slate-400\">{ev.time}</span>\n          </li>\n        ))}\n      </ul>\n    </section>\n  );\n}"
+      }
+    },
+    {
+      "id": "corp-dashboard-light-01",
+      "name": "DashboardLightCorporate01",
+      "category": "dashboard",
+      "subcategory": "kpi-grid",
+      "tags": {
+        "industry": [
+          "analytics",
+          "saas",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const METRICS = [\n  { label: 'Revenue', value: '$82.4k', delta: '+9%' },\n  { label: 'Users', value: '18,420', delta: '+12%' },\n  { label: 'Retention', value: '91%', delta: '+2%' }\n];\n\nexport default function DashboardLightCorporate01() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {METRICS.map((item) => (\n        <article key={item.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{item.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{item.value}</p>\n          <p className=\"mt-1 text-sm text-emerald-600\">{item.delta}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-dashboard-light-02",
+      "name": "DashboardLightCorporate02",
+      "category": "dashboard",
+      "subcategory": "ops-overview",
+      "tags": {
+        "industry": [
+          "analytics",
+          "saas",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const METRICS = [\n  { label: 'Revenue', value: '$82.4k', delta: '+9%' },\n  { label: 'Users', value: '18,420', delta: '+12%' },\n  { label: 'Retention', value: '91%', delta: '+2%' }\n];\n\nexport default function DashboardLightCorporate02() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {METRICS.map((item) => (\n        <article key={item.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{item.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{item.value}</p>\n          <p className=\"mt-1 text-sm text-emerald-600\">{item.delta}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-dashboard-light-03",
+      "name": "DashboardLightCorporate03",
+      "category": "dashboard",
+      "subcategory": "activity-panel",
+      "tags": {
+        "industry": [
+          "analytics",
+          "saas",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const METRICS = [\n  { label: 'Revenue', value: '$82.4k', delta: '+9%' },\n  { label: 'Users', value: '18,420', delta: '+12%' },\n  { label: 'Retention', value: '91%', delta: '+2%' }\n];\n\nexport default function DashboardLightCorporate03() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {METRICS.map((item) => (\n        <article key={item.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{item.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{item.value}</p>\n          <p className=\"mt-1 text-sm text-emerald-600\">{item.delta}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-dashboard-light-04",
+      "name": "DashboardLightCorporate04",
+      "category": "dashboard",
+      "subcategory": "kpi-grid",
+      "tags": {
+        "industry": [
+          "analytics",
+          "saas",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const METRICS = [\n  { label: 'Revenue', value: '$82.4k', delta: '+9%' },\n  { label: 'Users', value: '18,420', delta: '+12%' },\n  { label: 'Retention', value: '91%', delta: '+2%' }\n];\n\nexport default function DashboardLightCorporate04() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {METRICS.map((item) => (\n        <article key={item.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{item.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{item.value}</p>\n          <p className=\"mt-1 text-sm text-emerald-600\">{item.delta}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-dashboard-light-05",
+      "name": "DashboardLightCorporate05",
+      "category": "dashboard",
+      "subcategory": "ops-overview",
+      "tags": {
+        "industry": [
+          "analytics",
+          "saas",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const METRICS = [\n  { label: 'Revenue', value: '$82.4k', delta: '+9%' },\n  { label: 'Users', value: '18,420', delta: '+12%' },\n  { label: 'Retention', value: '91%', delta: '+2%' }\n];\n\nexport default function DashboardLightCorporate05() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {METRICS.map((item) => (\n        <article key={item.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{item.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{item.value}</p>\n          <p className=\"mt-1 text-sm text-emerald-600\">{item.delta}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-dashboard-light-06",
+      "name": "DashboardLightCorporate06",
+      "category": "dashboard",
+      "subcategory": "activity-panel",
+      "tags": {
+        "industry": [
+          "analytics",
+          "saas",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const METRICS = [\n  { label: 'Revenue', value: '$82.4k', delta: '+9%' },\n  { label: 'Users', value: '18,420', delta: '+12%' },\n  { label: 'Retention', value: '91%', delta: '+2%' }\n];\n\nexport default function DashboardLightCorporate06() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {METRICS.map((item) => (\n        <article key={item.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{item.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{item.value}</p>\n          <p className=\"mt-1 text-sm text-emerald-600\">{item.delta}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-dashboard-light-07",
+      "name": "DashboardLightCorporate07",
+      "category": "dashboard",
+      "subcategory": "kpi-grid",
+      "tags": {
+        "industry": [
+          "analytics",
+          "saas",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const METRICS = [\n  { label: 'Revenue', value: '$82.4k', delta: '+9%' },\n  { label: 'Users', value: '18,420', delta: '+12%' },\n  { label: 'Retention', value: '91%', delta: '+2%' }\n];\n\nexport default function DashboardLightCorporate07() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {METRICS.map((item) => (\n        <article key={item.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{item.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{item.value}</p>\n          <p className=\"mt-1 text-sm text-emerald-600\">{item.delta}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-dashboard-light-08",
+      "name": "DashboardLightCorporate08",
+      "category": "dashboard",
+      "subcategory": "ops-overview",
+      "tags": {
+        "industry": [
+          "analytics",
+          "saas",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const METRICS = [\n  { label: 'Revenue', value: '$82.4k', delta: '+9%' },\n  { label: 'Users', value: '18,420', delta: '+12%' },\n  { label: 'Retention', value: '91%', delta: '+2%' }\n];\n\nexport default function DashboardLightCorporate08() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {METRICS.map((item) => (\n        <article key={item.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{item.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{item.value}</p>\n          <p className=\"mt-1 text-sm text-emerald-600\">{item.delta}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-dashboard-light-09",
+      "name": "DashboardLightCorporate09",
+      "category": "dashboard",
+      "subcategory": "activity-panel",
+      "tags": {
+        "industry": [
+          "analytics",
+          "saas",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const METRICS = [\n  { label: 'Revenue', value: '$82.4k', delta: '+9%' },\n  { label: 'Users', value: '18,420', delta: '+12%' },\n  { label: 'Retention', value: '91%', delta: '+2%' }\n];\n\nexport default function DashboardLightCorporate09() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {METRICS.map((item) => (\n        <article key={item.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{item.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{item.value}</p>\n          <p className=\"mt-1 text-sm text-emerald-600\">{item.delta}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-dashboard-light-10",
+      "name": "DashboardLightCorporate10",
+      "category": "dashboard",
+      "subcategory": "kpi-grid",
+      "tags": {
+        "industry": [
+          "analytics",
+          "saas",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const METRICS = [\n  { label: 'Revenue', value: '$82.4k', delta: '+9%' },\n  { label: 'Users', value: '18,420', delta: '+12%' },\n  { label: 'Retention', value: '91%', delta: '+2%' }\n];\n\nexport default function DashboardLightCorporate10() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {METRICS.map((item) => (\n        <article key={item.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{item.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{item.value}</p>\n          <p className=\"mt-1 text-sm text-emerald-600\">{item.delta}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-dashboard-light-11",
+      "name": "DashboardLightCorporate11",
+      "category": "dashboard",
+      "subcategory": "ops-overview",
+      "tags": {
+        "industry": [
+          "analytics",
+          "saas",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const METRICS = [\n  { label: 'Revenue', value: '$82.4k', delta: '+9%' },\n  { label: 'Users', value: '18,420', delta: '+12%' },\n  { label: 'Retention', value: '91%', delta: '+2%' }\n];\n\nexport default function DashboardLightCorporate11() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {METRICS.map((item) => (\n        <article key={item.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{item.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{item.value}</p>\n          <p className=\"mt-1 text-sm text-emerald-600\">{item.delta}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-dashboard-light-12",
+      "name": "DashboardLightCorporate12",
+      "category": "dashboard",
+      "subcategory": "activity-panel",
+      "tags": {
+        "industry": [
+          "analytics",
+          "saas",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const METRICS = [\n  { label: 'Revenue', value: '$82.4k', delta: '+9%' },\n  { label: 'Users', value: '18,420', delta: '+12%' },\n  { label: 'Retention', value: '91%', delta: '+2%' }\n];\n\nexport default function DashboardLightCorporate12() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {METRICS.map((item) => (\n        <article key={item.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{item.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{item.value}</p>\n          <p className=\"mt-1 text-sm text-emerald-600\">{item.delta}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-dashboard-light-13",
+      "name": "DashboardLightCorporate13",
+      "category": "dashboard",
+      "subcategory": "kpi-grid",
+      "tags": {
+        "industry": [
+          "analytics",
+          "saas",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const METRICS = [\n  { label: 'Revenue', value: '$82.4k', delta: '+9%' },\n  { label: 'Users', value: '18,420', delta: '+12%' },\n  { label: 'Retention', value: '91%', delta: '+2%' }\n];\n\nexport default function DashboardLightCorporate13() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {METRICS.map((item) => (\n        <article key={item.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{item.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{item.value}</p>\n          <p className=\"mt-1 text-sm text-emerald-600\">{item.delta}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-dashboard-light-14",
+      "name": "DashboardLightCorporate14",
+      "category": "dashboard",
+      "subcategory": "ops-overview",
+      "tags": {
+        "industry": [
+          "analytics",
+          "saas",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const METRICS = [\n  { label: 'Revenue', value: '$82.4k', delta: '+9%' },\n  { label: 'Users', value: '18,420', delta: '+12%' },\n  { label: 'Retention', value: '91%', delta: '+2%' }\n];\n\nexport default function DashboardLightCorporate14() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {METRICS.map((item) => (\n        <article key={item.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{item.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{item.value}</p>\n          <p className=\"mt-1 text-sm text-emerald-600\">{item.delta}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-dashboard-light-15",
+      "name": "DashboardLightCorporate15",
+      "category": "dashboard",
+      "subcategory": "activity-panel",
+      "tags": {
+        "industry": [
+          "analytics",
+          "saas",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const METRICS = [\n  { label: 'Revenue', value: '$82.4k', delta: '+9%' },\n  { label: 'Users', value: '18,420', delta: '+12%' },\n  { label: 'Retention', value: '91%', delta: '+2%' }\n];\n\nexport default function DashboardLightCorporate15() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {METRICS.map((item) => (\n        <article key={item.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{item.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{item.value}</p>\n          <p className=\"mt-1 text-sm text-emerald-600\">{item.delta}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-dashboard-light-16",
+      "name": "DashboardLightCorporate16",
+      "category": "dashboard",
+      "subcategory": "kpi-grid",
+      "tags": {
+        "industry": [
+          "analytics",
+          "saas",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const METRICS = [\n  { label: 'Revenue', value: '$82.4k', delta: '+9%' },\n  { label: 'Users', value: '18,420', delta: '+12%' },\n  { label: 'Retention', value: '91%', delta: '+2%' }\n];\n\nexport default function DashboardLightCorporate16() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {METRICS.map((item) => (\n        <article key={item.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{item.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{item.value}</p>\n          <p className=\"mt-1 text-sm text-emerald-600\">{item.delta}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-dashboard-light-17",
+      "name": "DashboardLightCorporate17",
+      "category": "dashboard",
+      "subcategory": "ops-overview",
+      "tags": {
+        "industry": [
+          "analytics",
+          "saas",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const METRICS = [\n  { label: 'Revenue', value: '$82.4k', delta: '+9%' },\n  { label: 'Users', value: '18,420', delta: '+12%' },\n  { label: 'Retention', value: '91%', delta: '+2%' }\n];\n\nexport default function DashboardLightCorporate17() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {METRICS.map((item) => (\n        <article key={item.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{item.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{item.value}</p>\n          <p className=\"mt-1 text-sm text-emerald-600\">{item.delta}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-dashboard-light-18",
+      "name": "DashboardLightCorporate18",
+      "category": "dashboard",
+      "subcategory": "activity-panel",
+      "tags": {
+        "industry": [
+          "analytics",
+          "saas",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const METRICS = [\n  { label: 'Revenue', value: '$82.4k', delta: '+9%' },\n  { label: 'Users', value: '18,420', delta: '+12%' },\n  { label: 'Retention', value: '91%', delta: '+2%' }\n];\n\nexport default function DashboardLightCorporate18() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {METRICS.map((item) => (\n        <article key={item.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{item.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{item.value}</p>\n          <p className=\"mt-1 text-sm text-emerald-600\">{item.delta}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-dashboard-light-19",
+      "name": "DashboardLightCorporate19",
+      "category": "dashboard",
+      "subcategory": "kpi-grid",
+      "tags": {
+        "industry": [
+          "analytics",
+          "saas",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const METRICS = [\n  { label: 'Revenue', value: '$82.4k', delta: '+9%' },\n  { label: 'Users', value: '18,420', delta: '+12%' },\n  { label: 'Retention', value: '91%', delta: '+2%' }\n];\n\nexport default function DashboardLightCorporate19() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {METRICS.map((item) => (\n        <article key={item.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{item.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{item.value}</p>\n          <p className=\"mt-1 text-sm text-emerald-600\">{item.delta}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-dashboard-light-20",
+      "name": "DashboardLightCorporate20",
+      "category": "dashboard",
+      "subcategory": "ops-overview",
+      "tags": {
+        "industry": [
+          "analytics",
+          "saas",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const METRICS = [\n  { label: 'Revenue', value: '$82.4k', delta: '+9%' },\n  { label: 'Users', value: '18,420', delta: '+12%' },\n  { label: 'Retention', value: '91%', delta: '+2%' }\n];\n\nexport default function DashboardLightCorporate20() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {METRICS.map((item) => (\n        <article key={item.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{item.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{item.value}</p>\n          <p className=\"mt-1 text-sm text-emerald-600\">{item.delta}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-dashboard-light-21",
+      "name": "DashboardLightCorporate21",
+      "category": "dashboard",
+      "subcategory": "activity-panel",
+      "tags": {
+        "industry": [
+          "analytics",
+          "saas",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const METRICS = [\n  { label: 'Revenue', value: '$82.4k', delta: '+9%' },\n  { label: 'Users', value: '18,420', delta: '+12%' },\n  { label: 'Retention', value: '91%', delta: '+2%' }\n];\n\nexport default function DashboardLightCorporate21() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {METRICS.map((item) => (\n        <article key={item.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{item.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{item.value}</p>\n          <p className=\"mt-1 text-sm text-emerald-600\">{item.delta}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-dashboard-light-22",
+      "name": "DashboardLightCorporate22",
+      "category": "dashboard",
+      "subcategory": "kpi-grid",
+      "tags": {
+        "industry": [
+          "analytics",
+          "saas",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const METRICS = [\n  { label: 'Revenue', value: '$82.4k', delta: '+9%' },\n  { label: 'Users', value: '18,420', delta: '+12%' },\n  { label: 'Retention', value: '91%', delta: '+2%' }\n];\n\nexport default function DashboardLightCorporate22() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {METRICS.map((item) => (\n        <article key={item.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{item.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{item.value}</p>\n          <p className=\"mt-1 text-sm text-emerald-600\">{item.delta}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-dashboard-light-23",
+      "name": "DashboardLightCorporate23",
+      "category": "dashboard",
+      "subcategory": "ops-overview",
+      "tags": {
+        "industry": [
+          "analytics",
+          "saas",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const METRICS = [\n  { label: 'Revenue', value: '$82.4k', delta: '+9%' },\n  { label: 'Users', value: '18,420', delta: '+12%' },\n  { label: 'Retention', value: '91%', delta: '+2%' }\n];\n\nexport default function DashboardLightCorporate23() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {METRICS.map((item) => (\n        <article key={item.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{item.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{item.value}</p>\n          <p className=\"mt-1 text-sm text-emerald-600\">{item.delta}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-dashboard-light-24",
+      "name": "DashboardLightCorporate24",
+      "category": "dashboard",
+      "subcategory": "activity-panel",
+      "tags": {
+        "industry": [
+          "analytics",
+          "saas",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const METRICS = [\n  { label: 'Revenue', value: '$82.4k', delta: '+9%' },\n  { label: 'Users', value: '18,420', delta: '+12%' },\n  { label: 'Retention', value: '91%', delta: '+2%' }\n];\n\nexport default function DashboardLightCorporate24() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {METRICS.map((item) => (\n        <article key={item.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{item.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{item.value}</p>\n          <p className=\"mt-1 text-sm text-emerald-600\">{item.delta}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-dashboard-light-25",
+      "name": "DashboardLightCorporate25",
+      "category": "dashboard",
+      "subcategory": "kpi-grid",
+      "tags": {
+        "industry": [
+          "analytics",
+          "saas",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const METRICS = [\n  { label: 'Revenue', value: '$82.4k', delta: '+9%' },\n  { label: 'Users', value: '18,420', delta: '+12%' },\n  { label: 'Retention', value: '91%', delta: '+2%' }\n];\n\nexport default function DashboardLightCorporate25() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {METRICS.map((item) => (\n        <article key={item.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{item.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{item.value}</p>\n          <p className=\"mt-1 text-sm text-emerald-600\">{item.delta}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-dashboard-light-26",
+      "name": "DashboardLightCorporate26",
+      "category": "dashboard",
+      "subcategory": "ops-overview",
+      "tags": {
+        "industry": [
+          "analytics",
+          "saas",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const METRICS = [\n  { label: 'Revenue', value: '$82.4k', delta: '+9%' },\n  { label: 'Users', value: '18,420', delta: '+12%' },\n  { label: 'Retention', value: '91%', delta: '+2%' }\n];\n\nexport default function DashboardLightCorporate26() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {METRICS.map((item) => (\n        <article key={item.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{item.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{item.value}</p>\n          <p className=\"mt-1 text-sm text-emerald-600\">{item.delta}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-dashboard-light-27",
+      "name": "DashboardLightCorporate27",
+      "category": "dashboard",
+      "subcategory": "activity-panel",
+      "tags": {
+        "industry": [
+          "analytics",
+          "saas",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const METRICS = [\n  { label: 'Revenue', value: '$82.4k', delta: '+9%' },\n  { label: 'Users', value: '18,420', delta: '+12%' },\n  { label: 'Retention', value: '91%', delta: '+2%' }\n];\n\nexport default function DashboardLightCorporate27() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {METRICS.map((item) => (\n        <article key={item.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{item.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{item.value}</p>\n          <p className=\"mt-1 text-sm text-emerald-600\">{item.delta}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-dashboard-light-28",
+      "name": "DashboardLightCorporate28",
+      "category": "dashboard",
+      "subcategory": "kpi-grid",
+      "tags": {
+        "industry": [
+          "analytics",
+          "saas",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const METRICS = [\n  { label: 'Revenue', value: '$82.4k', delta: '+9%' },\n  { label: 'Users', value: '18,420', delta: '+12%' },\n  { label: 'Retention', value: '91%', delta: '+2%' }\n];\n\nexport default function DashboardLightCorporate28() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {METRICS.map((item) => (\n        <article key={item.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{item.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{item.value}</p>\n          <p className=\"mt-1 text-sm text-emerald-600\">{item.delta}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-dashboard-light-29",
+      "name": "DashboardLightCorporate29",
+      "category": "dashboard",
+      "subcategory": "ops-overview",
+      "tags": {
+        "industry": [
+          "analytics",
+          "saas",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const METRICS = [\n  { label: 'Revenue', value: '$82.4k', delta: '+9%' },\n  { label: 'Users', value: '18,420', delta: '+12%' },\n  { label: 'Retention', value: '91%', delta: '+2%' }\n];\n\nexport default function DashboardLightCorporate29() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {METRICS.map((item) => (\n        <article key={item.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{item.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{item.value}</p>\n          <p className=\"mt-1 text-sm text-emerald-600\">{item.delta}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-dashboard-light-30",
+      "name": "DashboardLightCorporate30",
+      "category": "dashboard",
+      "subcategory": "activity-panel",
+      "tags": {
+        "industry": [
+          "analytics",
+          "saas",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const METRICS = [\n  { label: 'Revenue', value: '$82.4k', delta: '+9%' },\n  { label: 'Users', value: '18,420', delta: '+12%' },\n  { label: 'Retention', value: '91%', delta: '+2%' }\n];\n\nexport default function DashboardLightCorporate30() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {METRICS.map((item) => (\n        <article key={item.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{item.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{item.value}</p>\n          <p className=\"mt-1 text-sm text-emerald-600\">{item.delta}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    }
+  ]
+}

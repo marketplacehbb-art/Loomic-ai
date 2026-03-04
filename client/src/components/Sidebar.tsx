@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { resolveImageWithFallback } from '../lib/assets';
 // import UsageIndicator from './UsageIndicator'; <--- Removed
 
 interface SidebarProps {
@@ -71,6 +72,16 @@ export default function Sidebar({
                     <span className="material-symbols-rounded">settings</span>
                     Settings
                 </Link>
+                <Link
+                    to="/billing"
+                    className={`flex items-center gap-3 px-3 py-3 font-medium transition-colors ${isActive('/billing')
+                        ? 'bg-gradient-to-r from-primary/10 to-transparent border-l-4 border-primary text-primary'
+                        : 'text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary border-l-4 border-transparent'
+                        }`}
+                >
+                    <span className="material-symbols-rounded">payments</span>
+                    Billing
+                </Link>
                 <div className="pt-4 mt-2 mb-2 border-t border-slate-200 dark:border-white/5">
                     <p className="px-3 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Enterprise</p>
                     <Link
@@ -92,6 +103,16 @@ export default function Sidebar({
                     >
                         <span className="material-symbols-rounded">source</span>
                         Source Control
+                    </Link>
+                    <Link
+                        to="/security"
+                        className={`flex items-center gap-3 px-3 py-3 font-medium transition-colors ${isActive('/security')
+                            ? 'bg-gradient-to-r from-primary/10 to-transparent border-l-4 border-primary text-primary'
+                            : 'text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary border-l-4 border-transparent'
+                            }`}
+                    >
+                        <span className="material-symbols-rounded">security</span>
+                        Security
                     </Link>
                     {onDeploy && (
                         <button
@@ -137,7 +158,12 @@ export default function Sidebar({
                         <img
                             alt="User Avatar"
                             className="w-10 h-10 rounded-lg bg-primary/20 object-cover"
-                            src={profile?.avatar_url || `https://ui-avatars.com/api/?name=${profile?.username || user?.email}&background=random`}
+                            src={resolveImageWithFallback(
+                                profile?.avatar_url || `https://ui-avatars.com/api/?name=${profile?.username || user?.email}&background=random`
+                            )}
+                            onError={(event) => {
+                                event.currentTarget.src = resolveImageWithFallback(null);
+                            }}
                         />
                         <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-green-500 border-2 border-slate-100 dark:border-card-dark rounded-full"></div>
                     </div>

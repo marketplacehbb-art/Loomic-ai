@@ -1,0 +1,842 @@
+{
+  "category": "team",
+  "components": [
+    {
+      "id": "team-cards-grid-01",
+      "name": "Team Cards Grid",
+      "category": "team",
+      "subcategory": "grid",
+      "tags": {
+        "industry": [
+          "agency",
+          "studio",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "elegant"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const MEMBERS = [\n  { name: \"Elena Krause\", role: \"CEO & Co-Founder\", initials: \"EK\", color: \"from-violet-400 to-indigo-500\", linkedin: \"#\" },\n  { name: \"David Park\", role: \"CTO\", initials: \"DP\", color: \"from-emerald-400 to-teal-500\", linkedin: \"#\" },\n  { name: \"Maria Santos\", role: \"Head of Design\", initials: \"MS\", color: \"from-rose-400 to-pink-500\", linkedin: \"#\" },\n  { name: \"Felix Weber\", role: \"VP Engineering\", initials: \"FW\", color: \"from-amber-400 to-orange-500\", linkedin: \"#\" },\n  { name: \"Nora Kim\", role: \"Head of Marketing\", initials: \"NK\", color: \"from-sky-400 to-cyan-500\", linkedin: \"#\" },\n  { name: \"Ben Fischer\", role: \"Lead Product Manager\", initials: \"BF\", color: \"from-fuchsia-400 to-purple-500\", linkedin: \"#\" },\n];\n\nexport default function TeamCardsGrid01() {\n  return (\n    <section id=\"team\" className=\"px-6 py-24\">\n      <div className=\"mx-auto max-w-6xl\">\n        <p className=\"text-center text-xs font-bold uppercase tracking-[0.25em] text-violet-600\">Das Team</p>\n        <h2 className=\"mt-3 text-center text-3xl font-extrabold text-slate-900\">Köpfe hinter {{projectName}}</h2>\n        <div className=\"mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3\">\n          {MEMBERS.map((m) => (\n            <article key={m.name} className=\"group rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md\">\n              <div className={`flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br ${m.color} text-xl font-black text-white`}>\n                {m.initials}\n              </div>\n              <h3 className=\"mt-4 font-bold text-slate-900\">{m.name}</h3>\n              <p className=\"mt-0.5 text-sm text-slate-500\">{m.role}</p>\n              <a href={m.linkedin} className=\"mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-violet-600 opacity-0 transition group-hover:opacity-100\">\n                LinkedIn →\n              </a>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}"
+      }
+    },
+    {
+      "id": "corp-team-light-01",
+      "name": "TeamLightCorporate01",
+      "category": "team",
+      "subcategory": "grid-clean",
+      "tags": {
+        "industry": [
+          "agency",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PEOPLE = [\n  { name: 'Anna Meyer', role: 'Managing Director' },\n  { name: 'Tim Schwarz', role: 'Head of Product' },\n  { name: 'Nora Lang', role: 'Engineering Lead' }\n];\n\nexport default function TeamLightCorporate01() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Team Section 01</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PEOPLE.map((p) => (\n            <article key={p.name} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <div className=\"h-20 rounded-lg bg-slate-100\" />\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{p.name}</p>\n              <p className=\"text-xs text-slate-500\">{p.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-team-light-02",
+      "name": "TeamLightCorporate02",
+      "category": "team",
+      "subcategory": "compact-profiles",
+      "tags": {
+        "industry": [
+          "agency",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PEOPLE = [\n  { name: 'Anna Meyer', role: 'Managing Director' },\n  { name: 'Tim Schwarz', role: 'Head of Product' },\n  { name: 'Nora Lang', role: 'Engineering Lead' }\n];\n\nexport default function TeamLightCorporate02() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Team Section 02</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PEOPLE.map((p) => (\n            <article key={p.name} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <div className=\"h-20 rounded-lg bg-slate-100\" />\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{p.name}</p>\n              <p className=\"text-xs text-slate-500\">{p.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-team-light-03",
+      "name": "TeamLightCorporate03",
+      "category": "team",
+      "subcategory": "leadership-row",
+      "tags": {
+        "industry": [
+          "agency",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PEOPLE = [\n  { name: 'Anna Meyer', role: 'Managing Director' },\n  { name: 'Tim Schwarz', role: 'Head of Product' },\n  { name: 'Nora Lang', role: 'Engineering Lead' }\n];\n\nexport default function TeamLightCorporate03() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Team Section 03</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PEOPLE.map((p) => (\n            <article key={p.name} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <div className=\"h-20 rounded-lg bg-slate-100\" />\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{p.name}</p>\n              <p className=\"text-xs text-slate-500\">{p.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-team-light-04",
+      "name": "TeamLightCorporate04",
+      "category": "team",
+      "subcategory": "grid-clean",
+      "tags": {
+        "industry": [
+          "agency",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PEOPLE = [\n  { name: 'Anna Meyer', role: 'Managing Director' },\n  { name: 'Tim Schwarz', role: 'Head of Product' },\n  { name: 'Nora Lang', role: 'Engineering Lead' }\n];\n\nexport default function TeamLightCorporate04() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Team Section 04</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PEOPLE.map((p) => (\n            <article key={p.name} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <div className=\"h-20 rounded-lg bg-slate-100\" />\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{p.name}</p>\n              <p className=\"text-xs text-slate-500\">{p.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-team-light-05",
+      "name": "TeamLightCorporate05",
+      "category": "team",
+      "subcategory": "compact-profiles",
+      "tags": {
+        "industry": [
+          "agency",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PEOPLE = [\n  { name: 'Anna Meyer', role: 'Managing Director' },\n  { name: 'Tim Schwarz', role: 'Head of Product' },\n  { name: 'Nora Lang', role: 'Engineering Lead' }\n];\n\nexport default function TeamLightCorporate05() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Team Section 05</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PEOPLE.map((p) => (\n            <article key={p.name} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <div className=\"h-20 rounded-lg bg-slate-100\" />\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{p.name}</p>\n              <p className=\"text-xs text-slate-500\">{p.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-team-light-06",
+      "name": "TeamLightCorporate06",
+      "category": "team",
+      "subcategory": "leadership-row",
+      "tags": {
+        "industry": [
+          "agency",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PEOPLE = [\n  { name: 'Anna Meyer', role: 'Managing Director' },\n  { name: 'Tim Schwarz', role: 'Head of Product' },\n  { name: 'Nora Lang', role: 'Engineering Lead' }\n];\n\nexport default function TeamLightCorporate06() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Team Section 06</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PEOPLE.map((p) => (\n            <article key={p.name} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <div className=\"h-20 rounded-lg bg-slate-100\" />\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{p.name}</p>\n              <p className=\"text-xs text-slate-500\">{p.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-team-light-07",
+      "name": "TeamLightCorporate07",
+      "category": "team",
+      "subcategory": "grid-clean",
+      "tags": {
+        "industry": [
+          "agency",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PEOPLE = [\n  { name: 'Anna Meyer', role: 'Managing Director' },\n  { name: 'Tim Schwarz', role: 'Head of Product' },\n  { name: 'Nora Lang', role: 'Engineering Lead' }\n];\n\nexport default function TeamLightCorporate07() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Team Section 07</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PEOPLE.map((p) => (\n            <article key={p.name} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <div className=\"h-20 rounded-lg bg-slate-100\" />\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{p.name}</p>\n              <p className=\"text-xs text-slate-500\">{p.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-team-light-08",
+      "name": "TeamLightCorporate08",
+      "category": "team",
+      "subcategory": "compact-profiles",
+      "tags": {
+        "industry": [
+          "agency",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PEOPLE = [\n  { name: 'Anna Meyer', role: 'Managing Director' },\n  { name: 'Tim Schwarz', role: 'Head of Product' },\n  { name: 'Nora Lang', role: 'Engineering Lead' }\n];\n\nexport default function TeamLightCorporate08() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Team Section 08</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PEOPLE.map((p) => (\n            <article key={p.name} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <div className=\"h-20 rounded-lg bg-slate-100\" />\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{p.name}</p>\n              <p className=\"text-xs text-slate-500\">{p.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-team-light-09",
+      "name": "TeamLightCorporate09",
+      "category": "team",
+      "subcategory": "leadership-row",
+      "tags": {
+        "industry": [
+          "agency",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PEOPLE = [\n  { name: 'Anna Meyer', role: 'Managing Director' },\n  { name: 'Tim Schwarz', role: 'Head of Product' },\n  { name: 'Nora Lang', role: 'Engineering Lead' }\n];\n\nexport default function TeamLightCorporate09() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Team Section 09</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PEOPLE.map((p) => (\n            <article key={p.name} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <div className=\"h-20 rounded-lg bg-slate-100\" />\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{p.name}</p>\n              <p className=\"text-xs text-slate-500\">{p.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-team-light-10",
+      "name": "TeamLightCorporate10",
+      "category": "team",
+      "subcategory": "grid-clean",
+      "tags": {
+        "industry": [
+          "agency",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PEOPLE = [\n  { name: 'Anna Meyer', role: 'Managing Director' },\n  { name: 'Tim Schwarz', role: 'Head of Product' },\n  { name: 'Nora Lang', role: 'Engineering Lead' }\n];\n\nexport default function TeamLightCorporate10() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Team Section 10</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PEOPLE.map((p) => (\n            <article key={p.name} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <div className=\"h-20 rounded-lg bg-slate-100\" />\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{p.name}</p>\n              <p className=\"text-xs text-slate-500\">{p.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-team-light-11",
+      "name": "TeamLightCorporate11",
+      "category": "team",
+      "subcategory": "compact-profiles",
+      "tags": {
+        "industry": [
+          "agency",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PEOPLE = [\n  { name: 'Anna Meyer', role: 'Managing Director' },\n  { name: 'Tim Schwarz', role: 'Head of Product' },\n  { name: 'Nora Lang', role: 'Engineering Lead' }\n];\n\nexport default function TeamLightCorporate11() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Team Section 11</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PEOPLE.map((p) => (\n            <article key={p.name} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <div className=\"h-20 rounded-lg bg-slate-100\" />\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{p.name}</p>\n              <p className=\"text-xs text-slate-500\">{p.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-team-light-12",
+      "name": "TeamLightCorporate12",
+      "category": "team",
+      "subcategory": "leadership-row",
+      "tags": {
+        "industry": [
+          "agency",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PEOPLE = [\n  { name: 'Anna Meyer', role: 'Managing Director' },\n  { name: 'Tim Schwarz', role: 'Head of Product' },\n  { name: 'Nora Lang', role: 'Engineering Lead' }\n];\n\nexport default function TeamLightCorporate12() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Team Section 12</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PEOPLE.map((p) => (\n            <article key={p.name} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <div className=\"h-20 rounded-lg bg-slate-100\" />\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{p.name}</p>\n              <p className=\"text-xs text-slate-500\">{p.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-team-light-13",
+      "name": "TeamLightCorporate13",
+      "category": "team",
+      "subcategory": "grid-clean",
+      "tags": {
+        "industry": [
+          "agency",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PEOPLE = [\n  { name: 'Anna Meyer', role: 'Managing Director' },\n  { name: 'Tim Schwarz', role: 'Head of Product' },\n  { name: 'Nora Lang', role: 'Engineering Lead' }\n];\n\nexport default function TeamLightCorporate13() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Team Section 13</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PEOPLE.map((p) => (\n            <article key={p.name} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <div className=\"h-20 rounded-lg bg-slate-100\" />\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{p.name}</p>\n              <p className=\"text-xs text-slate-500\">{p.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-team-light-14",
+      "name": "TeamLightCorporate14",
+      "category": "team",
+      "subcategory": "compact-profiles",
+      "tags": {
+        "industry": [
+          "agency",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PEOPLE = [\n  { name: 'Anna Meyer', role: 'Managing Director' },\n  { name: 'Tim Schwarz', role: 'Head of Product' },\n  { name: 'Nora Lang', role: 'Engineering Lead' }\n];\n\nexport default function TeamLightCorporate14() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Team Section 14</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PEOPLE.map((p) => (\n            <article key={p.name} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <div className=\"h-20 rounded-lg bg-slate-100\" />\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{p.name}</p>\n              <p className=\"text-xs text-slate-500\">{p.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-team-light-15",
+      "name": "TeamLightCorporate15",
+      "category": "team",
+      "subcategory": "leadership-row",
+      "tags": {
+        "industry": [
+          "agency",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PEOPLE = [\n  { name: 'Anna Meyer', role: 'Managing Director' },\n  { name: 'Tim Schwarz', role: 'Head of Product' },\n  { name: 'Nora Lang', role: 'Engineering Lead' }\n];\n\nexport default function TeamLightCorporate15() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Team Section 15</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PEOPLE.map((p) => (\n            <article key={p.name} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <div className=\"h-20 rounded-lg bg-slate-100\" />\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{p.name}</p>\n              <p className=\"text-xs text-slate-500\">{p.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-team-light-16",
+      "name": "TeamLightCorporate16",
+      "category": "team",
+      "subcategory": "grid-clean",
+      "tags": {
+        "industry": [
+          "agency",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PEOPLE = [\n  { name: 'Anna Meyer', role: 'Managing Director' },\n  { name: 'Tim Schwarz', role: 'Head of Product' },\n  { name: 'Nora Lang', role: 'Engineering Lead' }\n];\n\nexport default function TeamLightCorporate16() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Team Section 16</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PEOPLE.map((p) => (\n            <article key={p.name} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <div className=\"h-20 rounded-lg bg-slate-100\" />\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{p.name}</p>\n              <p className=\"text-xs text-slate-500\">{p.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-team-light-17",
+      "name": "TeamLightCorporate17",
+      "category": "team",
+      "subcategory": "compact-profiles",
+      "tags": {
+        "industry": [
+          "agency",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PEOPLE = [\n  { name: 'Anna Meyer', role: 'Managing Director' },\n  { name: 'Tim Schwarz', role: 'Head of Product' },\n  { name: 'Nora Lang', role: 'Engineering Lead' }\n];\n\nexport default function TeamLightCorporate17() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Team Section 17</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PEOPLE.map((p) => (\n            <article key={p.name} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <div className=\"h-20 rounded-lg bg-slate-100\" />\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{p.name}</p>\n              <p className=\"text-xs text-slate-500\">{p.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-team-light-18",
+      "name": "TeamLightCorporate18",
+      "category": "team",
+      "subcategory": "leadership-row",
+      "tags": {
+        "industry": [
+          "agency",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PEOPLE = [\n  { name: 'Anna Meyer', role: 'Managing Director' },\n  { name: 'Tim Schwarz', role: 'Head of Product' },\n  { name: 'Nora Lang', role: 'Engineering Lead' }\n];\n\nexport default function TeamLightCorporate18() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Team Section 18</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PEOPLE.map((p) => (\n            <article key={p.name} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <div className=\"h-20 rounded-lg bg-slate-100\" />\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{p.name}</p>\n              <p className=\"text-xs text-slate-500\">{p.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-team-light-19",
+      "name": "TeamLightCorporate19",
+      "category": "team",
+      "subcategory": "grid-clean",
+      "tags": {
+        "industry": [
+          "agency",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PEOPLE = [\n  { name: 'Anna Meyer', role: 'Managing Director' },\n  { name: 'Tim Schwarz', role: 'Head of Product' },\n  { name: 'Nora Lang', role: 'Engineering Lead' }\n];\n\nexport default function TeamLightCorporate19() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Team Section 19</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PEOPLE.map((p) => (\n            <article key={p.name} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <div className=\"h-20 rounded-lg bg-slate-100\" />\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{p.name}</p>\n              <p className=\"text-xs text-slate-500\">{p.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-team-light-20",
+      "name": "TeamLightCorporate20",
+      "category": "team",
+      "subcategory": "compact-profiles",
+      "tags": {
+        "industry": [
+          "agency",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PEOPLE = [\n  { name: 'Anna Meyer', role: 'Managing Director' },\n  { name: 'Tim Schwarz', role: 'Head of Product' },\n  { name: 'Nora Lang', role: 'Engineering Lead' }\n];\n\nexport default function TeamLightCorporate20() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Team Section 20</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PEOPLE.map((p) => (\n            <article key={p.name} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <div className=\"h-20 rounded-lg bg-slate-100\" />\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{p.name}</p>\n              <p className=\"text-xs text-slate-500\">{p.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-team-light-21",
+      "name": "TeamLightCorporate21",
+      "category": "team",
+      "subcategory": "leadership-row",
+      "tags": {
+        "industry": [
+          "agency",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PEOPLE = [\n  { name: 'Anna Meyer', role: 'Managing Director' },\n  { name: 'Tim Schwarz', role: 'Head of Product' },\n  { name: 'Nora Lang', role: 'Engineering Lead' }\n];\n\nexport default function TeamLightCorporate21() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Team Section 21</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PEOPLE.map((p) => (\n            <article key={p.name} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <div className=\"h-20 rounded-lg bg-slate-100\" />\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{p.name}</p>\n              <p className=\"text-xs text-slate-500\">{p.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-team-light-22",
+      "name": "TeamLightCorporate22",
+      "category": "team",
+      "subcategory": "grid-clean",
+      "tags": {
+        "industry": [
+          "agency",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PEOPLE = [\n  { name: 'Anna Meyer', role: 'Managing Director' },\n  { name: 'Tim Schwarz', role: 'Head of Product' },\n  { name: 'Nora Lang', role: 'Engineering Lead' }\n];\n\nexport default function TeamLightCorporate22() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Team Section 22</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PEOPLE.map((p) => (\n            <article key={p.name} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <div className=\"h-20 rounded-lg bg-slate-100\" />\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{p.name}</p>\n              <p className=\"text-xs text-slate-500\">{p.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-team-light-23",
+      "name": "TeamLightCorporate23",
+      "category": "team",
+      "subcategory": "compact-profiles",
+      "tags": {
+        "industry": [
+          "agency",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PEOPLE = [\n  { name: 'Anna Meyer', role: 'Managing Director' },\n  { name: 'Tim Schwarz', role: 'Head of Product' },\n  { name: 'Nora Lang', role: 'Engineering Lead' }\n];\n\nexport default function TeamLightCorporate23() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Team Section 23</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PEOPLE.map((p) => (\n            <article key={p.name} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <div className=\"h-20 rounded-lg bg-slate-100\" />\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{p.name}</p>\n              <p className=\"text-xs text-slate-500\">{p.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-team-light-24",
+      "name": "TeamLightCorporate24",
+      "category": "team",
+      "subcategory": "leadership-row",
+      "tags": {
+        "industry": [
+          "agency",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PEOPLE = [\n  { name: 'Anna Meyer', role: 'Managing Director' },\n  { name: 'Tim Schwarz', role: 'Head of Product' },\n  { name: 'Nora Lang', role: 'Engineering Lead' }\n];\n\nexport default function TeamLightCorporate24() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Team Section 24</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PEOPLE.map((p) => (\n            <article key={p.name} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <div className=\"h-20 rounded-lg bg-slate-100\" />\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{p.name}</p>\n              <p className=\"text-xs text-slate-500\">{p.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-team-light-25",
+      "name": "TeamLightCorporate25",
+      "category": "team",
+      "subcategory": "grid-clean",
+      "tags": {
+        "industry": [
+          "agency",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PEOPLE = [\n  { name: 'Anna Meyer', role: 'Managing Director' },\n  { name: 'Tim Schwarz', role: 'Head of Product' },\n  { name: 'Nora Lang', role: 'Engineering Lead' }\n];\n\nexport default function TeamLightCorporate25() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Team Section 25</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PEOPLE.map((p) => (\n            <article key={p.name} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <div className=\"h-20 rounded-lg bg-slate-100\" />\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{p.name}</p>\n              <p className=\"text-xs text-slate-500\">{p.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-team-light-26",
+      "name": "TeamLightCorporate26",
+      "category": "team",
+      "subcategory": "compact-profiles",
+      "tags": {
+        "industry": [
+          "agency",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PEOPLE = [\n  { name: 'Anna Meyer', role: 'Managing Director' },\n  { name: 'Tim Schwarz', role: 'Head of Product' },\n  { name: 'Nora Lang', role: 'Engineering Lead' }\n];\n\nexport default function TeamLightCorporate26() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Team Section 26</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PEOPLE.map((p) => (\n            <article key={p.name} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <div className=\"h-20 rounded-lg bg-slate-100\" />\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{p.name}</p>\n              <p className=\"text-xs text-slate-500\">{p.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-team-light-27",
+      "name": "TeamLightCorporate27",
+      "category": "team",
+      "subcategory": "leadership-row",
+      "tags": {
+        "industry": [
+          "agency",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PEOPLE = [\n  { name: 'Anna Meyer', role: 'Managing Director' },\n  { name: 'Tim Schwarz', role: 'Head of Product' },\n  { name: 'Nora Lang', role: 'Engineering Lead' }\n];\n\nexport default function TeamLightCorporate27() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Team Section 27</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PEOPLE.map((p) => (\n            <article key={p.name} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <div className=\"h-20 rounded-lg bg-slate-100\" />\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{p.name}</p>\n              <p className=\"text-xs text-slate-500\">{p.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-team-light-28",
+      "name": "TeamLightCorporate28",
+      "category": "team",
+      "subcategory": "grid-clean",
+      "tags": {
+        "industry": [
+          "agency",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PEOPLE = [\n  { name: 'Anna Meyer', role: 'Managing Director' },\n  { name: 'Tim Schwarz', role: 'Head of Product' },\n  { name: 'Nora Lang', role: 'Engineering Lead' }\n];\n\nexport default function TeamLightCorporate28() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Team Section 28</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PEOPLE.map((p) => (\n            <article key={p.name} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <div className=\"h-20 rounded-lg bg-slate-100\" />\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{p.name}</p>\n              <p className=\"text-xs text-slate-500\">{p.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-team-light-29",
+      "name": "TeamLightCorporate29",
+      "category": "team",
+      "subcategory": "compact-profiles",
+      "tags": {
+        "industry": [
+          "agency",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PEOPLE = [\n  { name: 'Anna Meyer', role: 'Managing Director' },\n  { name: 'Tim Schwarz', role: 'Head of Product' },\n  { name: 'Nora Lang', role: 'Engineering Lead' }\n];\n\nexport default function TeamLightCorporate29() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Team Section 29</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PEOPLE.map((p) => (\n            <article key={p.name} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <div className=\"h-20 rounded-lg bg-slate-100\" />\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{p.name}</p>\n              <p className=\"text-xs text-slate-500\">{p.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-team-light-30",
+      "name": "TeamLightCorporate30",
+      "category": "team",
+      "subcategory": "leadership-row",
+      "tags": {
+        "industry": [
+          "agency",
+          "enterprise",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PEOPLE = [\n  { name: 'Anna Meyer', role: 'Managing Director' },\n  { name: 'Tim Schwarz', role: 'Head of Product' },\n  { name: 'Nora Lang', role: 'Engineering Lead' }\n];\n\nexport default function TeamLightCorporate30() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Team Section 30</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PEOPLE.map((p) => (\n            <article key={p.name} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n              <div className=\"h-20 rounded-lg bg-slate-100\" />\n              <p className=\"mt-4 text-sm font-semibold text-slate-900\">{p.name}</p>\n              <p className=\"text-xs text-slate-500\">{p.role}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    }
+  ]
+}

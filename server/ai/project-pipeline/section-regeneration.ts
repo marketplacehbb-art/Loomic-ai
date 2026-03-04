@@ -27,6 +27,9 @@ export interface PromptIntentHint {
   forceAppUpdate?: boolean;
   confidence?: number;
   reasoning?: string;
+  impactedFiles?: string[];
+  forbiddenFiles?: string[];
+  editScope?: 'small_fix' | 'style_tweak' | 'component_update' | 'refactor';
 }
 
 interface CreateSectionRegenerationInput {
@@ -306,7 +309,12 @@ export function filterFilesForSectionContext(
   if (plan.mode !== 'section-isolated') return files;
 
   const allow = new Set(plan.allowedUpdatePaths.map(normalizePath));
-  const keepAlways = new Set(['src/main.tsx', 'src/index.css']);
+  const keepAlways = new Set([
+    'src/main.tsx',
+    'src/index.css',
+    'src/App.css',
+    'src/vite-env.d.ts',
+  ]);
   if (plan.allowAppUpdate) {
     keepAlways.add('src/App.tsx');
   }

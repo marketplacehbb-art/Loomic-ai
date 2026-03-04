@@ -14,12 +14,37 @@ import helmet from 'helmet';
 import generateRouter from './api/generate.js';
 import gitRouter from './api/git/routes.js';
 import supabaseIntegrationRouter from './api/integrations/supabase.js';
-import { apiLimiter, generationLimiter } from './middleware/rate-limiter.js';
+import cloudRouter from './api/cloud.js';
+import publishRouter from './api/publish.js';
+import securityScanRouter from './api/security/scan.js';
+import { apiLimiter, generationLimiter, gitLimiter, securityLimiter } from './middleware/rate-limiter.js';
 import { usageMonitor } from './middleware/usage-monitor.js';
 import { requireAuth } from './middleware/auth.js';
+import {
+  getReleaseStatus,
+  releaseGate,
+  updateReleaseConfig,
+  verifyReleaseAdminToken,
+} from './middleware/release-control.js';
+import {
+  detectClientExposedSecrets,
+  getDeepSeekApiKey,
+  getGeminiApiKey,
+  getGroqApiKey,
+  getNvidiaApiKey,
+  getOpenAIApiKey,
+  getOpenRouterApiKey,
+} from './utils/env-security.js';
+import { sanitizeErrorForLog, sanitizeErrorMessage } from './utils/error-sanitizer.js';
 
 const app = express();
 const PORT = process.env.API_PORT || 3001;
+const defaultCorsOrigins = ['http://localhost:3000', 'http://127.0.0.1:3000'];
+const configuredCorsOrigins = String(process.env.CORS_ORIGINS || '')
+  .split(',')
+  .map((value) => value.trim())
+  .filter(Boolean);
+const allowedCorsOrigins = configuredCorsOrigins.length > 0 ? configuredCorsOrigins : defaultCorsOrigins;
 
 // ═══════════════════════════════════════════
 // MIDDLEWARE
@@ -31,7 +56,13 @@ app.use(helmet());
 // CORS - Allow requests from Vite dev server
 app.use(
   cors({
-    origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+    origin: (origin, callback) => {
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+      callback(null, allowedCorsOrigins.includes(origin));
+    },
     credentials: true
   })
 );
@@ -43,11 +74,17 @@ app.use(express.json({ limit: '10mb' }));
 app.use('/api', apiLimiter); // Global limit for all API routes
 app.use('/api/generate', requireAuth);
 app.use('/api/git', requireAuth);
+app.use('/api/security', requireAuth);
+app.use('/api/cloud', requireAuth);
+app.use('/api/publish', requireAuth);
 app.use('/api/integrations', (req: Request, res: Response, next: NextFunction) => {
   if (req.path === '/supabase/callback') return next();
   return requireAuth(req, res, next);
 });
 app.use('/api/generate', generationLimiter); // Strict limit for generation
+app.use('/api/generate', releaseGate); // Canary/rollback release gate
+app.use('/api/git', gitLimiter); // Git route class limit
+app.use('/api/security', securityLimiter); // Security route class limit
 app.use('/api/generate', usageMonitor); // User quota check
 
 // Request logging
@@ -62,17 +99,103 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
 // Health check
 app.get('/api/health', (req: Request, res: Response) => {
+  const openRouterKey = getOpenRouterApiKey();
+  const geminiKey = getGeminiApiKey();
+  const groqKey = getGroqApiKey();
+  const nvidiaKey = getNvidiaApiKey();
+  const deepSeekKey = getDeepSeekApiKey();
+  const openaiKey = getOpenAIApiKey();
+
+  const geminiConfigured = Boolean(
+    (openRouterKey && openRouterKey.trim()) ||
+    (geminiKey && geminiKey.trim())
+  );
+  const openaiConfigured = Boolean(
+    openaiKey && openaiKey.trim()
+  );
+  const groqConfigured = Boolean(
+    groqKey && groqKey.trim()
+  );
+  const nvidiaConfigured = Boolean(
+    nvidiaKey && nvidiaKey.trim()
+  );
+  const deepSeekConfigured = Boolean(
+    deepSeekKey && deepSeekKey.trim()
+  );
+
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'development',
+    providers: {
+      gemini: {
+        configured: geminiConfigured,
+        gateway: openRouterKey ? 'openrouter' : 'direct-or-default'
+      },
+      groq: {
+        configured: groqConfigured
+      },
+      openai: {
+        configured: openaiConfigured
+      },
+      nvidia: {
+        configured: nvidiaConfigured
+      },
+      deepseek: {
+        configured: deepSeekConfigured
+      }
+    },
+    release: getReleaseStatus(),
+  });
+});
+
+app.get('/api/release/status', (_req: Request, res: Response) => {
+  res.json({
+    success: true,
+    release: getReleaseStatus(),
+  });
+});
+
+app.post('/api/release/control', (req: Request, res: Response) => {
+  if (!verifyReleaseAdminToken(req)) {
+    return res.status(401).json({
+      success: false,
+      error: 'Unauthorized: invalid release admin token',
+      code: 'RELEASE_ADMIN_UNAUTHORIZED',
+    });
+  }
+
+  const mode = typeof req.body?.mode === 'string' ? req.body.mode : undefined;
+  const reason = typeof req.body?.reason === 'string' ? req.body.reason : undefined;
+  const killSwitch = typeof req.body?.killSwitch === 'boolean' ? req.body.killSwitch : undefined;
+  const canaryPercent = Number.isFinite(Number(req.body?.canaryPercent))
+    ? Number(req.body.canaryPercent)
+    : undefined;
+  const enforceCanary = typeof req.body?.enforceCanary === 'boolean'
+    ? req.body.enforceCanary
+    : undefined;
+
+  const release = updateReleaseConfig({
+    mode: mode as any,
+    reason,
+    killSwitch,
+    canaryPercent,
+    enforceCanary,
+  });
+
+  return res.json({
+    success: true,
+    release,
   });
 });
 
 // Main API routes
 app.use('/api', generateRouter);
 app.use('/api/git', gitRouter);
+app.use('/api/security', securityScanRouter);
+app.use('/api/cloud', cloudRouter);
+app.use('/api/publish', publishRouter);
 app.use('/api/integrations/supabase', supabaseIntegrationRouter);
 
 // 404 handler
@@ -86,10 +209,20 @@ app.use((req: Request, res: Response) => {
 
 // Error handler
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error('❌ Server Error:', err);
+  console.error('❌ Server Error:', {
+    path: req.path,
+    method: req.method,
+    message: sanitizeErrorForLog(err),
+    status: Number((err as any)?.status) || undefined,
+    code: typeof (err as any)?.code === 'string' ? (err as any).code : undefined,
+  });
+  const safeDevMessage = sanitizeErrorMessage(err, {
+    fallback: 'Unexpected server error',
+    maxLength: 320,
+  });
   res.status(500).json({
     error: 'Internal server error',
-    message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
+    message: process.env.NODE_ENV === 'development' ? safeDevMessage : 'Something went wrong'
   });
 });
 
@@ -114,8 +247,19 @@ async function startServer() {
     console.log('\n🚀 ═══════════════════════════════════════');
     console.log(`✅ API Server running on http://localhost:${PORT}`);
     console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`🔑 Gemini API Key: ${process.env.VITE_GEMINI_API_KEY ? '✓ Configured' : '✗ Missing'}`);
-    console.log(`🔑 DeepSeek API Key: ${process.env.VITE_DEEPSEEK_API_KEY ? '✓ Configured' : '✗ Missing'}`);
+    const exposedSecrets = detectClientExposedSecrets();
+    console.log(`🔑 Gemini API Key: ${getGeminiApiKey() ? '✓ Configured' : '✗ Missing'}`);
+    console.log(`🔑 Groq API Key: ${getGroqApiKey() ? '✓ Configured' : '✗ Missing'}`);
+    console.log(`🔑 OpenAI API Key: ${getOpenAIApiKey() ? '✓ Configured' : '✗ Missing'}`);
+    console.log(`🔑 OpenRouter API Key: ${getOpenRouterApiKey() ? '✓ Configured' : '✗ Missing'}`);
+    console.log(`🔑 NVIDIA API Key: ${getNvidiaApiKey() ? '✓ Configured' : '✗ Missing'}`);
+    console.log(`🔑 DeepSeek API Key: ${process.env.DEEPSEEK_API_KEY ? '✓ Configured' : '✗ Missing'}`);
+    if (exposedSecrets.length > 0) {
+      console.warn(
+        `[Security] Client-exposed secret env keys detected: ${exposedSecrets.join(', ')}. ` +
+        'Move these to server-only env names immediately.'
+      );
+    }
     console.log('═══════════════════════════════════════\n');
   });
 

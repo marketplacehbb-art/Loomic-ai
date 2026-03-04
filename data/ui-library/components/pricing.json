@@ -1,0 +1,863 @@
+{
+  "category": "pricing",
+  "components": [
+    {
+      "id": "pricing-cards-spotlight-01",
+      "name": "Pricing Spotlight Cards",
+      "category": "pricing",
+      "subcategory": "3-tier",
+      "tags": {
+        "industry": [
+          "saas",
+          "startup"
+        ],
+        "tone": [
+          "modern",
+          "conversion"
+        ],
+        "theme": [
+          "light",
+          "dark"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PLANS = [\n  { name: \"Starter\", price: \"19\", points: [\"1 Projekt\", \"Email-Support\", \"Basis-Analytics\"], featured: false },\n  { name: \"Growth\", price: \"49\", points: [\"5 Projekte\", \"Priority-Support\", \"Erweiterte Analytics\", \"Team-Zugang\"], featured: true },\n  { name: \"Scale\", price: \"99\", points: [\"Unbegrenzt\", \"Dedicated Onboarding\", \"API-Zugang\", \"SLA 99.9%\"], featured: false },\n];\n\nexport default function PricingCardsSpotlight01() {\n  return (\n    <section id=\"pricing\" className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900 dark:text-white\">Flexible Preise</h2>\n        <p className=\"mt-2 text-slate-500 dark:text-slate-400\">Monatlich kündbar. Kein Risiko.</p>\n        <div className=\"mt-10 grid gap-6 md:grid-cols-3\">\n          {PLANS.map((plan) => (\n            <article key={plan.name} className={`relative rounded-2xl border p-7 ${plan.featured ? \"border-indigo-500 bg-indigo-600 text-white ring-4 ring-indigo-500/20\" : \"border-slate-200 bg-white text-slate-900 dark:border-slate-800 dark:bg-slate-900 dark:text-white\"}`}>\n              {plan.featured && (\n                <span className=\"absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-amber-400 px-3 py-1 text-xs font-bold text-slate-900\">\n                  Beliebteste Wahl\n                </span>\n              )}\n              <h3 className=\"text-lg font-semibold\">{plan.name}</h3>\n              <p className=\"mt-3 text-4xl font-black\">€{plan.price}<span className=\"text-sm font-medium opacity-70\">/mo</span></p>\n              <ul className=\"mt-5 space-y-2 text-sm\">\n                {plan.points.map((p) => (\n                  <li key={p} className=\"flex items-center gap-2\">\n                    <span className={`text-base ${plan.featured ? \"text-cyan-200\" : \"text-indigo-500\"}`}>✓</span>\n                    {p}\n                  </li>\n                ))}\n              </ul>\n              <button className={`mt-7 w-full rounded-xl px-4 py-2.5 text-sm font-semibold transition ${plan.featured ? \"bg-white text-indigo-700 hover:bg-slate-100\" : \"bg-slate-900 text-white hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100\"}`}>\n                Auswählen\n              </button>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}"
+      }
+    },
+    {
+      "id": "pricing-toggle-01",
+      "name": "Pricing Toggle Monthly/Annual",
+      "category": "pricing",
+      "subcategory": "toggle",
+      "tags": {
+        "industry": [
+          "saas",
+          "startup",
+          "tech"
+        ],
+        "tone": [
+          "clean",
+          "conversion"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "import { useState } from \"react\";\n\nconst PLANS = [\n  { name: \"Pro\", monthly: 29, annual: 19, description: \"Fur Freelancer und kleine Teams.\" },\n  { name: \"Business\", monthly: 79, annual: 59, description: \"Fur wachsende Unternehmen mit mehr Projekten.\", featured: true },\n];\n\nexport default function PricingToggle01() {\n  const [annual, setAnnual] = useState(false);\n  return (\n    <section id=\"pricing\" className=\"bg-white px-6 py-20\">\n      <div className=\"mx-auto max-w-4xl text-center\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Wahle deinen Plan</h2>\n        <div className=\"mt-6 inline-flex items-center gap-3 rounded-full border border-slate-200 bg-slate-100 p-1\">\n          <button onClick={() => setAnnual(false)} className={`rounded-full px-4 py-1.5 text-sm font-semibold transition ${!annual ? \"bg-white shadow text-slate-900\" : \"text-slate-500\"}`}>Monatlich</button>\n          <button onClick={() => setAnnual(true)} className={`rounded-full px-4 py-1.5 text-sm font-semibold transition ${annual ? \"bg-white shadow text-slate-900\" : \"text-slate-500\"}`}>\n            Jahrlich <span className=\"ml-1 text-xs text-emerald-600\">−35%</span>\n          </button>\n        </div>\n        <div className=\"mt-10 grid gap-6 md:grid-cols-2\">\n          {PLANS.map((plan) => (\n            <article key={plan.name} className={`rounded-2xl border p-8 text-left ${plan.featured ? \"border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200\" : \"border-slate-200 bg-white\"}`}>\n              <h3 className=\"text-lg font-bold text-slate-900\">{plan.name}</h3>\n              <p className=\"mt-1 text-sm text-slate-500\">{plan.description}</p>\n              <p className=\"mt-5 text-5xl font-black text-slate-900\">\n                €{annual ? plan.annual : plan.monthly}<span className=\"text-base font-medium text-slate-400\">/mo</span>\n              </p>\n              <button className={`mt-7 w-full rounded-xl py-3 text-sm font-semibold transition ${plan.featured ? \"bg-indigo-600 text-white hover:bg-indigo-500\" : \"bg-slate-900 text-white hover:bg-slate-700\"}`}>\n                Jetzt starten\n              </button>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}"
+      }
+    },
+    {
+      "id": "pricing-horizontal-cards-01",
+      "name": "Pricing Horizontal Stack",
+      "category": "pricing",
+      "subcategory": "horizontal",
+      "tags": {
+        "industry": [
+          "saas",
+          "startup",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "conversion"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const FEATURES = [\"Bis zu 10 Nutzer\", \"20 aktive Projekte\", \"5 GB Speicher\", \"Email-Support\", \"Analytics-Dashboard\", \"API-Zugang\", \"SSO & SAML\", \"Dedizierter Accountmanager\"];\n\nconst TIERS = [\n  { name: \"Free\", price: \"0\", description: \"Perfekt zum Ausprobieren.\", featureCount: 2, color: \"border-slate-200\" },\n  { name: \"Pro\", price: \"39\", description: \"Für wachsende Teams.\", featureCount: 5, color: \"border-violet-500 ring-2 ring-violet-100\", badge: \"Beliebt\" },\n  { name: \"Enterprise\", price: \"Individuell\", description: \"Für skalierungsstarke Unternehmen.\", featureCount: 8, color: \"border-slate-800 bg-slate-900 text-white\" },\n];\n\nexport default function PricingHorizontalCards01() {\n  return (\n    <section id=\"pricing\" className=\"px-6 py-24\">\n      <div className=\"mx-auto max-w-5xl\">\n        <h2 className=\"text-center text-3xl font-extrabold text-slate-900\">Transparent. Fair. Skalierbar.</h2>\n        <p className=\"mt-3 text-center text-slate-500\">Monatlich kündbar. Kein Vendor-Lock-in.</p>\n        <div className=\"mt-12 grid gap-6 md:grid-cols-3\">\n          {TIERS.map((tier) => (\n            <article key={tier.name} className={`relative rounded-3xl border p-7 ${tier.color}`}>\n              {tier.badge && (\n                <span className=\"absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-violet-600 px-4 py-1 text-xs font-bold text-white\">\n                  {tier.badge}\n                </span>\n              )}\n              <h3 className={`text-lg font-bold ${tier.name === \"Enterprise\" ? \"text-white\" : \"text-slate-900\"}`}>{tier.name}</h3>\n              <p className={`mt-1 text-xs ${tier.name === \"Enterprise\" ? \"text-slate-400\" : \"text-slate-500\"}`}>{tier.description}</p>\n              <p className={`mt-5 text-4xl font-black ${tier.name === \"Enterprise\" ? \"text-white\" : \"text-slate-900\"}`}>\n                {tier.price === \"Individuell\" ? <span className=\"text-2xl\">Auf Anfrage</span> : <>${tier.price}<span className=\"text-sm font-normal opacity-60\">/mo</span></>}\n              </p>\n              <ul className={`mt-6 space-y-2 text-sm ${tier.name === \"Enterprise\" ? \"text-slate-300\" : \"text-slate-600\"}`}>\n                {FEATURES.slice(0, tier.featureCount).map((f) => (\n                  <li key={f} className=\"flex items-center gap-2\">\n                    <span className=\"text-emerald-500\">✓</span>{f}\n                  </li>\n                ))}\n              </ul>\n              <button className={`mt-8 w-full rounded-2xl py-2.5 text-sm font-bold transition ${tier.name === \"Enterprise\" ? \"bg-white text-slate-900 hover:bg-slate-100\" : tier.name === \"Pro\" ? \"bg-violet-600 text-white hover:bg-violet-500\" : \"border border-slate-200 text-slate-700 hover:bg-slate-50\"}`}>\n                {tier.name === \"Enterprise\" ? \"Kontakt aufnehmen\" : \"Jetzt starten\"}\n              </button>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}"
+      }
+    },
+    {
+      "id": "corp-pricing-light-01",
+      "name": "PricingLightCorporate01",
+      "category": "pricing",
+      "subcategory": "three-tier-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PLANS = [\n  { name: 'Starter', price: '$19', bullets: ['Core modules', 'Email support'] },\n  { name: 'Growth', price: '$59', bullets: ['Advanced analytics', 'Priority support'], featured: true },\n  { name: 'Scale', price: '$129', bullets: ['Enterprise controls', 'Dedicated success'] }\n];\n\nexport default function PricingLightCorporate01() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Pricing Section 01</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PLANS.map((plan) => (\n            <article key={plan.name} className={`rounded-xl border p-6 ${plan.featured ? 'border-slate-500 bg-slate-50' : 'border-slate-200 bg-white'}`}>\n              <h3 className=\"text-lg font-semibold text-slate-900\">{plan.name}</h3>\n              <p className=\"mt-2 text-3xl font-bold text-slate-900\">{plan.price}</p>\n              <ul className=\"mt-4 space-y-2 text-sm text-slate-600\">\n                {plan.bullets.map((b) => <li key={b}>{b}</li>)}\n              </ul>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-pricing-light-02",
+      "name": "PricingLightCorporate02",
+      "category": "pricing",
+      "subcategory": "enterprise-grid",
+      "tags": {
+        "industry": [
+          "saas",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PLANS = [\n  { name: 'Starter', price: '$19', bullets: ['Core modules', 'Email support'] },\n  { name: 'Growth', price: '$59', bullets: ['Advanced analytics', 'Priority support'], featured: true },\n  { name: 'Scale', price: '$129', bullets: ['Enterprise controls', 'Dedicated success'] }\n];\n\nexport default function PricingLightCorporate02() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Pricing Section 02</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PLANS.map((plan) => (\n            <article key={plan.name} className={`rounded-xl border p-6 ${plan.featured ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 bg-white'}`}>\n              <h3 className=\"text-lg font-semibold text-slate-900\">{plan.name}</h3>\n              <p className=\"mt-2 text-3xl font-bold text-slate-900\">{plan.price}</p>\n              <ul className=\"mt-4 space-y-2 text-sm text-slate-600\">\n                {plan.bullets.map((b) => <li key={b}>{b}</li>)}\n              </ul>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-pricing-light-03",
+      "name": "PricingLightCorporate03",
+      "category": "pricing",
+      "subcategory": "comparison-lite",
+      "tags": {
+        "industry": [
+          "saas",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PLANS = [\n  { name: 'Starter', price: '$19', bullets: ['Core modules', 'Email support'] },\n  { name: 'Growth', price: '$59', bullets: ['Advanced analytics', 'Priority support'], featured: true },\n  { name: 'Scale', price: '$129', bullets: ['Enterprise controls', 'Dedicated success'] }\n];\n\nexport default function PricingLightCorporate03() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Pricing Section 03</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PLANS.map((plan) => (\n            <article key={plan.name} className={`rounded-xl border p-6 ${plan.featured ? 'border-slate-500 bg-slate-50' : 'border-slate-200 bg-white'}`}>\n              <h3 className=\"text-lg font-semibold text-slate-900\">{plan.name}</h3>\n              <p className=\"mt-2 text-3xl font-bold text-slate-900\">{plan.price}</p>\n              <ul className=\"mt-4 space-y-2 text-sm text-slate-600\">\n                {plan.bullets.map((b) => <li key={b}>{b}</li>)}\n              </ul>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-pricing-light-04",
+      "name": "PricingLightCorporate04",
+      "category": "pricing",
+      "subcategory": "three-tier-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PLANS = [\n  { name: 'Starter', price: '$19', bullets: ['Core modules', 'Email support'] },\n  { name: 'Growth', price: '$59', bullets: ['Advanced analytics', 'Priority support'], featured: true },\n  { name: 'Scale', price: '$129', bullets: ['Enterprise controls', 'Dedicated success'] }\n];\n\nexport default function PricingLightCorporate04() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Pricing Section 04</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PLANS.map((plan) => (\n            <article key={plan.name} className={`rounded-xl border p-6 ${plan.featured ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 bg-white'}`}>\n              <h3 className=\"text-lg font-semibold text-slate-900\">{plan.name}</h3>\n              <p className=\"mt-2 text-3xl font-bold text-slate-900\">{plan.price}</p>\n              <ul className=\"mt-4 space-y-2 text-sm text-slate-600\">\n                {plan.bullets.map((b) => <li key={b}>{b}</li>)}\n              </ul>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-pricing-light-05",
+      "name": "PricingLightCorporate05",
+      "category": "pricing",
+      "subcategory": "enterprise-grid",
+      "tags": {
+        "industry": [
+          "saas",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PLANS = [\n  { name: 'Starter', price: '$19', bullets: ['Core modules', 'Email support'] },\n  { name: 'Growth', price: '$59', bullets: ['Advanced analytics', 'Priority support'], featured: true },\n  { name: 'Scale', price: '$129', bullets: ['Enterprise controls', 'Dedicated success'] }\n];\n\nexport default function PricingLightCorporate05() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Pricing Section 05</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PLANS.map((plan) => (\n            <article key={plan.name} className={`rounded-xl border p-6 ${plan.featured ? 'border-slate-500 bg-slate-50' : 'border-slate-200 bg-white'}`}>\n              <h3 className=\"text-lg font-semibold text-slate-900\">{plan.name}</h3>\n              <p className=\"mt-2 text-3xl font-bold text-slate-900\">{plan.price}</p>\n              <ul className=\"mt-4 space-y-2 text-sm text-slate-600\">\n                {plan.bullets.map((b) => <li key={b}>{b}</li>)}\n              </ul>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-pricing-light-06",
+      "name": "PricingLightCorporate06",
+      "category": "pricing",
+      "subcategory": "comparison-lite",
+      "tags": {
+        "industry": [
+          "saas",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PLANS = [\n  { name: 'Starter', price: '$19', bullets: ['Core modules', 'Email support'] },\n  { name: 'Growth', price: '$59', bullets: ['Advanced analytics', 'Priority support'], featured: true },\n  { name: 'Scale', price: '$129', bullets: ['Enterprise controls', 'Dedicated success'] }\n];\n\nexport default function PricingLightCorporate06() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Pricing Section 06</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PLANS.map((plan) => (\n            <article key={plan.name} className={`rounded-xl border p-6 ${plan.featured ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 bg-white'}`}>\n              <h3 className=\"text-lg font-semibold text-slate-900\">{plan.name}</h3>\n              <p className=\"mt-2 text-3xl font-bold text-slate-900\">{plan.price}</p>\n              <ul className=\"mt-4 space-y-2 text-sm text-slate-600\">\n                {plan.bullets.map((b) => <li key={b}>{b}</li>)}\n              </ul>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-pricing-light-07",
+      "name": "PricingLightCorporate07",
+      "category": "pricing",
+      "subcategory": "three-tier-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PLANS = [\n  { name: 'Starter', price: '$19', bullets: ['Core modules', 'Email support'] },\n  { name: 'Growth', price: '$59', bullets: ['Advanced analytics', 'Priority support'], featured: true },\n  { name: 'Scale', price: '$129', bullets: ['Enterprise controls', 'Dedicated success'] }\n];\n\nexport default function PricingLightCorporate07() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Pricing Section 07</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PLANS.map((plan) => (\n            <article key={plan.name} className={`rounded-xl border p-6 ${plan.featured ? 'border-slate-500 bg-slate-50' : 'border-slate-200 bg-white'}`}>\n              <h3 className=\"text-lg font-semibold text-slate-900\">{plan.name}</h3>\n              <p className=\"mt-2 text-3xl font-bold text-slate-900\">{plan.price}</p>\n              <ul className=\"mt-4 space-y-2 text-sm text-slate-600\">\n                {plan.bullets.map((b) => <li key={b}>{b}</li>)}\n              </ul>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-pricing-light-08",
+      "name": "PricingLightCorporate08",
+      "category": "pricing",
+      "subcategory": "enterprise-grid",
+      "tags": {
+        "industry": [
+          "saas",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PLANS = [\n  { name: 'Starter', price: '$19', bullets: ['Core modules', 'Email support'] },\n  { name: 'Growth', price: '$59', bullets: ['Advanced analytics', 'Priority support'], featured: true },\n  { name: 'Scale', price: '$129', bullets: ['Enterprise controls', 'Dedicated success'] }\n];\n\nexport default function PricingLightCorporate08() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Pricing Section 08</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PLANS.map((plan) => (\n            <article key={plan.name} className={`rounded-xl border p-6 ${plan.featured ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 bg-white'}`}>\n              <h3 className=\"text-lg font-semibold text-slate-900\">{plan.name}</h3>\n              <p className=\"mt-2 text-3xl font-bold text-slate-900\">{plan.price}</p>\n              <ul className=\"mt-4 space-y-2 text-sm text-slate-600\">\n                {plan.bullets.map((b) => <li key={b}>{b}</li>)}\n              </ul>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-pricing-light-09",
+      "name": "PricingLightCorporate09",
+      "category": "pricing",
+      "subcategory": "comparison-lite",
+      "tags": {
+        "industry": [
+          "saas",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PLANS = [\n  { name: 'Starter', price: '$19', bullets: ['Core modules', 'Email support'] },\n  { name: 'Growth', price: '$59', bullets: ['Advanced analytics', 'Priority support'], featured: true },\n  { name: 'Scale', price: '$129', bullets: ['Enterprise controls', 'Dedicated success'] }\n];\n\nexport default function PricingLightCorporate09() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Pricing Section 09</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PLANS.map((plan) => (\n            <article key={plan.name} className={`rounded-xl border p-6 ${plan.featured ? 'border-slate-500 bg-slate-50' : 'border-slate-200 bg-white'}`}>\n              <h3 className=\"text-lg font-semibold text-slate-900\">{plan.name}</h3>\n              <p className=\"mt-2 text-3xl font-bold text-slate-900\">{plan.price}</p>\n              <ul className=\"mt-4 space-y-2 text-sm text-slate-600\">\n                {plan.bullets.map((b) => <li key={b}>{b}</li>)}\n              </ul>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-pricing-light-10",
+      "name": "PricingLightCorporate10",
+      "category": "pricing",
+      "subcategory": "three-tier-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PLANS = [\n  { name: 'Starter', price: '$19', bullets: ['Core modules', 'Email support'] },\n  { name: 'Growth', price: '$59', bullets: ['Advanced analytics', 'Priority support'], featured: true },\n  { name: 'Scale', price: '$129', bullets: ['Enterprise controls', 'Dedicated success'] }\n];\n\nexport default function PricingLightCorporate10() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Pricing Section 10</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PLANS.map((plan) => (\n            <article key={plan.name} className={`rounded-xl border p-6 ${plan.featured ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 bg-white'}`}>\n              <h3 className=\"text-lg font-semibold text-slate-900\">{plan.name}</h3>\n              <p className=\"mt-2 text-3xl font-bold text-slate-900\">{plan.price}</p>\n              <ul className=\"mt-4 space-y-2 text-sm text-slate-600\">\n                {plan.bullets.map((b) => <li key={b}>{b}</li>)}\n              </ul>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-pricing-light-11",
+      "name": "PricingLightCorporate11",
+      "category": "pricing",
+      "subcategory": "enterprise-grid",
+      "tags": {
+        "industry": [
+          "saas",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PLANS = [\n  { name: 'Starter', price: '$19', bullets: ['Core modules', 'Email support'] },\n  { name: 'Growth', price: '$59', bullets: ['Advanced analytics', 'Priority support'], featured: true },\n  { name: 'Scale', price: '$129', bullets: ['Enterprise controls', 'Dedicated success'] }\n];\n\nexport default function PricingLightCorporate11() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Pricing Section 11</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PLANS.map((plan) => (\n            <article key={plan.name} className={`rounded-xl border p-6 ${plan.featured ? 'border-slate-500 bg-slate-50' : 'border-slate-200 bg-white'}`}>\n              <h3 className=\"text-lg font-semibold text-slate-900\">{plan.name}</h3>\n              <p className=\"mt-2 text-3xl font-bold text-slate-900\">{plan.price}</p>\n              <ul className=\"mt-4 space-y-2 text-sm text-slate-600\">\n                {plan.bullets.map((b) => <li key={b}>{b}</li>)}\n              </ul>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-pricing-light-12",
+      "name": "PricingLightCorporate12",
+      "category": "pricing",
+      "subcategory": "comparison-lite",
+      "tags": {
+        "industry": [
+          "saas",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PLANS = [\n  { name: 'Starter', price: '$19', bullets: ['Core modules', 'Email support'] },\n  { name: 'Growth', price: '$59', bullets: ['Advanced analytics', 'Priority support'], featured: true },\n  { name: 'Scale', price: '$129', bullets: ['Enterprise controls', 'Dedicated success'] }\n];\n\nexport default function PricingLightCorporate12() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Pricing Section 12</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PLANS.map((plan) => (\n            <article key={plan.name} className={`rounded-xl border p-6 ${plan.featured ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 bg-white'}`}>\n              <h3 className=\"text-lg font-semibold text-slate-900\">{plan.name}</h3>\n              <p className=\"mt-2 text-3xl font-bold text-slate-900\">{plan.price}</p>\n              <ul className=\"mt-4 space-y-2 text-sm text-slate-600\">\n                {plan.bullets.map((b) => <li key={b}>{b}</li>)}\n              </ul>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-pricing-light-13",
+      "name": "PricingLightCorporate13",
+      "category": "pricing",
+      "subcategory": "three-tier-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PLANS = [\n  { name: 'Starter', price: '$19', bullets: ['Core modules', 'Email support'] },\n  { name: 'Growth', price: '$59', bullets: ['Advanced analytics', 'Priority support'], featured: true },\n  { name: 'Scale', price: '$129', bullets: ['Enterprise controls', 'Dedicated success'] }\n];\n\nexport default function PricingLightCorporate13() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Pricing Section 13</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PLANS.map((plan) => (\n            <article key={plan.name} className={`rounded-xl border p-6 ${plan.featured ? 'border-slate-500 bg-slate-50' : 'border-slate-200 bg-white'}`}>\n              <h3 className=\"text-lg font-semibold text-slate-900\">{plan.name}</h3>\n              <p className=\"mt-2 text-3xl font-bold text-slate-900\">{plan.price}</p>\n              <ul className=\"mt-4 space-y-2 text-sm text-slate-600\">\n                {plan.bullets.map((b) => <li key={b}>{b}</li>)}\n              </ul>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-pricing-light-14",
+      "name": "PricingLightCorporate14",
+      "category": "pricing",
+      "subcategory": "enterprise-grid",
+      "tags": {
+        "industry": [
+          "saas",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PLANS = [\n  { name: 'Starter', price: '$19', bullets: ['Core modules', 'Email support'] },\n  { name: 'Growth', price: '$59', bullets: ['Advanced analytics', 'Priority support'], featured: true },\n  { name: 'Scale', price: '$129', bullets: ['Enterprise controls', 'Dedicated success'] }\n];\n\nexport default function PricingLightCorporate14() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Pricing Section 14</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PLANS.map((plan) => (\n            <article key={plan.name} className={`rounded-xl border p-6 ${plan.featured ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 bg-white'}`}>\n              <h3 className=\"text-lg font-semibold text-slate-900\">{plan.name}</h3>\n              <p className=\"mt-2 text-3xl font-bold text-slate-900\">{plan.price}</p>\n              <ul className=\"mt-4 space-y-2 text-sm text-slate-600\">\n                {plan.bullets.map((b) => <li key={b}>{b}</li>)}\n              </ul>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-pricing-light-15",
+      "name": "PricingLightCorporate15",
+      "category": "pricing",
+      "subcategory": "comparison-lite",
+      "tags": {
+        "industry": [
+          "saas",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PLANS = [\n  { name: 'Starter', price: '$19', bullets: ['Core modules', 'Email support'] },\n  { name: 'Growth', price: '$59', bullets: ['Advanced analytics', 'Priority support'], featured: true },\n  { name: 'Scale', price: '$129', bullets: ['Enterprise controls', 'Dedicated success'] }\n];\n\nexport default function PricingLightCorporate15() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Pricing Section 15</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PLANS.map((plan) => (\n            <article key={plan.name} className={`rounded-xl border p-6 ${plan.featured ? 'border-slate-500 bg-slate-50' : 'border-slate-200 bg-white'}`}>\n              <h3 className=\"text-lg font-semibold text-slate-900\">{plan.name}</h3>\n              <p className=\"mt-2 text-3xl font-bold text-slate-900\">{plan.price}</p>\n              <ul className=\"mt-4 space-y-2 text-sm text-slate-600\">\n                {plan.bullets.map((b) => <li key={b}>{b}</li>)}\n              </ul>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-pricing-light-16",
+      "name": "PricingLightCorporate16",
+      "category": "pricing",
+      "subcategory": "three-tier-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PLANS = [\n  { name: 'Starter', price: '$19', bullets: ['Core modules', 'Email support'] },\n  { name: 'Growth', price: '$59', bullets: ['Advanced analytics', 'Priority support'], featured: true },\n  { name: 'Scale', price: '$129', bullets: ['Enterprise controls', 'Dedicated success'] }\n];\n\nexport default function PricingLightCorporate16() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Pricing Section 16</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PLANS.map((plan) => (\n            <article key={plan.name} className={`rounded-xl border p-6 ${plan.featured ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 bg-white'}`}>\n              <h3 className=\"text-lg font-semibold text-slate-900\">{plan.name}</h3>\n              <p className=\"mt-2 text-3xl font-bold text-slate-900\">{plan.price}</p>\n              <ul className=\"mt-4 space-y-2 text-sm text-slate-600\">\n                {plan.bullets.map((b) => <li key={b}>{b}</li>)}\n              </ul>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-pricing-light-17",
+      "name": "PricingLightCorporate17",
+      "category": "pricing",
+      "subcategory": "enterprise-grid",
+      "tags": {
+        "industry": [
+          "saas",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PLANS = [\n  { name: 'Starter', price: '$19', bullets: ['Core modules', 'Email support'] },\n  { name: 'Growth', price: '$59', bullets: ['Advanced analytics', 'Priority support'], featured: true },\n  { name: 'Scale', price: '$129', bullets: ['Enterprise controls', 'Dedicated success'] }\n];\n\nexport default function PricingLightCorporate17() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Pricing Section 17</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PLANS.map((plan) => (\n            <article key={plan.name} className={`rounded-xl border p-6 ${plan.featured ? 'border-slate-500 bg-slate-50' : 'border-slate-200 bg-white'}`}>\n              <h3 className=\"text-lg font-semibold text-slate-900\">{plan.name}</h3>\n              <p className=\"mt-2 text-3xl font-bold text-slate-900\">{plan.price}</p>\n              <ul className=\"mt-4 space-y-2 text-sm text-slate-600\">\n                {plan.bullets.map((b) => <li key={b}>{b}</li>)}\n              </ul>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-pricing-light-18",
+      "name": "PricingLightCorporate18",
+      "category": "pricing",
+      "subcategory": "comparison-lite",
+      "tags": {
+        "industry": [
+          "saas",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PLANS = [\n  { name: 'Starter', price: '$19', bullets: ['Core modules', 'Email support'] },\n  { name: 'Growth', price: '$59', bullets: ['Advanced analytics', 'Priority support'], featured: true },\n  { name: 'Scale', price: '$129', bullets: ['Enterprise controls', 'Dedicated success'] }\n];\n\nexport default function PricingLightCorporate18() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Pricing Section 18</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PLANS.map((plan) => (\n            <article key={plan.name} className={`rounded-xl border p-6 ${plan.featured ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 bg-white'}`}>\n              <h3 className=\"text-lg font-semibold text-slate-900\">{plan.name}</h3>\n              <p className=\"mt-2 text-3xl font-bold text-slate-900\">{plan.price}</p>\n              <ul className=\"mt-4 space-y-2 text-sm text-slate-600\">\n                {plan.bullets.map((b) => <li key={b}>{b}</li>)}\n              </ul>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-pricing-light-19",
+      "name": "PricingLightCorporate19",
+      "category": "pricing",
+      "subcategory": "three-tier-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PLANS = [\n  { name: 'Starter', price: '$19', bullets: ['Core modules', 'Email support'] },\n  { name: 'Growth', price: '$59', bullets: ['Advanced analytics', 'Priority support'], featured: true },\n  { name: 'Scale', price: '$129', bullets: ['Enterprise controls', 'Dedicated success'] }\n];\n\nexport default function PricingLightCorporate19() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Pricing Section 19</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PLANS.map((plan) => (\n            <article key={plan.name} className={`rounded-xl border p-6 ${plan.featured ? 'border-slate-500 bg-slate-50' : 'border-slate-200 bg-white'}`}>\n              <h3 className=\"text-lg font-semibold text-slate-900\">{plan.name}</h3>\n              <p className=\"mt-2 text-3xl font-bold text-slate-900\">{plan.price}</p>\n              <ul className=\"mt-4 space-y-2 text-sm text-slate-600\">\n                {plan.bullets.map((b) => <li key={b}>{b}</li>)}\n              </ul>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-pricing-light-20",
+      "name": "PricingLightCorporate20",
+      "category": "pricing",
+      "subcategory": "enterprise-grid",
+      "tags": {
+        "industry": [
+          "saas",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PLANS = [\n  { name: 'Starter', price: '$19', bullets: ['Core modules', 'Email support'] },\n  { name: 'Growth', price: '$59', bullets: ['Advanced analytics', 'Priority support'], featured: true },\n  { name: 'Scale', price: '$129', bullets: ['Enterprise controls', 'Dedicated success'] }\n];\n\nexport default function PricingLightCorporate20() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Pricing Section 20</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PLANS.map((plan) => (\n            <article key={plan.name} className={`rounded-xl border p-6 ${plan.featured ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 bg-white'}`}>\n              <h3 className=\"text-lg font-semibold text-slate-900\">{plan.name}</h3>\n              <p className=\"mt-2 text-3xl font-bold text-slate-900\">{plan.price}</p>\n              <ul className=\"mt-4 space-y-2 text-sm text-slate-600\">\n                {plan.bullets.map((b) => <li key={b}>{b}</li>)}\n              </ul>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-pricing-light-21",
+      "name": "PricingLightCorporate21",
+      "category": "pricing",
+      "subcategory": "comparison-lite",
+      "tags": {
+        "industry": [
+          "saas",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PLANS = [\n  { name: 'Starter', price: '$19', bullets: ['Core modules', 'Email support'] },\n  { name: 'Growth', price: '$59', bullets: ['Advanced analytics', 'Priority support'], featured: true },\n  { name: 'Scale', price: '$129', bullets: ['Enterprise controls', 'Dedicated success'] }\n];\n\nexport default function PricingLightCorporate21() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Pricing Section 21</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PLANS.map((plan) => (\n            <article key={plan.name} className={`rounded-xl border p-6 ${plan.featured ? 'border-slate-500 bg-slate-50' : 'border-slate-200 bg-white'}`}>\n              <h3 className=\"text-lg font-semibold text-slate-900\">{plan.name}</h3>\n              <p className=\"mt-2 text-3xl font-bold text-slate-900\">{plan.price}</p>\n              <ul className=\"mt-4 space-y-2 text-sm text-slate-600\">\n                {plan.bullets.map((b) => <li key={b}>{b}</li>)}\n              </ul>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-pricing-light-22",
+      "name": "PricingLightCorporate22",
+      "category": "pricing",
+      "subcategory": "three-tier-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PLANS = [\n  { name: 'Starter', price: '$19', bullets: ['Core modules', 'Email support'] },\n  { name: 'Growth', price: '$59', bullets: ['Advanced analytics', 'Priority support'], featured: true },\n  { name: 'Scale', price: '$129', bullets: ['Enterprise controls', 'Dedicated success'] }\n];\n\nexport default function PricingLightCorporate22() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Pricing Section 22</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PLANS.map((plan) => (\n            <article key={plan.name} className={`rounded-xl border p-6 ${plan.featured ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 bg-white'}`}>\n              <h3 className=\"text-lg font-semibold text-slate-900\">{plan.name}</h3>\n              <p className=\"mt-2 text-3xl font-bold text-slate-900\">{plan.price}</p>\n              <ul className=\"mt-4 space-y-2 text-sm text-slate-600\">\n                {plan.bullets.map((b) => <li key={b}>{b}</li>)}\n              </ul>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-pricing-light-23",
+      "name": "PricingLightCorporate23",
+      "category": "pricing",
+      "subcategory": "enterprise-grid",
+      "tags": {
+        "industry": [
+          "saas",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PLANS = [\n  { name: 'Starter', price: '$19', bullets: ['Core modules', 'Email support'] },\n  { name: 'Growth', price: '$59', bullets: ['Advanced analytics', 'Priority support'], featured: true },\n  { name: 'Scale', price: '$129', bullets: ['Enterprise controls', 'Dedicated success'] }\n];\n\nexport default function PricingLightCorporate23() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Pricing Section 23</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PLANS.map((plan) => (\n            <article key={plan.name} className={`rounded-xl border p-6 ${plan.featured ? 'border-slate-500 bg-slate-50' : 'border-slate-200 bg-white'}`}>\n              <h3 className=\"text-lg font-semibold text-slate-900\">{plan.name}</h3>\n              <p className=\"mt-2 text-3xl font-bold text-slate-900\">{plan.price}</p>\n              <ul className=\"mt-4 space-y-2 text-sm text-slate-600\">\n                {plan.bullets.map((b) => <li key={b}>{b}</li>)}\n              </ul>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-pricing-light-24",
+      "name": "PricingLightCorporate24",
+      "category": "pricing",
+      "subcategory": "comparison-lite",
+      "tags": {
+        "industry": [
+          "saas",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PLANS = [\n  { name: 'Starter', price: '$19', bullets: ['Core modules', 'Email support'] },\n  { name: 'Growth', price: '$59', bullets: ['Advanced analytics', 'Priority support'], featured: true },\n  { name: 'Scale', price: '$129', bullets: ['Enterprise controls', 'Dedicated success'] }\n];\n\nexport default function PricingLightCorporate24() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Pricing Section 24</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PLANS.map((plan) => (\n            <article key={plan.name} className={`rounded-xl border p-6 ${plan.featured ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 bg-white'}`}>\n              <h3 className=\"text-lg font-semibold text-slate-900\">{plan.name}</h3>\n              <p className=\"mt-2 text-3xl font-bold text-slate-900\">{plan.price}</p>\n              <ul className=\"mt-4 space-y-2 text-sm text-slate-600\">\n                {plan.bullets.map((b) => <li key={b}>{b}</li>)}\n              </ul>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-pricing-light-25",
+      "name": "PricingLightCorporate25",
+      "category": "pricing",
+      "subcategory": "three-tier-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PLANS = [\n  { name: 'Starter', price: '$19', bullets: ['Core modules', 'Email support'] },\n  { name: 'Growth', price: '$59', bullets: ['Advanced analytics', 'Priority support'], featured: true },\n  { name: 'Scale', price: '$129', bullets: ['Enterprise controls', 'Dedicated success'] }\n];\n\nexport default function PricingLightCorporate25() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Pricing Section 25</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PLANS.map((plan) => (\n            <article key={plan.name} className={`rounded-xl border p-6 ${plan.featured ? 'border-slate-500 bg-slate-50' : 'border-slate-200 bg-white'}`}>\n              <h3 className=\"text-lg font-semibold text-slate-900\">{plan.name}</h3>\n              <p className=\"mt-2 text-3xl font-bold text-slate-900\">{plan.price}</p>\n              <ul className=\"mt-4 space-y-2 text-sm text-slate-600\">\n                {plan.bullets.map((b) => <li key={b}>{b}</li>)}\n              </ul>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-pricing-light-26",
+      "name": "PricingLightCorporate26",
+      "category": "pricing",
+      "subcategory": "enterprise-grid",
+      "tags": {
+        "industry": [
+          "saas",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PLANS = [\n  { name: 'Starter', price: '$19', bullets: ['Core modules', 'Email support'] },\n  { name: 'Growth', price: '$59', bullets: ['Advanced analytics', 'Priority support'], featured: true },\n  { name: 'Scale', price: '$129', bullets: ['Enterprise controls', 'Dedicated success'] }\n];\n\nexport default function PricingLightCorporate26() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Pricing Section 26</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PLANS.map((plan) => (\n            <article key={plan.name} className={`rounded-xl border p-6 ${plan.featured ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 bg-white'}`}>\n              <h3 className=\"text-lg font-semibold text-slate-900\">{plan.name}</h3>\n              <p className=\"mt-2 text-3xl font-bold text-slate-900\">{plan.price}</p>\n              <ul className=\"mt-4 space-y-2 text-sm text-slate-600\">\n                {plan.bullets.map((b) => <li key={b}>{b}</li>)}\n              </ul>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-pricing-light-27",
+      "name": "PricingLightCorporate27",
+      "category": "pricing",
+      "subcategory": "comparison-lite",
+      "tags": {
+        "industry": [
+          "saas",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PLANS = [\n  { name: 'Starter', price: '$19', bullets: ['Core modules', 'Email support'] },\n  { name: 'Growth', price: '$59', bullets: ['Advanced analytics', 'Priority support'], featured: true },\n  { name: 'Scale', price: '$129', bullets: ['Enterprise controls', 'Dedicated success'] }\n];\n\nexport default function PricingLightCorporate27() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Pricing Section 27</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PLANS.map((plan) => (\n            <article key={plan.name} className={`rounded-xl border p-6 ${plan.featured ? 'border-slate-500 bg-slate-50' : 'border-slate-200 bg-white'}`}>\n              <h3 className=\"text-lg font-semibold text-slate-900\">{plan.name}</h3>\n              <p className=\"mt-2 text-3xl font-bold text-slate-900\">{plan.price}</p>\n              <ul className=\"mt-4 space-y-2 text-sm text-slate-600\">\n                {plan.bullets.map((b) => <li key={b}>{b}</li>)}\n              </ul>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-pricing-light-28",
+      "name": "PricingLightCorporate28",
+      "category": "pricing",
+      "subcategory": "three-tier-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PLANS = [\n  { name: 'Starter', price: '$19', bullets: ['Core modules', 'Email support'] },\n  { name: 'Growth', price: '$59', bullets: ['Advanced analytics', 'Priority support'], featured: true },\n  { name: 'Scale', price: '$129', bullets: ['Enterprise controls', 'Dedicated success'] }\n];\n\nexport default function PricingLightCorporate28() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Pricing Section 28</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PLANS.map((plan) => (\n            <article key={plan.name} className={`rounded-xl border p-6 ${plan.featured ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 bg-white'}`}>\n              <h3 className=\"text-lg font-semibold text-slate-900\">{plan.name}</h3>\n              <p className=\"mt-2 text-3xl font-bold text-slate-900\">{plan.price}</p>\n              <ul className=\"mt-4 space-y-2 text-sm text-slate-600\">\n                {plan.bullets.map((b) => <li key={b}>{b}</li>)}\n              </ul>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-pricing-light-29",
+      "name": "PricingLightCorporate29",
+      "category": "pricing",
+      "subcategory": "enterprise-grid",
+      "tags": {
+        "industry": [
+          "saas",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PLANS = [\n  { name: 'Starter', price: '$19', bullets: ['Core modules', 'Email support'] },\n  { name: 'Growth', price: '$59', bullets: ['Advanced analytics', 'Priority support'], featured: true },\n  { name: 'Scale', price: '$129', bullets: ['Enterprise controls', 'Dedicated success'] }\n];\n\nexport default function PricingLightCorporate29() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Pricing Section 29</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PLANS.map((plan) => (\n            <article key={plan.name} className={`rounded-xl border p-6 ${plan.featured ? 'border-slate-500 bg-slate-50' : 'border-slate-200 bg-white'}`}>\n              <h3 className=\"text-lg font-semibold text-slate-900\">{plan.name}</h3>\n              <p className=\"mt-2 text-3xl font-bold text-slate-900\">{plan.price}</p>\n              <ul className=\"mt-4 space-y-2 text-sm text-slate-600\">\n                {plan.bullets.map((b) => <li key={b}>{b}</li>)}\n              </ul>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-pricing-light-30",
+      "name": "PricingLightCorporate30",
+      "category": "pricing",
+      "subcategory": "comparison-lite",
+      "tags": {
+        "industry": [
+          "saas",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const PLANS = [\n  { name: 'Starter', price: '$19', bullets: ['Core modules', 'Email support'] },\n  { name: 'Growth', price: '$59', bullets: ['Advanced analytics', 'Priority support'], featured: true },\n  { name: 'Scale', price: '$129', bullets: ['Enterprise controls', 'Dedicated success'] }\n];\n\nexport default function PricingLightCorporate30() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Pricing Section 30</h2>\n        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">\n          {PLANS.map((plan) => (\n            <article key={plan.name} className={`rounded-xl border p-6 ${plan.featured ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 bg-white'}`}>\n              <h3 className=\"text-lg font-semibold text-slate-900\">{plan.name}</h3>\n              <p className=\"mt-2 text-3xl font-bold text-slate-900\">{plan.price}</p>\n              <ul className=\"mt-4 space-y-2 text-sm text-slate-600\">\n                {plan.bullets.map((b) => <li key={b}>{b}</li>)}\n              </ul>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    }
+  ]
+}

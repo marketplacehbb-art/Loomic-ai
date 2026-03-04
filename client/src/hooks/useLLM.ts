@@ -6,7 +6,7 @@ import { useState, useCallback } from 'react';
 import { llmClient, type GenerateRequest, type GenerateResponse } from '@lib/llm-client';
 
 interface UseLLMOptions {
-  provider?: 'gemini' | 'deepseek' | 'openai';
+  provider?: 'gemini' | 'groq' | 'openai' | 'nvidia';
   temperature?: number;
   maxTokens?: number;
 }

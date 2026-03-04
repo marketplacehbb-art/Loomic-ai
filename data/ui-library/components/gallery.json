@@ -1,0 +1,842 @@
+{
+  "category": "gallery",
+  "components": [
+    {
+      "id": "gallery-mosaic-01",
+      "name": "Gallery Mosaic Grid",
+      "category": "gallery",
+      "subcategory": "mosaic",
+      "tags": {
+        "industry": [
+          "studio",
+          "portfolio",
+          "agency"
+        ],
+        "tone": [
+          "minimal",
+          "elegant",
+          "premium"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = [\n  { span: \"col-span-2 row-span-2\", gradient: \"from-slate-200 to-slate-300\", label: \"Campaign 01\" },\n  { span: \"\", gradient: \"from-violet-200 to-indigo-300\", label: \"Brand Identity\" },\n  { span: \"\", gradient: \"from-rose-200 to-pink-300\", label: \"Motion Design\" },\n  { span: \"col-span-2\", gradient: \"from-amber-200 to-orange-300\", label: \"Photography Series\" },\n  { span: \"\", gradient: \"from-emerald-200 to-teal-300\", label: \"UI/UX Design\" },\n];\n\nexport default function GalleryMosaic01() {\n  return (\n    <section id=\"work\" className=\"px-6 py-24\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-extrabold text-slate-900\">Ausgewählte Arbeiten</h2>\n        <div className=\"mt-10 grid h-[600px] grid-cols-3 grid-rows-3 gap-4\">\n          {ITEMS.map((item) => (\n            <div\n              key={item.label}\n              className={`group relative overflow-hidden rounded-2xl bg-gradient-to-br ${item.gradient} ${item.span} cursor-pointer`}\n            >\n              <div className=\"absolute inset-0 flex items-end bg-gradient-to-t from-black/40 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100\">\n                <p className=\"px-4 pb-4 text-sm font-semibold text-white\">{item.label}</p>\n              </div>\n            </div>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}"
+      }
+    },
+    {
+      "id": "corp-gallery-light-01",
+      "name": "GalleryLightCorporate01",
+      "category": "gallery",
+      "subcategory": "grid-clean",
+      "tags": {
+        "industry": [
+          "portfolio",
+          "agency",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = ['One', 'Two', 'Three', 'Four', 'Five', 'Six'];\n\nexport default function GalleryLightCorporate01() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Gallery Section 01</h2>\n        <div className=\"mt-8 grid gap-3 sm:grid-cols-2 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <div key={item} className=\"aspect-[4/3] rounded-xl border border-slate-200 bg-slate-100\" />\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-gallery-light-02",
+      "name": "GalleryLightCorporate02",
+      "category": "gallery",
+      "subcategory": "masonry-lite",
+      "tags": {
+        "industry": [
+          "portfolio",
+          "agency",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = ['One', 'Two', 'Three', 'Four', 'Five', 'Six'];\n\nexport default function GalleryLightCorporate02() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Gallery Section 02</h2>\n        <div className=\"mt-8 grid gap-3 sm:grid-cols-2 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <div key={item} className=\"aspect-[4/3] rounded-xl border border-slate-200 bg-slate-100\" />\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-gallery-light-03",
+      "name": "GalleryLightCorporate03",
+      "category": "gallery",
+      "subcategory": "portfolio-strip",
+      "tags": {
+        "industry": [
+          "portfolio",
+          "agency",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = ['One', 'Two', 'Three', 'Four', 'Five', 'Six'];\n\nexport default function GalleryLightCorporate03() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Gallery Section 03</h2>\n        <div className=\"mt-8 grid gap-3 sm:grid-cols-2 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <div key={item} className=\"aspect-[4/3] rounded-xl border border-slate-200 bg-slate-100\" />\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-gallery-light-04",
+      "name": "GalleryLightCorporate04",
+      "category": "gallery",
+      "subcategory": "grid-clean",
+      "tags": {
+        "industry": [
+          "portfolio",
+          "agency",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = ['One', 'Two', 'Three', 'Four', 'Five', 'Six'];\n\nexport default function GalleryLightCorporate04() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Gallery Section 04</h2>\n        <div className=\"mt-8 grid gap-3 sm:grid-cols-2 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <div key={item} className=\"aspect-[4/3] rounded-xl border border-slate-200 bg-slate-100\" />\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-gallery-light-05",
+      "name": "GalleryLightCorporate05",
+      "category": "gallery",
+      "subcategory": "masonry-lite",
+      "tags": {
+        "industry": [
+          "portfolio",
+          "agency",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = ['One', 'Two', 'Three', 'Four', 'Five', 'Six'];\n\nexport default function GalleryLightCorporate05() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Gallery Section 05</h2>\n        <div className=\"mt-8 grid gap-3 sm:grid-cols-2 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <div key={item} className=\"aspect-[4/3] rounded-xl border border-slate-200 bg-slate-100\" />\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-gallery-light-06",
+      "name": "GalleryLightCorporate06",
+      "category": "gallery",
+      "subcategory": "portfolio-strip",
+      "tags": {
+        "industry": [
+          "portfolio",
+          "agency",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = ['One', 'Two', 'Three', 'Four', 'Five', 'Six'];\n\nexport default function GalleryLightCorporate06() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Gallery Section 06</h2>\n        <div className=\"mt-8 grid gap-3 sm:grid-cols-2 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <div key={item} className=\"aspect-[4/3] rounded-xl border border-slate-200 bg-slate-100\" />\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-gallery-light-07",
+      "name": "GalleryLightCorporate07",
+      "category": "gallery",
+      "subcategory": "grid-clean",
+      "tags": {
+        "industry": [
+          "portfolio",
+          "agency",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = ['One', 'Two', 'Three', 'Four', 'Five', 'Six'];\n\nexport default function GalleryLightCorporate07() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Gallery Section 07</h2>\n        <div className=\"mt-8 grid gap-3 sm:grid-cols-2 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <div key={item} className=\"aspect-[4/3] rounded-xl border border-slate-200 bg-slate-100\" />\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-gallery-light-08",
+      "name": "GalleryLightCorporate08",
+      "category": "gallery",
+      "subcategory": "masonry-lite",
+      "tags": {
+        "industry": [
+          "portfolio",
+          "agency",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = ['One', 'Two', 'Three', 'Four', 'Five', 'Six'];\n\nexport default function GalleryLightCorporate08() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Gallery Section 08</h2>\n        <div className=\"mt-8 grid gap-3 sm:grid-cols-2 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <div key={item} className=\"aspect-[4/3] rounded-xl border border-slate-200 bg-slate-100\" />\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-gallery-light-09",
+      "name": "GalleryLightCorporate09",
+      "category": "gallery",
+      "subcategory": "portfolio-strip",
+      "tags": {
+        "industry": [
+          "portfolio",
+          "agency",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = ['One', 'Two', 'Three', 'Four', 'Five', 'Six'];\n\nexport default function GalleryLightCorporate09() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Gallery Section 09</h2>\n        <div className=\"mt-8 grid gap-3 sm:grid-cols-2 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <div key={item} className=\"aspect-[4/3] rounded-xl border border-slate-200 bg-slate-100\" />\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-gallery-light-10",
+      "name": "GalleryLightCorporate10",
+      "category": "gallery",
+      "subcategory": "grid-clean",
+      "tags": {
+        "industry": [
+          "portfolio",
+          "agency",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = ['One', 'Two', 'Three', 'Four', 'Five', 'Six'];\n\nexport default function GalleryLightCorporate10() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Gallery Section 10</h2>\n        <div className=\"mt-8 grid gap-3 sm:grid-cols-2 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <div key={item} className=\"aspect-[4/3] rounded-xl border border-slate-200 bg-slate-100\" />\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-gallery-light-11",
+      "name": "GalleryLightCorporate11",
+      "category": "gallery",
+      "subcategory": "masonry-lite",
+      "tags": {
+        "industry": [
+          "portfolio",
+          "agency",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = ['One', 'Two', 'Three', 'Four', 'Five', 'Six'];\n\nexport default function GalleryLightCorporate11() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Gallery Section 11</h2>\n        <div className=\"mt-8 grid gap-3 sm:grid-cols-2 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <div key={item} className=\"aspect-[4/3] rounded-xl border border-slate-200 bg-slate-100\" />\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-gallery-light-12",
+      "name": "GalleryLightCorporate12",
+      "category": "gallery",
+      "subcategory": "portfolio-strip",
+      "tags": {
+        "industry": [
+          "portfolio",
+          "agency",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = ['One', 'Two', 'Three', 'Four', 'Five', 'Six'];\n\nexport default function GalleryLightCorporate12() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Gallery Section 12</h2>\n        <div className=\"mt-8 grid gap-3 sm:grid-cols-2 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <div key={item} className=\"aspect-[4/3] rounded-xl border border-slate-200 bg-slate-100\" />\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-gallery-light-13",
+      "name": "GalleryLightCorporate13",
+      "category": "gallery",
+      "subcategory": "grid-clean",
+      "tags": {
+        "industry": [
+          "portfolio",
+          "agency",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = ['One', 'Two', 'Three', 'Four', 'Five', 'Six'];\n\nexport default function GalleryLightCorporate13() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Gallery Section 13</h2>\n        <div className=\"mt-8 grid gap-3 sm:grid-cols-2 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <div key={item} className=\"aspect-[4/3] rounded-xl border border-slate-200 bg-slate-100\" />\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-gallery-light-14",
+      "name": "GalleryLightCorporate14",
+      "category": "gallery",
+      "subcategory": "masonry-lite",
+      "tags": {
+        "industry": [
+          "portfolio",
+          "agency",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = ['One', 'Two', 'Three', 'Four', 'Five', 'Six'];\n\nexport default function GalleryLightCorporate14() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Gallery Section 14</h2>\n        <div className=\"mt-8 grid gap-3 sm:grid-cols-2 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <div key={item} className=\"aspect-[4/3] rounded-xl border border-slate-200 bg-slate-100\" />\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-gallery-light-15",
+      "name": "GalleryLightCorporate15",
+      "category": "gallery",
+      "subcategory": "portfolio-strip",
+      "tags": {
+        "industry": [
+          "portfolio",
+          "agency",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = ['One', 'Two', 'Three', 'Four', 'Five', 'Six'];\n\nexport default function GalleryLightCorporate15() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Gallery Section 15</h2>\n        <div className=\"mt-8 grid gap-3 sm:grid-cols-2 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <div key={item} className=\"aspect-[4/3] rounded-xl border border-slate-200 bg-slate-100\" />\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-gallery-light-16",
+      "name": "GalleryLightCorporate16",
+      "category": "gallery",
+      "subcategory": "grid-clean",
+      "tags": {
+        "industry": [
+          "portfolio",
+          "agency",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = ['One', 'Two', 'Three', 'Four', 'Five', 'Six'];\n\nexport default function GalleryLightCorporate16() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Gallery Section 16</h2>\n        <div className=\"mt-8 grid gap-3 sm:grid-cols-2 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <div key={item} className=\"aspect-[4/3] rounded-xl border border-slate-200 bg-slate-100\" />\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-gallery-light-17",
+      "name": "GalleryLightCorporate17",
+      "category": "gallery",
+      "subcategory": "masonry-lite",
+      "tags": {
+        "industry": [
+          "portfolio",
+          "agency",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = ['One', 'Two', 'Three', 'Four', 'Five', 'Six'];\n\nexport default function GalleryLightCorporate17() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Gallery Section 17</h2>\n        <div className=\"mt-8 grid gap-3 sm:grid-cols-2 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <div key={item} className=\"aspect-[4/3] rounded-xl border border-slate-200 bg-slate-100\" />\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-gallery-light-18",
+      "name": "GalleryLightCorporate18",
+      "category": "gallery",
+      "subcategory": "portfolio-strip",
+      "tags": {
+        "industry": [
+          "portfolio",
+          "agency",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = ['One', 'Two', 'Three', 'Four', 'Five', 'Six'];\n\nexport default function GalleryLightCorporate18() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Gallery Section 18</h2>\n        <div className=\"mt-8 grid gap-3 sm:grid-cols-2 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <div key={item} className=\"aspect-[4/3] rounded-xl border border-slate-200 bg-slate-100\" />\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-gallery-light-19",
+      "name": "GalleryLightCorporate19",
+      "category": "gallery",
+      "subcategory": "grid-clean",
+      "tags": {
+        "industry": [
+          "portfolio",
+          "agency",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = ['One', 'Two', 'Three', 'Four', 'Five', 'Six'];\n\nexport default function GalleryLightCorporate19() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Gallery Section 19</h2>\n        <div className=\"mt-8 grid gap-3 sm:grid-cols-2 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <div key={item} className=\"aspect-[4/3] rounded-xl border border-slate-200 bg-slate-100\" />\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-gallery-light-20",
+      "name": "GalleryLightCorporate20",
+      "category": "gallery",
+      "subcategory": "masonry-lite",
+      "tags": {
+        "industry": [
+          "portfolio",
+          "agency",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = ['One', 'Two', 'Three', 'Four', 'Five', 'Six'];\n\nexport default function GalleryLightCorporate20() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Gallery Section 20</h2>\n        <div className=\"mt-8 grid gap-3 sm:grid-cols-2 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <div key={item} className=\"aspect-[4/3] rounded-xl border border-slate-200 bg-slate-100\" />\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-gallery-light-21",
+      "name": "GalleryLightCorporate21",
+      "category": "gallery",
+      "subcategory": "portfolio-strip",
+      "tags": {
+        "industry": [
+          "portfolio",
+          "agency",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = ['One', 'Two', 'Three', 'Four', 'Five', 'Six'];\n\nexport default function GalleryLightCorporate21() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Gallery Section 21</h2>\n        <div className=\"mt-8 grid gap-3 sm:grid-cols-2 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <div key={item} className=\"aspect-[4/3] rounded-xl border border-slate-200 bg-slate-100\" />\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-gallery-light-22",
+      "name": "GalleryLightCorporate22",
+      "category": "gallery",
+      "subcategory": "grid-clean",
+      "tags": {
+        "industry": [
+          "portfolio",
+          "agency",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = ['One', 'Two', 'Three', 'Four', 'Five', 'Six'];\n\nexport default function GalleryLightCorporate22() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Gallery Section 22</h2>\n        <div className=\"mt-8 grid gap-3 sm:grid-cols-2 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <div key={item} className=\"aspect-[4/3] rounded-xl border border-slate-200 bg-slate-100\" />\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-gallery-light-23",
+      "name": "GalleryLightCorporate23",
+      "category": "gallery",
+      "subcategory": "masonry-lite",
+      "tags": {
+        "industry": [
+          "portfolio",
+          "agency",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = ['One', 'Two', 'Three', 'Four', 'Five', 'Six'];\n\nexport default function GalleryLightCorporate23() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Gallery Section 23</h2>\n        <div className=\"mt-8 grid gap-3 sm:grid-cols-2 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <div key={item} className=\"aspect-[4/3] rounded-xl border border-slate-200 bg-slate-100\" />\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-gallery-light-24",
+      "name": "GalleryLightCorporate24",
+      "category": "gallery",
+      "subcategory": "portfolio-strip",
+      "tags": {
+        "industry": [
+          "portfolio",
+          "agency",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = ['One', 'Two', 'Three', 'Four', 'Five', 'Six'];\n\nexport default function GalleryLightCorporate24() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Gallery Section 24</h2>\n        <div className=\"mt-8 grid gap-3 sm:grid-cols-2 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <div key={item} className=\"aspect-[4/3] rounded-xl border border-slate-200 bg-slate-100\" />\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-gallery-light-25",
+      "name": "GalleryLightCorporate25",
+      "category": "gallery",
+      "subcategory": "grid-clean",
+      "tags": {
+        "industry": [
+          "portfolio",
+          "agency",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = ['One', 'Two', 'Three', 'Four', 'Five', 'Six'];\n\nexport default function GalleryLightCorporate25() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Gallery Section 25</h2>\n        <div className=\"mt-8 grid gap-3 sm:grid-cols-2 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <div key={item} className=\"aspect-[4/3] rounded-xl border border-slate-200 bg-slate-100\" />\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-gallery-light-26",
+      "name": "GalleryLightCorporate26",
+      "category": "gallery",
+      "subcategory": "masonry-lite",
+      "tags": {
+        "industry": [
+          "portfolio",
+          "agency",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = ['One', 'Two', 'Three', 'Four', 'Five', 'Six'];\n\nexport default function GalleryLightCorporate26() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Gallery Section 26</h2>\n        <div className=\"mt-8 grid gap-3 sm:grid-cols-2 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <div key={item} className=\"aspect-[4/3] rounded-xl border border-slate-200 bg-slate-100\" />\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-gallery-light-27",
+      "name": "GalleryLightCorporate27",
+      "category": "gallery",
+      "subcategory": "portfolio-strip",
+      "tags": {
+        "industry": [
+          "portfolio",
+          "agency",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = ['One', 'Two', 'Three', 'Four', 'Five', 'Six'];\n\nexport default function GalleryLightCorporate27() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Gallery Section 27</h2>\n        <div className=\"mt-8 grid gap-3 sm:grid-cols-2 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <div key={item} className=\"aspect-[4/3] rounded-xl border border-slate-200 bg-slate-100\" />\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-gallery-light-28",
+      "name": "GalleryLightCorporate28",
+      "category": "gallery",
+      "subcategory": "grid-clean",
+      "tags": {
+        "industry": [
+          "portfolio",
+          "agency",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = ['One', 'Two', 'Three', 'Four', 'Five', 'Six'];\n\nexport default function GalleryLightCorporate28() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Gallery Section 28</h2>\n        <div className=\"mt-8 grid gap-3 sm:grid-cols-2 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <div key={item} className=\"aspect-[4/3] rounded-xl border border-slate-200 bg-slate-100\" />\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-gallery-light-29",
+      "name": "GalleryLightCorporate29",
+      "category": "gallery",
+      "subcategory": "masonry-lite",
+      "tags": {
+        "industry": [
+          "portfolio",
+          "agency",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = ['One', 'Two', 'Three', 'Four', 'Five', 'Six'];\n\nexport default function GalleryLightCorporate29() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Gallery Section 29</h2>\n        <div className=\"mt-8 grid gap-3 sm:grid-cols-2 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <div key={item} className=\"aspect-[4/3] rounded-xl border border-slate-200 bg-slate-100\" />\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-gallery-light-30",
+      "name": "GalleryLightCorporate30",
+      "category": "gallery",
+      "subcategory": "portfolio-strip",
+      "tags": {
+        "industry": [
+          "portfolio",
+          "agency",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const ITEMS = ['One', 'Two', 'Three', 'Four', 'Five', 'Six'];\n\nexport default function GalleryLightCorporate30() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Gallery Section 30</h2>\n        <div className=\"mt-8 grid gap-3 sm:grid-cols-2 md:grid-cols-3\">\n          {ITEMS.map((item) => (\n            <div key={item} className=\"aspect-[4/3] rounded-xl border border-slate-200 bg-slate-100\" />\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    }
+  ]
+}

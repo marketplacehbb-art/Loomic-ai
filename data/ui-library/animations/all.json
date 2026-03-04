@@ -1,0 +1,205 @@
+{
+  "animationPresets": [
+    {
+      "id": "anim-reveal-fade-up",
+      "name": "Reveal Fade Up",
+      "description": "Elements fade in and move upward on scroll",
+      "trigger": "scroll-into-view",
+      "tags": [
+        "entrance",
+        "subtle",
+        "universal"
+      ]
+    },
+    {
+      "id": "anim-stagger-cards",
+      "name": "Stagger Cards",
+      "description": "Card items animate sequentially with delay",
+      "trigger": "scroll-into-view",
+      "tags": [
+        "cards",
+        "stagger",
+        "list"
+      ]
+    },
+    {
+      "id": "anim-hover-lift",
+      "name": "Hover Lift",
+      "description": "Cards and buttons lift and add shadow on hover",
+      "trigger": "hover",
+      "tags": [
+        "hover",
+        "micro-interaction",
+        "cards"
+      ]
+    },
+    {
+      "id": "anim-logo-marquee",
+      "name": "Logo Marquee",
+      "description": "Infinite horizontal logo scroll for social proof sections",
+      "trigger": "auto",
+      "tags": [
+        "social-proof",
+        "marquee",
+        "logos"
+      ]
+    },
+    {
+      "id": "anim-counter-up",
+      "name": "Counter Up",
+      "description": "Stat values count up from zero on scroll reveal",
+      "trigger": "scroll-into-view",
+      "tags": [
+        "stats",
+        "numbers",
+        "counter"
+      ]
+    },
+    {
+      "id": "anim-page-transition-soft",
+      "name": "Page Transition Soft",
+      "description": "Smooth crossfade transition between routes",
+      "trigger": "route-change",
+      "tags": [
+        "navigation",
+        "page-transition"
+      ]
+    },
+    {
+      "id": "anim-scale-in-modal",
+      "name": "Scale In Modal",
+      "description": "Modals scale in from center with backdrop blur",
+      "trigger": "click",
+      "tags": [
+        "modal",
+        "dialog",
+        "entrance"
+      ]
+    },
+    {
+      "id": "anim-fade-up-spring",
+      "name": "Fade Up Spring",
+      "description": "Springy entrance: fades in while rising with a slight overshoot",
+      "trigger": "scroll-into-view",
+      "tags": [
+        "entrance",
+        "spring",
+        "universal"
+      ]
+    },
+    {
+      "id": "anim-stagger-children",
+      "name": "Stagger Children",
+      "description": "Container staggers each direct child in sequence",
+      "trigger": "scroll-into-view",
+      "tags": [
+        "stagger",
+        "cards",
+        "list",
+        "grid"
+      ]
+    },
+    {
+      "id": "anim-reveal-clip",
+      "name": "Reveal Clip",
+      "description": "Text/image revealed by expanding clip-path from bottom",
+      "trigger": "scroll-into-view",
+      "tags": [
+        "text",
+        "headline",
+        "dramatic"
+      ]
+    },
+    {
+      "id": "anim-parallax-scroll",
+      "name": "Parallax Scroll",
+      "description": "Background layer scrolls slower than foreground for depth",
+      "trigger": "scroll-into-view",
+      "tags": [
+        "parallax",
+        "hero",
+        "depth"
+      ]
+    },
+    {
+      "id": "anim-hover-glow",
+      "name": "Hover Glow",
+      "description": "Card emits a radial glow in the brand accent color on hover",
+      "trigger": "hover",
+      "tags": [
+        "hover",
+        "glow",
+        "cards",
+        "premium"
+      ]
+    },
+    {
+      "id": "anim-counter-easeout",
+      "name": "Counter EaseOut",
+      "description": "Numeric stats count up from zero with an easeOut deceleration",
+      "trigger": "scroll-into-view",
+      "tags": [
+        "stats",
+        "numbers",
+        "counter"
+      ]
+    },
+    {
+      "id": "anim-marquee-loop",
+      "name": "Marquee Loop",
+      "description": "Infinite horizontal ticker – perfect for logo strips and tag clouds",
+      "trigger": "auto",
+      "tags": [
+        "social-proof",
+        "marquee",
+        "logos",
+        "tags"
+      ]
+    },
+    {
+      "id": "anim-morph-blob",
+      "name": "Morph Blob",
+      "description": "SVG background blob continuously morphs between organic shapes",
+      "trigger": "auto",
+      "tags": [
+        "background",
+        "blob",
+        "hero",
+        "decorative"
+      ]
+    },
+    {
+      "id": "anim-scale-in-center",
+      "name": "Scale In Center",
+      "description": "Modals and popovers scale in from center with ease-out",
+      "trigger": "click",
+      "tags": [
+        "modal",
+        "popover",
+        "dialog"
+      ]
+    },
+    {
+      "id": "anim-slide-in-right",
+      "name": "Slide In Right",
+      "description": "Sidebars and drawers slide in from the right edge",
+      "trigger": "click",
+      "tags": [
+        "sidebar",
+        "drawer",
+        "panel"
+      ]
+    },
+    {
+      "id": "anim-page-fade",
+      "name": "Page Fade",
+      "description": "Subtle full-page crossfade between routes",
+      "trigger": "route-change",
+      "tags": [
+        "navigation",
+        "page-transition",
+        "layout"
+      ]
+    }
+  ]
+}

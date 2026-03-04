@@ -13,7 +13,7 @@ export class GitManager {
     constructor(projectId: string = 'default') {
         this.projectId = this.sanitizeProjectId(projectId);
         this.baseDir = path.join(REPOS_DIR, this.projectId);
-        this.git = simpleGit(this.baseDir);
+        this.git = simpleGit();
     }
 
     private sanitizeProjectId(projectId: string): string {
@@ -24,6 +24,57 @@ export class GitManager {
             throw new Error('Invalid projectId');
         }
         return normalized;
+    }
+
+    private tryParseHttpUrl(rawValue: string): URL | null {
+        try {
+            const parsed = new URL(rawValue);
+            if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+                return null;
+            }
+            return parsed;
+        } catch {
+            return null;
+        }
+    }
+
+    private stripHttpCredentials(rawValue: string): string {
+        const parsed = this.tryParseHttpUrl(rawValue);
+        if (!parsed) return rawValue;
+        parsed.username = '';
+        parsed.password = '';
+        return parsed.toString();
+    }
+
+    private buildEphemeralPushUrl(remoteUrl: string, token?: string): string | null {
+        const parsed = this.tryParseHttpUrl(remoteUrl);
+        if (!parsed) return null;
+
+        if (token) {
+            parsed.username = 'oauth2';
+            parsed.password = token;
+            return parsed.toString();
+        }
+
+        if (parsed.username || parsed.password) {
+            return remoteUrl;
+        }
+
+        return null;
+    }
+
+    private async upsertRemote(remoteName: string, remoteUrl: string, remotes?: Awaited<ReturnType<SimpleGit['getRemotes']>>) {
+        const existingRemotes = remotes || await this.git.getRemotes(true);
+        const existing = existingRemotes.find((entry) => entry.name === remoteName);
+        if (!existing) {
+            await this.git.addRemote(remoteName, remoteUrl);
+            return;
+        }
+
+        if (existing.refs.fetch !== remoteUrl || existing.refs.push !== remoteUrl) {
+            await this.git.removeRemote(remoteName);
+            await this.git.addRemote(remoteName, remoteUrl);
+        }
     }
 
     private ensureRepoDir() {
@@ -39,8 +90,9 @@ export class GitManager {
         this.ensureRepoDir();
         this.git = simpleGit(this.baseDir);
 
-        const isRepo = await this.git.checkIsRepo();
-        if (!isRepo) {
+        const repoMarkerPath = path.join(this.baseDir, '.git');
+        const hasOwnRepo = fs.existsSync(repoMarkerPath);
+        if (!hasOwnRepo) {
             await this.git.init();
             await this.git.addConfig('user.name', 'AI Builder');
             await this.git.addConfig('user.email', 'ai-builder@local.dev');
@@ -167,29 +219,33 @@ export class GitManager {
 
     async push(remote: string = 'origin', branch: string, token?: string) {
         await this.ensureRepo();
-        // Handling auth using remote URL manipulation or simple-git options is tricky securely.
-        // For now assuming the user provided HTTPS URL might include token or SSH is setup.
-        // If token provided, we inject it: https://oauth2:TOKEN@github.com/user/repo.git
-
-        let remoteUrl = remote;
-        if (token && remote.startsWith('https://')) {
-            const urlObj = new URL(remote);
-            urlObj.username = 'oauth2';
-            urlObj.password = token;
-            remoteUrl = urlObj.toString();
-        }
-
-        // Check if remote exists, add/replace if needed
         const remotes = await this.git.getRemotes(true);
-        const origin = remotes.find(r => r.name === 'origin');
 
-        if (!origin) {
-            await this.git.addRemote('origin', remoteUrl);
-        } else if (origin.refs.push !== remoteUrl) {
-            await this.git.removeRemote('origin');
-            await this.git.addRemote('origin', remoteUrl);
+        const remoteName = remote.trim() || 'origin';
+        const httpRemote = this.tryParseHttpUrl(remoteName);
+
+        if (httpRemote) {
+            const sanitizedRemoteUrl = this.stripHttpCredentials(remoteName);
+            await this.upsertRemote('origin', sanitizedRemoteUrl, remotes);
+
+            const ephemeralPushUrl = this.buildEphemeralPushUrl(remoteName, token);
+            if (ephemeralPushUrl) {
+                return await this.git.raw(['push', ephemeralPushUrl, `${branch}:${branch}`]);
+            }
+
+            return await this.git.push('origin', branch, ['--set-upstream']);
         }
 
-        return await this.git.push('origin', branch, ['--set-upstream']);
+        const namedRemote = remotes.find((entry) => entry.name === remoteName);
+        const configuredPushUrl = namedRemote?.refs.push || namedRemote?.refs.fetch || '';
+        const ephemeralPushUrl = configuredPushUrl
+            ? this.buildEphemeralPushUrl(configuredPushUrl, token)
+            : null;
+
+        if (ephemeralPushUrl) {
+            return await this.git.raw(['push', ephemeralPushUrl, `${branch}:${branch}`]);
+        }
+
+        return await this.git.push(remoteName, branch, ['--set-upstream']);
     }
 }

@@ -76,7 +76,9 @@ const integrationsSchema = z.object({
 
 export const generateSchema = z.object({
     prompt: z.string().min(10, 'Prompt too short (min 10 chars)').max(5000, 'Prompt too long (max 5000 chars)'),
-    provider: z.enum(['gemini', 'deepseek', 'openai']),
+    provider: z.enum(['gemini', 'groq', 'openai', 'nvidia']),
+    mode: z.enum(['generate', 'repair']).nullable().optional(),
+    errorContext: z.string().max(8000).nullable().optional(),
     generationMode: z.enum(['new', 'edit']).nullable().optional(),
     templateId: z.string().max(100).nullable().optional(),
     image: z.string().nullable().optional(),

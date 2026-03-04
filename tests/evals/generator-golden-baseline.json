@@ -1,0 +1,212 @@
+{
+  "generatedAt": "2026-03-01T00:50:51.752Z",
+  "snapshots": [
+    {
+      "id": "kanban-board",
+      "plan": {
+        "projectType": "dashboard",
+        "mode": "dashboard",
+        "templateId": "dashboard-ops",
+        "features": [
+          "dashboard",
+          "dnd",
+          "kanban",
+          "persistence",
+          "search"
+        ],
+        "routes": [
+          "/",
+          "/board"
+        ],
+        "resolvedBlockIds": [
+          "stats-tiles-03",
+          "dashboard-kpi-ribbon-03",
+          "sidebar-ops-03",
+          "footer-legal-05"
+        ],
+        "selectedBlockIds": [
+          "stats-tiles-03",
+          "dashboard-kpi-ribbon-03",
+          "sidebar-ops-03",
+          "footer-legal-05"
+        ],
+        "fileCount": 5
+      },
+      "quality": {
+        "pass": true,
+        "overall": 78,
+        "visualScore": 88,
+        "accessibilityScore": 50,
+        "performanceScore": 100,
+        "criticalCount": 0,
+        "warningCount": 2
+      }
+    },
+    {
+      "id": "pathfinding-visualizer",
+      "plan": {
+        "projectType": "dashboard",
+        "mode": "dashboard",
+        "templateId": "dashboard-ops",
+        "features": [
+          "dashboard",
+          "pathfinding",
+          "search"
+        ],
+        "routes": [
+          "/",
+          "/visualizer"
+        ],
+        "resolvedBlockIds": [
+          "stats-tiles-03",
+          "chart-line-mock-03",
+          "dashboard-kpi-ribbon-03",
+          "sidebar-ops-03",
+          "footer-legal-05"
+        ],
+        "selectedBlockIds": [
+          "stats-tiles-03",
+          "chart-line-mock-03",
+          "dashboard-kpi-ribbon-03",
+          "sidebar-ops-03",
+          "footer-legal-05"
+        ],
+        "fileCount": 6
+      },
+      "quality": {
+        "pass": true,
+        "overall": 78,
+        "visualScore": 88,
+        "accessibilityScore": 50,
+        "performanceScore": 100,
+        "criticalCount": 0,
+        "warningCount": 2
+      }
+    },
+    {
+      "id": "inventory-invoice",
+      "plan": {
+        "projectType": "dashboard",
+        "mode": "dashboard",
+        "templateId": "dashboard-enterprise",
+        "features": [
+          "dashboard",
+          "inventory",
+          "invoice",
+          "pdf",
+          "tabs",
+          "toast"
+        ],
+        "routes": [
+          "/",
+          "/inventory",
+          "/invoices",
+          "/products"
+        ],
+        "resolvedBlockIds": [
+          "ext-corp-navbar-light-03",
+          "stats-cards-01",
+          "dashboard-overview-grid-01",
+          "sidebar-enterprise-01",
+          "footer-enterprise-01"
+        ],
+        "selectedBlockIds": [
+          "ext-corp-navbar-light-03",
+          "stats-cards-01",
+          "dashboard-overview-grid-01",
+          "sidebar-enterprise-01",
+          "footer-enterprise-01"
+        ],
+        "fileCount": 6
+      },
+      "quality": {
+        "pass": true,
+        "overall": 78,
+        "visualScore": 88,
+        "accessibilityScore": 50,
+        "performanceScore": 100,
+        "criticalCount": 0,
+        "warningCount": 2
+      }
+    },
+    {
+      "id": "split-bill-calculator",
+      "plan": {
+        "projectType": "dashboard",
+        "mode": "dashboard",
+        "templateId": "dashboard-ops",
+        "features": [
+          "calculator",
+          "dashboard"
+        ],
+        "routes": [
+          "/",
+          "/tool"
+        ],
+        "resolvedBlockIds": [
+          "stats-tiles-03",
+          "dashboard-kpi-ribbon-03",
+          "sidebar-ops-03",
+          "footer-legal-05"
+        ],
+        "selectedBlockIds": [
+          "stats-tiles-03",
+          "dashboard-kpi-ribbon-03",
+          "sidebar-ops-03",
+          "footer-legal-05"
+        ],
+        "fileCount": 5
+      },
+      "quality": {
+        "pass": true,
+        "overall": 78,
+        "visualScore": 88,
+        "accessibilityScore": 50,
+        "performanceScore": 100,
+        "criticalCount": 0,
+        "warningCount": 2
+      }
+    },
+    {
+      "id": "crypto-portfolio-dashboard",
+      "plan": {
+        "projectType": "dashboard",
+        "mode": "dashboard",
+        "templateId": "dashboard-enterprise",
+        "features": [
+          "chart",
+          "dashboard",
+          "table"
+        ],
+        "routes": [
+          "/",
+          "/dashboard"
+        ],
+        "resolvedBlockIds": [
+          "stats-cards-01",
+          "chart-area-mock-01",
+          "dashboard-overview-grid-01",
+          "sidebar-enterprise-01",
+          "footer-enterprise-01"
+        ],
+        "selectedBlockIds": [
+          "stats-cards-01",
+          "chart-area-mock-01",
+          "dashboard-overview-grid-01",
+          "sidebar-enterprise-01",
+          "footer-enterprise-01"
+        ],
+        "fileCount": 6
+      },
+      "quality": {
+        "pass": true,
+        "overall": 78,
+        "visualScore": 88,
+        "accessibilityScore": 50,
+        "performanceScore": 100,
+        "criticalCount": 0,
+        "warningCount": 2
+      }
+    }
+  ]
+}

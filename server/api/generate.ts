@@ -5,23 +5,25 @@
 
 import { Router, Request, Response } from 'express';
 import { llmManager } from './llm/manager.js';
-import { codeProcessor, type ProcessedCode } from '../utils/code-processor.js';
+import { codeProcessor } from '../utils/code-processor.js';
 import { supabase } from '../lib/supabase.js';
 import { validateRequest, generateSchema } from '../middleware/validation.js';
 import { getBaseTemplateFiles } from '../ai/project-pipeline/template-base.js';
 import { createFilePlan, filterFilesForLLMContext } from '../ai/project-pipeline/file-planner.js';
-import { assembleProjectFiles, toProcessedFiles } from '../ai/project-pipeline/project-assembler.js';
+import { assembleProjectFiles, hydrateMissingLocalImports, toProcessedFiles } from '../ai/project-pipeline/project-assembler.js';
 import {
   applySectionUpdateGuard,
   createSectionRegenerationPlan,
   filterFilesForSectionContext,
   type PromptIntentHint
 } from '../ai/project-pipeline/section-regeneration.js';
+import { buildRagLightContext, type EditScope as RagEditScope } from '../ai/project-pipeline/context-injector.js';
 import { buildFileHashMap, computeSmartDiff } from '../ai/project-pipeline/smart-diff.js';
 import { projectSnapshotStore } from '../ai/project-pipeline/snapshot-store.js';
 import { buildStyleRetryPrompt, evaluateStylePolicy, isStylePrompt } from '../ai/project-pipeline/style-policy.js';
 import { evaluateLibraryQuality } from '../ai/project-pipeline/library-quality-gate.js';
 import { editTelemetry } from '../ai/project-pipeline/edit-telemetry.js';
+import { generateObservability } from '../ai/project-pipeline/generate-observability.js';
 import { getFeatureFlagsForRequest as getRequestFeatureFlags, type FeatureFlags } from '../config/feature-flags.js';
 import { parseLLMOutput, sanitizeGeneratedModuleCode, type ParsedLLMOutput } from '../ai/project-pipeline/llm-response-parser.js';
 import { polishGeneratedContent } from '../ai/project-pipeline/content-intelligence.js';
@@ -39,292 +41,241 @@ import { createResolvedProjectPlan } from '../ai/template-library/project-plan.j
 import type { BlockCategory } from '../ai/template-library/types.js';
 import { iconValidator } from '../ai/code-pipeline/icon-validator.js';
 import { iconRegistry } from '../utils/icon-registry.js';
+import { RUNTIME_DEP_VERSION_HINTS } from '../ai/runtime/dependency-registry.js';
+import { sanitizeErrorForLog } from '../utils/error-sanitizer.js';
+import { resolveDomainPacks } from '../ai/domain-packs/index.js';
+import {
+  applyDeterministicDomainFallback,
+  evaluateDomainCoverage,
+} from '../ai/domain-packs/coverage.js';
+import {
+  EDIT_MODE_READ_ONLY_FILES,
+  extractSourceIdFromSelector,
+  isEditProtectedRootFile,
+  isRuntimeUiSourcePath,
+  normalizeGeneratedPath,
+  normalizeGeneratedPathSafe,
+  resolveSourceFileFromSourceId,
+} from './generate-path-utils.js';
+import {
+  APP_DEFAULT_EXPORT_FALLBACK,
+  ensureAppDefaultExportInFileMap,
+  ensureAppDefaultExportInFiles,
+  hasDefaultExport,
+  isAppModulePath,
+  looksLikeHtmlDocument,
+  tryInjectDefaultExportForApp,
+} from './generate-shared.js';
+import {
+  SupportedProvider,
+  isSupportedProvider,
+  ProviderErrorCategory,
+  ClassifiedProviderError,
+  getAlternateProvider,
+  extractProviderErrorStatus,
+  isMissingRpcError,
+  toObservedProvider,
+  classifyProviderError,
+} from './generate-validation.js';
+import {
+  buildSupabaseIntegrationPrompt,
+  buildVisualAnchorPrompt,
+  detectBackendIntent,
+  trimAnchorValue,
+} from './generate-prompt-utils.js';
+import { collectProjectDependencies } from './generate-dependency-utils.js';
+import {
+  buildEditModeContextPrompt,
+  TIMEOUT_MS,
+  withTimeout,
+} from './generate-edit-mode-utils.js';
+import {
+  inferFallbackEditScope,
+  normalizeArchitectPath,
+  normalizeArchitectPaths,
+} from './generate-architect-utils.js';
+import { STACK_CONSTRAINT } from '../prompts/designReferences.js';
+import { hydratePrompt, type HydratedContext } from './hydration.js';
+
+import { inferPromptUnderstandingWithAI, type PromptUnderstandingResult } from './generate-prompt-builder.js';
+import {
+  type PipelinePath,
+  type TokenBudgetDecision,
+  type ComplexPromptMode,
+  type ComplexPromptRouteProfile,
+  isStyleIntentPrompt,
+  clampTokens,
+  createTokenBudget,
+  classifyComplexPromptRoute,
+  buildComplexRouteDirective,
+} from './generate-token-budget.js';
+import {
+  executeStructuredRetryLoop,
+  coerceToStructuredFilesFallback,
+  attemptTsxRescue,
+} from './generate-structured-retry.js';
+import {
+  runStructuredAutoRepairLoop,
+  type AutoRepairSummary,
+} from './generate-auto-repair.js';
+import {
+  buildQualitySummary,
+  type OrchestratorCritiqueSnapshot,
+  type QualitySummary,
+} from './generate-quality.js';
+import {
+  buildGenerateErrorResponse,
+  buildGenerateSuccessResponse,
+  buildResponseErrors,
+  buildResponseWarnings,
+} from './generate-response.js';
 
 const router = Router();
 
-// ═══════════════════════════════════════════════════════════════════════
-// Helper: Timeout wrapper for async operations
-// ═══════════════════════════════════════════════════════════════════════
+function ensureStackConstraintInSystemPrompt(baseSystemPrompt: string): string {
+  const normalized = String(baseSystemPrompt || '').trim();
+  if (normalized.includes('You generate EXCLUSIVELY:')) {
+    return normalized;
+  }
+  if (!normalized) return STACK_CONSTRAINT;
+  return `${STACK_CONSTRAINT}\n\n${normalized}`;
+}
 
-const TIMEOUT_MS = 120000; // 2 minutes timeout
+type FileMap = Record<string, string>;
 
-async function withTimeout<T>(promise: Promise<T>, timeoutMs: number = TIMEOUT_MS): Promise<T> {
-  let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
-  const timeoutPromise = new Promise<T>((_, reject) => {
-    timeoutHandle = setTimeout(() => reject(new Error(`Request timeout after ${timeoutMs}ms`)), timeoutMs);
+function parseLLMOutputWithDebugLogs(
+  rawContent: string,
+  preferredPath: string,
+  existingFiles: Record<string, string>
+): ParsedLLMOutput {
+  console.log('[RAW_LLM_OUTPUT]', JSON.stringify(rawContent).slice(0, 2000));
+  const parsed = parseLLMOutput(rawContent, preferredPath, existingFiles);
+  const parsedFiles = Object.fromEntries(
+    (parsed.extractedFiles || []).map((file) => {
+      const filename = normalizeGeneratedPath(file.path || '') || file.path || 'unknown';
+      return [filename, String(file.content || '')];
+    })
+  ) as Record<string, string>;
+  console.log('[PARSED_FILES]', Object.keys(parsedFiles));
+  Object.entries(parsedFiles).forEach(([filename, content]) => {
+    console.log('[FILE_CONTENT_PREVIEW]', filename, content.slice(0, 200));
   });
-  return Promise.race([promise, timeoutPromise]).finally(() => {
-    if (timeoutHandle !== undefined) clearTimeout(timeoutHandle);
-  });
+  return parsed;
 }
 
-function buildEditModeContextPrompt(
-  existingFiles: Record<string, string>,
-  brand: string,
-  language: string
-): string {
-  const extractRouteHints = (): string[] => {
-    const routes = new Set<string>(['/']);
-    const pushPath = (raw: string) => {
-      if (!raw) return;
-      if (!raw.startsWith('/')) return;
-      if (raw.startsWith('//')) return;
-      if (raw.startsWith('/#')) return;
-      const clean = raw.split('?')[0].split('#')[0].trim();
-      if (!clean) return;
-      routes.add(clean);
-    };
+function classifyRequest(prompt: string, files: FileMap): PipelinePath {
+  const wordCount = String(prompt || '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean).length;
+  const underWordBudget = wordCount < 120;
+  const noExistingFiles = !files || Object.keys(files).length === 0;
+  const normalizedPrompt = String(prompt || '');
+  const hasComplexSignal = /\b(refactor|redesign|migrate|authentication|database|multi[-\s]?page)\b/i
+    .test(normalizedPrompt);
 
-    Object.values(existingFiles).forEach((content) => {
-      if (typeof content !== 'string' || content.length === 0) return;
-      const patterns = [
-        /path\s*=\s*["'`]([^"'`]+)["'`]/g,
-        /\bto\s*=\s*["'`]([^"'`]+)["'`]/g,
-        /\bhref\s*=\s*["'`]([^"'`]+)["'`]/g,
-      ];
-      patterns.forEach((pattern) => {
-        for (const match of content.matchAll(pattern)) {
-          pushPath(match[1]);
-        }
-      });
-    });
-
-    return [...routes].sort().slice(0, 14);
-  };
-
-  const extractStyleFingerprint = (): string => {
-    const joined = Object.values(existingFiles)
-      .filter((content): content is string => typeof content === 'string')
-      .join('\n');
-    if (!joined) return 'unknown';
-
-    const colorBases = ['slate', 'zinc', 'neutral', 'gray', 'blue', 'cyan', 'indigo', 'emerald', 'orange', 'amber', 'rose', 'red', 'teal', 'violet'];
-    const colorScores = new Map<string, number>();
-    colorBases.forEach((color) => colorScores.set(color, 0));
-
-    const colorMatches = joined.match(/\b(?:bg|text|border)-([a-z]+)-\d{2,3}\b/g) || [];
-    colorMatches.forEach((token) => {
-      const parts = token.split('-');
-      const color = parts.length >= 3 ? parts[1] : '';
-      if (colorScores.has(color)) {
-        colorScores.set(color, (colorScores.get(color) || 0) + 1);
-      }
-    });
-
-    const topColors = [...colorScores.entries()]
-      .filter((entry) => entry[1] > 0)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3)
-      .map((entry) => entry[0]);
-
-    const radiusMatches = joined.match(/\brounded(?:-(?:sm|md|lg|xl|2xl|3xl|full))?\b/g) || [];
-    const radiusDensity = radiusMatches.length > 45 ? 'high' : radiusMatches.length > 18 ? 'medium' : 'low';
-
-    if (topColors.length === 0) {
-      return `palette=neutral, radius_density=${radiusDensity}`;
-    }
-    return `palette=${topColors.join(', ')}, radius_density=${radiusDensity}`;
-  };
-
-  const normalizedPaths = Object.keys(existingFiles)
-    .map((path) => path.replace(/\\/g, '/').replace(/^\.?\//, ''))
-    .filter((path) => /^src\/.*\.(tsx|ts|jsx|js|css)$/.test(path))
-    .sort();
-  const sectionPaths = normalizedPaths.filter((path) => path.startsWith('src/components/sections/'));
-  const previewPaths = normalizedPaths.slice(0, 24);
-  const sectionPreview = sectionPaths.slice(0, 12);
-
-  const pathList = previewPaths.length > 0
-    ? previewPaths.map((path) => `- ${path}`).join('\n')
-    : '- (none)';
-  const sectionList = sectionPreview.length > 0
-    ? sectionPreview.map((path) => `- ${path}`).join('\n')
-    : '- (none)';
-  const routeList = extractRouteHints().map((path) => `- ${path}`).join('\n');
-  const styleFingerprint = extractStyleFingerprint();
-
-  return `Edit mode is active. Use the current project files as the source of truth.
-Brand: ${brand}
-Language: ${language}
-Existing source files (${normalizedPaths.length} total, preview):
-${pathList}
-Existing section files (${sectionPaths.length} total, preview):
-${sectionList}
-Detected routes (preview):
-${routeList}
-Style fingerprint:
-${styleFingerprint}
-Do not reset to a template preset or generic starter content.
-  Keep current routing, layout, and section structure unless the user explicitly asks for structural changes.
-Apply the smallest possible code diff to satisfy the prompt.`;
+  if (underWordBudget || noExistingFiles || !hasComplexSignal) {
+    return 'fast';
+  }
+  return 'deep';
 }
 
-function trimAnchorValue(value: unknown, maxLength: number = 180): string {
-  if (typeof value !== 'string') return '';
-  const normalized = value.replace(/\s+/g, ' ').trim();
-  if (!normalized) return '';
-  return normalized.length > maxLength ? `${normalized.slice(0, maxLength)}...` : normalized;
-}
+function toSafeComponentIdentifier(path: string, used: Set<string>): string {
+  const normalized = normalizeGeneratedPath(path || '');
+  const basename = normalized.split('/').pop() || 'Section';
+  const stem = basename.replace(/\.[^.]+$/, '');
+  const tokens = stem
+    .replace(/[^A-Za-z0-9]+/g, ' ')
+    .split(' ')
+    .map((token) => token.trim())
+    .filter(Boolean);
 
-function buildVisualAnchorPrompt(anchor: GenerateRequest['editAnchor']): string {
-  if (!anchor || typeof anchor !== 'object') return '';
+  const pascal = tokens.length > 0
+    ? tokens.map((token) => token.charAt(0).toUpperCase() + token.slice(1)).join('')
+    : 'Section';
 
-  const lines: string[] = [];
-  const nodeId = trimAnchorValue(anchor.nodeId, 120);
-  const selector = trimAnchorValue(anchor.selector, 220);
-  const domPath = trimAnchorValue(anchor.domPath, 220);
-  const sectionId = trimAnchorValue(anchor.sectionId, 120);
-  const routePath = trimAnchorValue(anchor.routePath, 120);
-  const tagName = trimAnchorValue(anchor.tagName, 60);
-  const className = trimAnchorValue(anchor.className, 180);
-  const elementId = trimAnchorValue(anchor.id, 120);
-  const role = trimAnchorValue(anchor.role, 60);
-  const href = trimAnchorValue(anchor.href, 180);
-  const innerText = trimAnchorValue(anchor.innerText, 200);
-  const sourceId = trimAnchorValue(anchor.sourceId, 220);
+  let candidate = /^[A-Za-z_$]/.test(pascal) ? pascal : `Section${pascal}`;
+  if (!candidate) candidate = 'Section';
 
-  if (nodeId) lines.push(`- nodeId: ${nodeId}`);
-  if (selector) lines.push(`- selector: ${selector}`);
-  if (domPath) lines.push(`- domPath: ${domPath}`);
-  if (sectionId) lines.push(`- sectionId: ${sectionId}`);
-  if (routePath) lines.push(`- routePath: ${routePath}`);
-  if (tagName) lines.push(`- tagName: ${tagName}`);
-  if (className) lines.push(`- className: ${className}`);
-  if (elementId) lines.push(`- id: ${elementId}`);
-  if (role) lines.push(`- role: ${role}`);
-  if (href) lines.push(`- href: ${href}`);
-  if (innerText) lines.push(`- text: ${innerText}`);
-  if (sourceId) lines.push(`- sourceId: ${sourceId}`);
-
-  if (lines.length === 0) return '';
-
-  return `Visual edit target (authoritative):
-${lines.join('\n')}
-Treat this as the primary edit anchor. Apply a minimal local diff around this target before considering global rewrites.
-If sourceId is available, prefer selector-based edits with [data-source-id="..."].`;
-}
-
-const SUPABASE_BACKEND_INTENT_KEYWORDS = [
-  'supabase',
-  'backend',
-  'fullstack',
-  'full-stack',
-  'api',
-  'server',
-  'database',
-  'db',
-  'postgres',
-  'sql',
-  'table',
-  'auth',
-  'authentication',
-  'login',
-  'signup',
-  'register',
-  'user account',
-  'storage',
-  'upload',
-  'bucket',
-  'realtime',
-  'edge function',
-  'admin panel',
-];
-
-function detectBackendIntent(prompt: string): boolean {
-  if (!prompt || typeof prompt !== 'string') return false;
-  const normalized = prompt.toLowerCase();
-  return SUPABASE_BACKEND_INTENT_KEYWORDS.some((keyword) => normalized.includes(keyword));
-}
-
-function buildSupabaseIntegrationPrompt(
-  integration: SupabaseIntegrationContext | null | undefined,
-  backendIntentDetected: boolean
-): string {
-  const connected = Boolean(integration && typeof integration === 'object' && integration.connected);
-  const environment =
-    integration && typeof integration === 'object' && (integration.environment === 'test' || integration.environment === 'live')
-      ? integration.environment
-      : null;
-  const projectRef =
-    integration && typeof integration === 'object' && typeof integration.projectRef === 'string' && integration.projectRef.trim().length > 0
-      ? integration.projectRef.trim()
-      : null;
-  const hasTestConnection = Boolean(integration && typeof integration === 'object' && integration.hasTestConnection);
-  const hasLiveConnection = Boolean(integration && typeof integration === 'object' && integration.hasLiveConnection);
-
-  const lines = [
-    'Supabase integration context:',
-    `- connected: ${connected ? 'yes' : 'no'}`,
-    `- active_environment: ${environment || 'none'}`,
-    `- has_test_connection: ${hasTestConnection ? 'yes' : 'no'}`,
-    `- has_live_connection: ${hasLiveConnection ? 'yes' : 'no'}`,
-    `- project_ref: ${projectRef || 'none'}`,
-  ];
-
-  if (connected && environment) {
-    lines.push(
-      'If user intent needs backend/auth/data, prefer Supabase-compatible implementation (auth, tables, storage, RLS-safe patterns).',
-      'Do not invent non-existing env vars. Use placeholders only where project secrets are needed.'
-    );
-  } else if (backendIntentDetected) {
-    lines.push(
-      'Backend/fullstack intent detected but Supabase is not connected.',
-      'Generate connection-ready code scaffolding and clear TODO placeholders instead of pretending a live backend is already configured.'
-    );
+  if (!used.has(candidate)) {
+    used.add(candidate);
+    return candidate;
   }
 
-  return lines.join('\n');
+  let suffix = 2;
+  while (used.has(`${candidate}${suffix}`)) {
+    suffix += 1;
+  }
+  const deduped = `${candidate}${suffix}`;
+  used.add(deduped);
+  return deduped;
 }
 
-function normalizeGeneratedPath(path: string): string {
-  return path.replace(/\\/g, '/').replace(/^\.?\//, '');
+function inferRecoveredSectionOrder(path: string): number {
+  const normalized = normalizeGeneratedPath(path || '');
+  const name = (normalized.split('/').pop() || '').replace(/\.[^.]+$/, '').toLowerCase();
+
+  if (/^(navbar|nav|header)/.test(name)) return 0;
+  if (/^hero/.test(name)) return 1;
+  if (/^(features|benefits|showcase|gallery|highlights)/.test(name)) return 2;
+  if (/^(menu|catalog|products|product|cards|pricing)/.test(name)) return 3;
+  if (/^(testimonials|reviews|socialproof|proof)/.test(name)) return 4;
+  if (/^(faq|questions)/.test(name)) return 5;
+  if (/^(cta|contact|booking|form)/.test(name)) return 6;
+  if (/^(footer)/.test(name)) return 9;
+  return 7;
 }
 
-function extractSourceIdFromSelector(selector: string): string | null {
-  if (typeof selector !== 'string') return null;
-  const trimmed = selector.trim();
-  if (!trimmed) return null;
-  const match = trimmed.match(/^\[data-source-id=(?:"([^"]+)"|'([^']+)')\]$/);
-  if (!match) return null;
-  const sourceId = (match[1] || match[2] || '').trim();
-  return sourceId || null;
+function buildAppFromGeneratedSections(files: Record<string, string>): string | null {
+  const sectionPaths = Object.keys(files)
+    .map((path) => normalizeGeneratedPath(path))
+    .filter((path) =>
+      path.startsWith('src/components/sections/') &&
+      /\.(tsx|jsx|ts|js)$/.test(path)
+    )
+    .sort((a, b) => {
+      const rankDiff = inferRecoveredSectionOrder(a) - inferRecoveredSectionOrder(b);
+      if (rankDiff !== 0) return rankDiff;
+      return a.localeCompare(b);
+    });
+
+  if (sectionPaths.length === 0) return null;
+
+  const meaningfulSections = sectionPaths.filter((path) => {
+    const source = files[path];
+    if (typeof source !== 'string') return false;
+    if (!/\bexport\s+default\b/.test(source)) return false;
+    return /<section|<header|<footer|<nav|className=|aria-|role=/i.test(source);
+  });
+
+  const usableSections = meaningfulSections.length > 0 ? meaningfulSections : sectionPaths;
+  if (usableSections.length === 0) return null;
+
+  const usedIdentifiers = new Set<string>();
+  const sectionEntries = usableSections.map((path) => {
+    const identifier = toSafeComponentIdentifier(path, usedIdentifiers);
+    const importPath = `./${path.replace(/^src\//, '').replace(/\.(tsx|jsx|ts|js)$/, '')}`;
+    return { identifier, importPath };
+  });
+
+  const importLines = sectionEntries.map((entry) => `import ${entry.identifier} from '${entry.importPath}';`);
+  const renderLines = sectionEntries.map((entry) => `      <${entry.identifier} />`);
+
+  return `${importLines.join('\n')}
+
+export default function App() {
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100">
+${renderLines.join('\n')}
+    </div>
+  );
+}
+`;
 }
 
-function resolveSourceFileFromSourceId(sourceId: string): string | null {
-  if (typeof sourceId !== 'string' || !sourceId.trim()) return null;
-  const parts = sourceId.split(':');
-  if (parts.length < 3) return null;
-  parts.pop();
-  parts.pop();
-  const candidate = normalizeGeneratedPath(parts.join(':').trim());
-  if (!candidate) return null;
-  if (!/\.(tsx|ts|jsx|js)$/.test(candidate)) return null;
-  return candidate;
-}
-
-function isRuntimeUiSourcePath(path: string): boolean {
-  const normalized = normalizeGeneratedPath(path);
-  if (!/\.(tsx|ts|jsx|js)$/.test(normalized)) return false;
-  if (!normalized.startsWith('src/')) return false;
-  if (/\.config\.(ts|js|mjs|cjs)$/.test(normalized)) return false;
-  if (normalized.includes('/__tests__/') || normalized.includes('/tests/')) return false;
-  return true;
-}
-
-function isEditProtectedRootFile(path: string): boolean {
-  const normalized = normalizeGeneratedPath(path);
-  const protectedFiles = new Set([
-    '.gitignore',
-    'README.md',
-    'index.html',
-    'package.json',
-    'vite.config.ts',
-    'tsconfig.json',
-    'tsconfig.node.json',
-    'src/main.tsx',
-    'src/vite-env.d.ts',
-  ]);
-  return protectedFiles.has(normalized);
+function isFallbackAppPlaceholder(code: string): boolean {
+  const normalized = String(code || '');
+  return normalized.includes('Generation incomplete - please retry');
 }
 
 function sanitizeProjectSourceFiles(files: Record<string, string>): Record<string, string> {
@@ -600,40 +551,201 @@ function sanitizeProjectSourceFiles(files: Record<string, string>): Record<strin
   return sanitized;
 }
 
-type SupportedProvider = 'gemini' | 'deepseek' | 'openai';
-
-function isSupportedProvider(value: unknown): value is SupportedProvider {
-  return value === 'gemini' || value === 'deepseek' || value === 'openai';
+interface PlannedFileContractResult {
+  validPaths: string[];
+  discardedPaths: string[];
 }
 
-interface TokenBudgetDecision {
-  provider: SupportedProvider;
-  requestedMaxTokens?: number;
-  generationMaxTokens: number;
-  repairMaxTokens: number;
-  repairAttempts: number;
-  reason: string;
+interface GeneratedFileContractValidation {
+  accepted: Array<{ path: string; content: string }>;
+  rejected: Array<{ path: string; reason: string }>;
+  unplanned: string[];
 }
 
-interface AutoRepairAttemptLog {
-  attempt: number;
-  beforeErrors: number;
-  afterErrors: number;
-  status: 'improved' | 'resolved' | 'aborted' | 'failed';
-  reason?: string;
+function estimateTokensFromText(input: unknown): number {
+  if (typeof input !== 'string' || input.length === 0) return 0;
+  return Math.max(0, Math.ceil(input.length / 4));
 }
 
-interface AutoRepairSummary {
-  enabled: boolean;
-  attempted: boolean;
-  applied: boolean;
-  maxAttempts: number;
-  attemptsExecuted: number;
-  initialErrorCount: number;
-  finalErrorCount: number;
-  abortedReason?: string;
-  logs: AutoRepairAttemptLog[];
+function estimateTokensFromFiles(files: Record<string, string> | null | undefined): number {
+  if (!files || typeof files !== 'object') return 0;
+  try {
+    const payload = JSON.stringify(files);
+    return estimateTokensFromText(payload);
+  } catch {
+    return 0;
+  }
 }
+
+const STRUCTURED_ALLOWED_ROOT_FILES = new Set([
+  'package.json',
+  'package-lock.json',
+  'pnpm-lock.yaml',
+  'yarn.lock',
+  'index.html',
+  'readme.md',
+  'robots.txt',
+  'sitemap.xml',
+  'src/vite-env.d.ts',
+]);
+
+const STRUCTURED_ALLOWED_PREFIXES = [
+  'src/',
+  'public/',
+  'server/',
+  'supabase/',
+  'scripts/',
+  'tests/',
+  'migrations/',
+  'data/',
+  'docs/',
+];
+
+const STRUCTURED_ALLOWED_FILE_EXTENSIONS =
+  /\.(tsx|ts|jsx|js|css|scss|sass|less|json|html|md|txt|ya?ml|toml|sql)$/i;
+
+const NEW_MODE_CONTRACT_BLOCKLIST = new Set([
+  '.gitignore',
+  'tailwind.config.ts',
+  'tailwind.config.js',
+  'postcss.config.js',
+  'vite.config.ts',
+  'vite.config.js',
+  'eslint.config.js',
+  'vitest.config.ts',
+  'tsconfig.json',
+  'tsconfig.node.json',
+  'tsconfig.app.json',
+  'components.json',
+]);
+
+function normalizeContractPath(input: string): string {
+  const raw = String(input || '')
+    .replace(/\\/g, '/')
+    .replace(/^\.?\//, '')
+    .trim();
+  if (!raw) return '';
+  const parts = raw.split('/');
+  const stack: string[] = [];
+  for (const part of parts) {
+    if (!part || part === '.') continue;
+    if (part === '..') {
+      if (stack.length > 0) stack.pop();
+      continue;
+    }
+    stack.push(part);
+  }
+  return stack.join('/');
+}
+
+function isStructuredContractPath(path: string): boolean {
+  const normalized = normalizeContractPath(path);
+  if (!normalized || normalized.endsWith('/')) return false;
+
+  const lower = normalized.toLowerCase();
+  if (STRUCTURED_ALLOWED_ROOT_FILES.has(lower)) return true;
+  if (normalized.startsWith('.git/')) return false;
+  if (/[<>:"|?*]/.test(normalized)) return false;
+
+  const inAllowedPrefix = STRUCTURED_ALLOWED_PREFIXES.some((prefix) => normalized.startsWith(prefix));
+  if (!inAllowedPrefix) return false;
+
+  if (normalized.endsWith('.d.ts')) return true;
+  return STRUCTURED_ALLOWED_FILE_EXTENSIONS.test(normalized);
+}
+
+function sanitizePlannedFileContract(paths: string[]): PlannedFileContractResult {
+  const valid = new Set<string>();
+  const discarded = new Set<string>();
+
+  for (const rawPath of paths || []) {
+    const normalized = normalizeContractPath(rawPath || '');
+    if (!isStructuredContractPath(normalized)) {
+      if (String(rawPath || '').trim().length > 0) discarded.add(String(rawPath));
+      continue;
+    }
+    valid.add(normalized);
+  }
+
+  return {
+    validPaths: [...valid],
+    discardedPaths: [...discarded],
+  };
+}
+
+function validateGeneratedFilesAgainstContract(input: {
+  files: Array<{ path: string; content: string }>;
+  generationMode: 'new' | 'edit';
+  plannedFileSet: Set<string>;
+  templateFileSet: Set<string>;
+  isAllowedEditOutputPath: (path: string) => boolean;
+}): GeneratedFileContractValidation {
+  const acceptedMap = new Map<string, string>();
+  const rejected: Array<{ path: string; reason: string }> = [];
+  const unplanned = new Set<string>();
+  const contractBaseline = new Set<string>([
+    'src/App.tsx',
+    'src/main.tsx',
+    'src/index.css',
+    'package.json',
+    'index.html',
+    ...Array.from(input.plannedFileSet),
+    ...Array.from(input.templateFileSet),
+  ].map((path) => normalizeContractPath(path)).filter(Boolean));
+
+  for (const file of input.files || []) {
+    const normalizedPath = normalizeContractPath(file?.path || '');
+    const content = typeof file?.content === 'string' ? file.content : '';
+
+    if (!normalizedPath) {
+      rejected.push({ path: String(file?.path || ''), reason: 'empty_path' });
+      continue;
+    }
+    if (!content.trim()) {
+      rejected.push({ path: normalizedPath, reason: 'empty_content' });
+      continue;
+    }
+    if (!isStructuredContractPath(normalizedPath)) {
+      rejected.push({ path: normalizedPath, reason: 'unsupported_path' });
+      continue;
+    }
+    if (/\.(tsx|ts|jsx|js)$/.test(normalizedPath) && looksLikeHtmlDocument(content)) {
+      rejected.push({ path: normalizedPath, reason: 'invalid_html_runtime_module' });
+      continue;
+    }
+    if (input.generationMode === 'edit') {
+      if (!input.isAllowedEditOutputPath(normalizedPath)) {
+        rejected.push({ path: normalizedPath, reason: 'scope_blocked' });
+        continue;
+      }
+      acceptedMap.set(normalizedPath, content);
+      continue;
+    }
+
+    if (NEW_MODE_CONTRACT_BLOCKLIST.has(normalizedPath)) {
+      rejected.push({ path: normalizedPath, reason: 'blocked_root_file' });
+      continue;
+    }
+
+    if (!contractBaseline.has(normalizedPath) && !normalizedPath.startsWith('src/')) {
+      rejected.push({ path: normalizedPath, reason: 'outside_contract' });
+      continue;
+    }
+
+    if (!contractBaseline.has(normalizedPath) && normalizedPath.startsWith('src/')) {
+      unplanned.add(normalizedPath);
+    }
+
+    acceptedMap.set(normalizedPath, content);
+  }
+
+  return {
+    accepted: Array.from(acceptedMap.entries()).map(([path, content]) => ({ path, content })),
+    rejected,
+    unplanned: Array.from(unplanned),
+  };
+}
+
 
 interface ValidationErrorBreakdown {
   total: number;
@@ -646,200 +758,6 @@ interface ValidationErrorBreakdown {
     other: number;
   };
   dominantType: 'import' | 'icon' | 'syntax' | 'type' | 'runtime' | 'other' | 'none';
-}
-
-interface PromptUnderstandingResult {
-  source: 'ai' | 'fallback';
-  confidence: number;
-  scope: 'section' | 'global';
-  targetedCategories: BlockCategory[];
-  forceAppUpdate: boolean;
-  styleRequest: boolean;
-  reasoning: string;
-}
-
-const PROMPT_UNDERSTANDING_CATEGORIES: BlockCategory[] = [
-  'navbar',
-  'banner',
-  'hero',
-  'features',
-  'testimonials',
-  'team',
-  'timeline',
-  'blog',
-  'gallery',
-  'ecommerce',
-  'social-proof',
-  'pricing',
-  'cta',
-  'faq',
-  'contact',
-  'footer',
-  'dashboard',
-  'sidebar',
-  'auth',
-  'stats',
-  'chart',
-  'modal',
-];
-
-function normalizePromptUnderstandingCategory(input: string): BlockCategory | null {
-  const value = input.toLowerCase().trim();
-  if (PROMPT_UNDERSTANDING_CATEGORIES.includes(value as BlockCategory)) {
-    return value as BlockCategory;
-  }
-  if (/header|menu|navigation|brand|logo/.test(value)) return 'navbar';
-  if (/hero|headline/.test(value)) return 'hero';
-  if (/feature|benefit|section/.test(value)) return 'features';
-  if (/social proof/.test(value)) return 'social-proof';
-  if (/testimonial|review/.test(value)) return 'testimonials';
-  if (/team|about/.test(value)) return 'team';
-  if (/timeline|roadmap|steps/.test(value)) return 'timeline';
-  if (/blog|article|news/.test(value)) return 'blog';
-  if (/gallery|portfolio|showcase/.test(value)) return 'gallery';
-  if (/shop|product|store|ecommerce/.test(value)) return 'ecommerce';
-  if (/cta|call to action/.test(value)) return 'cta';
-  if (/faq|question|help/.test(value)) return 'faq';
-  if (/contact|kontakt|form/.test(value)) return 'contact';
-  if (/banner|announcement/.test(value)) return 'banner';
-  if (/price|plan/.test(value)) return 'pricing';
-  if (/footer|legal/.test(value)) return 'footer';
-  if (/dashboard|admin/.test(value)) return 'dashboard';
-  if (/sidebar/.test(value)) return 'sidebar';
-  if (/auth|login|register/.test(value)) return 'auth';
-  if (/stat|kpi|metric/.test(value)) return 'stats';
-  if (/chart|graph|report/.test(value)) return 'chart';
-  if (/modal|dialog|popup/.test(value)) return 'modal';
-  return null;
-}
-
-function buildPromptUnderstandingFallback(prompt: string): PromptUnderstandingResult {
-  const lower = prompt.toLowerCase();
-  const globalStyleSignal = /(hintergrund|background|theme|palette|farben|farbe|gold|golden|style|styling|design)/.test(lower);
-  const styleSignal = /(hintergrund|background|theme|palette|farben|farbe|gold|golden|style|styling|design|schöner|schoener|modern|premium|elegant)/.test(lower);
-  const explicitGlobalSignal = /(ganze seite|gesamte seite|Ã¼berall|ueberall|global|all pages|whole page)/.test(lower);
-  const scope: 'section' | 'global' = (globalStyleSignal || explicitGlobalSignal) ? 'global' : 'section';
-  const forceAppUpdate = scope === 'global';
-  const targetedCategories: BlockCategory[] = [];
-  if (/nav|navbar|menu|header/.test(lower)) targetedCategories.push('navbar');
-  if (/banner|announcement/.test(lower)) targetedCategories.push('banner');
-  if (/hero|headline/.test(lower)) targetedCategories.push('hero');
-  if (/feature|features/.test(lower)) targetedCategories.push('features');
-  if (/testimonial|review/.test(lower)) targetedCategories.push('testimonials');
-  if (/social proof/.test(lower)) targetedCategories.push('social-proof');
-  if (/team|about/.test(lower)) targetedCategories.push('team');
-  if (/timeline|roadmap|steps/.test(lower)) targetedCategories.push('timeline');
-  if (/blog|article|news/.test(lower)) targetedCategories.push('blog');
-  if (/gallery|portfolio|showcase/.test(lower)) targetedCategories.push('gallery');
-  if (/shop|store|product|ecommerce/.test(lower)) targetedCategories.push('ecommerce');
-  if (/cta|call to action/.test(lower)) targetedCategories.push('cta');
-  if (/faq|question|help/.test(lower)) targetedCategories.push('faq');
-  if (/contact|kontakt|form/.test(lower)) targetedCategories.push('contact');
-  if (/pricing|preise|price/.test(lower)) targetedCategories.push('pricing');
-  if (/footer/.test(lower)) targetedCategories.push('footer');
-
-  return {
-    source: 'fallback',
-    confidence: 0.45,
-    scope,
-    forceAppUpdate,
-    styleRequest: styleSignal,
-    targetedCategories: [...new Set(targetedCategories)],
-    reasoning: 'Keyword fallback heuristic',
-  };
-}
-
-async function inferPromptUnderstandingWithAI(input: {
-  provider: SupportedProvider;
-  generationMode: 'new' | 'edit';
-  prompt: string;
-  currentFiles: Record<string, string>;
-}): Promise<PromptUnderstandingResult> {
-  const fallback = buildPromptUnderstandingFallback(input.prompt);
-
-  const fileHints = Object.keys(input.currentFiles || {})
-    .map((path) => path.replace(/\\/g, '/'))
-    .slice(0, 20)
-    .join(', ');
-
-  const systemPrompt = `You classify UI edit prompts for a React project.
-Return JSON only. No markdown.
-Schema:
-{
-  "scope": "section" | "global",
-  "targetedCategories": ["navbar"|"banner"|"hero"|"features"|"testimonials"|"team"|"timeline"|"blog"|"gallery"|"ecommerce"|"social-proof"|"pricing"|"cta"|"faq"|"contact"|"footer"|"dashboard"|"sidebar"|"auth"|"stats"|"chart"|"modal"],
-  "forceAppUpdate": boolean,
-  "styleRequest": boolean,
-  "confidence": number,
-  "reasoning": string
-}`;
-
-  const userPrompt = `Prompt:
-${input.prompt}
-
-Known files:
-${fileHints || '(none)'}
-
-Rules:
-- If prompt requests global visual/style changes (e.g. background/theme/colors), set scope="global" and forceAppUpdate=true.
-- If prompt is section-specific, set scope="section".
-- Set styleRequest=true when prompt asks for style/look/theme/color/background changes.
-- Choose only valid categories from schema list.
-- Confidence in range 0..1.`;
-
-  try {
-    const response = await withTimeout(
-      llmManager.generate({
-        provider: input.provider,
-        generationMode: input.generationMode,
-        prompt: userPrompt,
-        systemPrompt,
-        temperature: 0,
-        maxTokens: 260,
-        stream: false,
-        currentFiles: {},
-      }),
-      15000
-    );
-
-    const content = typeof response === 'object' && 'content' in response && !('getReader' in response)
-      ? ((response as any).content || '')
-      : '';
-    if (!content || typeof content !== 'string') return fallback;
-
-    const jsonCandidateMatch = content.match(/\{[\s\S]*\}/);
-    if (!jsonCandidateMatch) return fallback;
-    const parsed = JSON.parse(jsonCandidateMatch[0]);
-
-    const categories = Array.isArray(parsed?.targetedCategories)
-      ? parsed.targetedCategories
-        .map((item: unknown) => normalizePromptUnderstandingCategory(String(item)))
-        .filter((item: BlockCategory | null): item is BlockCategory => Boolean(item))
-      : [];
-    const uniqueCategories: BlockCategory[] = Array.from(new Set<BlockCategory>(categories));
-
-    const scope: 'section' | 'global' = parsed?.scope === 'global' ? 'global' : 'section';
-    const confidenceRaw = typeof parsed?.confidence === 'number' ? parsed.confidence : fallback.confidence;
-    const confidence = Math.max(0, Math.min(1, confidenceRaw));
-    const forceAppUpdate = Boolean(parsed?.forceAppUpdate) || scope === 'global';
-    const styleRequest = typeof parsed?.styleRequest === 'boolean' ? parsed.styleRequest : fallback.styleRequest;
-    const reasoning = typeof parsed?.reasoning === 'string' && parsed.reasoning.trim().length > 0
-      ? parsed.reasoning.trim()
-      : 'AI prompt understanding';
-
-    return {
-      source: 'ai',
-      confidence,
-      scope,
-      forceAppUpdate,
-      styleRequest,
-      targetedCategories: uniqueCategories,
-      reasoning,
-    };
-  } catch (error) {
-    console.warn('[PromptUnderstanding] Falling back to keyword heuristic:', error);
-    return fallback;
-  }
 }
 
 const STYLE_ANCHOR_REGEX = /\b(?:bg|text|border|from|to|via|shadow|rounded|font)-[a-z0-9:/%.[\]-]+|--[a-z0-9-]+|linear-gradient|radial-gradient|backdrop-blur|transition-[a-z-]+|animate-[a-z-]+/gi;
@@ -880,136 +798,13 @@ function computeStyleAnchorDelta(
   }, 0);
 }
 
-function isStyleIntentPrompt(prompt: string): boolean {
-  return /(hintergrund|background|theme|palette|farbe|farben|style|styling|design|schoener|schöner|modern|premium|gold|golden|gradient|typography|font|shadow|radius)/i.test(prompt);
-}
 
-function clampTokens(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
-}
-
-function createTokenBudget(input: {
-  provider: SupportedProvider;
-  requestedMaxTokens?: number;
-  generationMode: 'new' | 'edit';
-  semantic: {
-    intent: string;
-    intensity: 'low' | 'medium' | 'high';
-    touchesStructure: boolean;
-  };
-}): TokenBudgetDecision {
-  const providerHardCap: Record<SupportedProvider, number> = {
-    gemini: 6144,
-    deepseek: 6144,
-    openai: 8192,
-  };
-
-  const cap = providerHardCap[input.provider];
-  const baseByMode = input.generationMode === 'new' ? 5600 : 4200;
-
-  let generationTarget = baseByMode;
-  if (input.semantic.intent === 'layout-change' || input.semantic.intent === 'feature-addition') {
-    generationTarget += 700;
-  }
-  if (input.semantic.intensity === 'high' || input.semantic.touchesStructure) {
-    generationTarget += 600;
-  } else if (input.semantic.intensity === 'low') {
-    generationTarget -= 400;
-  }
-
-  const requested = typeof input.requestedMaxTokens === 'number' ? input.requestedMaxTokens : undefined;
-  const generationMaxTokens = clampTokens(
-    requested ? Math.min(requested, generationTarget) : generationTarget,
-    1200,
-    cap
-  );
-  const repairMaxTokens = clampTokens(Math.round(generationMaxTokens * 0.55), 900, Math.min(cap, 4096));
-  const repairAttempts = input.generationMode === 'edit' && (input.semantic.intent === 'layout-change' || input.semantic.intent === 'feature-addition')
-    ? 2
-    : 1;
-
-  return {
-    provider: input.provider,
-    requestedMaxTokens: requested,
-    generationMaxTokens,
-    repairMaxTokens,
-    repairAttempts,
-    reason: `provider_cap=${cap}, mode=${input.generationMode}, intent=${input.semantic.intent}, intensity=${input.semantic.intensity}`,
-  };
-}
 
 function truncateForPrompt(input: string, maxLength: number): string {
   if (!input || input.length <= maxLength) return input;
   return `${input.slice(0, maxLength)}\n/* truncated */`;
 }
 
-function looksLikeHtmlDocument(code: string): boolean {
-  if (!code || typeof code !== 'string') return false;
-  return /<!doctype\s+html|<html[\s>]|<head[\s>]|<body[\s>]/i.test(code);
-}
-
-function coerceToStructuredFilesFallback(input: {
-  parsedOutput: ParsedLLMOutput;
-  generationMode: 'new' | 'edit';
-  fallbackPath: string;
-  existingFiles: Record<string, string>;
-}): { parsedOutput: ParsedLLMOutput; reason: string } | null {
-  const parsedOutput = input.parsedOutput;
-  if (parsedOutput.parseError) return null;
-  if (parsedOutput.detectedFormat === 'json' || parsedOutput.detectedFormat === 'operations') {
-    return null;
-  }
-
-  const dedupedFiles = new Map<string, string>();
-  for (const file of parsedOutput.extractedFiles || []) {
-    const normalizedPath = normalizeGeneratedPath(file.path || '');
-    const content = typeof file.content === 'string' ? file.content : '';
-    if (!normalizedPath || !content.trim()) continue;
-    dedupedFiles.set(normalizedPath, content);
-  }
-
-  const extracted = Array.from(dedupedFiles.entries()).map(([path, content]) => ({ path, content }));
-  const extractedRuntime = extracted.filter((file) => isRuntimeUiSourcePath(file.path));
-
-  if (extracted.length > 0 && (extractedRuntime.length > 0 || input.generationMode === 'edit')) {
-    const primary = parsedOutput.primaryCode?.trim().length
-      ? parsedOutput.primaryCode
-      : (extractedRuntime[0]?.content || extracted[0].content || '');
-
-    return {
-      reason: 'coerced_fenced_output_to_files',
-      parsedOutput: {
-        ...parsedOutput,
-        detectedFormat: 'json',
-        primaryCode: primary,
-        extractedFiles: extracted,
-      },
-    };
-  }
-
-  const primaryCode = typeof parsedOutput.primaryCode === 'string' ? parsedOutput.primaryCode.trim() : '';
-  if (!primaryCode || looksLikeHtmlDocument(primaryCode)) {
-    return null;
-  }
-
-  let targetPath = normalizeGeneratedPath(input.fallbackPath || 'src/App.tsx');
-  if (!isRuntimeUiSourcePath(targetPath)) {
-    const preferredExistingRuntime = Object.keys(input.existingFiles || {})
-      .map((path) => normalizeGeneratedPath(path))
-      .find((path) => isRuntimeUiSourcePath(path));
-    targetPath = preferredExistingRuntime || 'src/App.tsx';
-  }
-
-  return {
-    reason: 'wrapped_raw_module_as_files_json',
-    parsedOutput: {
-      ...parsedOutput,
-      detectedFormat: 'json',
-      extractedFiles: [{ path: targetPath, content: primaryCode }],
-      primaryCode,
-    },
-  };
-}
 
 function classifyValidationErrors(errors: string[]): ValidationErrorBreakdown {
   const byType = {
@@ -1061,564 +856,6 @@ function classifyValidationErrors(errors: string[]): ValidationErrorBreakdown {
   };
 }
 
-function applyDeterministicReactSetterRepair(sourceCode: string, errors: string[]): { code: string; changed: boolean; repairedSetters: string[] } {
-  const missingSetters = new Set<string>();
-  for (const rawError of errors) {
-    const match = rawError.match(/Cannot find name ['"]?(set[A-Z][A-Za-z0-9_]*)['"]?/i);
-    if (match?.[1]) {
-      missingSetters.add(match[1]);
-    }
-  }
-
-  if (missingSetters.size === 0) {
-    return { code: sourceCode, changed: false, repairedSetters: [] };
-  }
-
-  let code = sourceCode;
-  let changed = false;
-
-  const declaredSetters = new Set<string>();
-  for (const match of code.matchAll(/\[\s*[A-Za-z_$][\w$]*\s*,\s*(set[A-Z][A-Za-z0-9_]*)\s*\]\s*=\s*useState\b/g)) {
-    if (match[1]) declaredSetters.add(match[1]);
-  }
-
-  const settersToRepair = [...missingSetters].filter((setter) => !declaredSetters.has(setter));
-  if (settersToRepair.length === 0) {
-    return { code, changed: false, repairedSetters: [] };
-  }
-
-  const hasUseStateImport = /import\s*{[^}]*\buseState\b[^}]*}\s*from\s*['"]react['"]/.test(code);
-  if (!hasUseStateImport) {
-    const namedReactImportRegex = /import\s*{([^}]*)}\s*from\s*['"]react['"];?/;
-    if (namedReactImportRegex.test(code)) {
-      code = code.replace(namedReactImportRegex, (_full, imports: string) => {
-        const merged = new Set(
-          imports
-            .split(',')
-            .map((item) => item.trim())
-            .filter(Boolean)
-        );
-        merged.add('useState');
-        return `import { ${[...merged].join(', ')} } from 'react';`;
-      });
-    } else {
-      const firstImport = code.match(/^import[^\n]*\n/m);
-      if (firstImport && typeof firstImport.index === 'number') {
-        const insertAt = firstImport.index + firstImport[0].length;
-        code = `${code.slice(0, insertAt)}import { useState } from 'react';\n${code.slice(insertAt)}`;
-      } else {
-        code = `import { useState } from 'react';\n${code}`;
-      }
-    }
-    changed = true;
-  }
-
-  const findInjectionPoint = (): number | null => {
-    const defaultFunctionMatch = code.match(/export\s+default\s+function\s+[A-Z][A-Za-z0-9_]*\s*\([^)]*\)\s*\{/);
-    if (defaultFunctionMatch && typeof defaultFunctionMatch.index === 'number') {
-      return defaultFunctionMatch.index + defaultFunctionMatch[0].length;
-    }
-
-    const defaultRefMatch = code.match(/export\s+default\s+([A-Z][A-Za-z0-9_]*)\s*;?/);
-    if (defaultRefMatch?.[1]) {
-      const componentName = defaultRefMatch[1];
-      const escaped = componentName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-      const functionDecl = new RegExp(`function\\s+${escaped}\\s*\\([^)]*\\)\\s*\\{`);
-      const functionDeclMatch = code.match(functionDecl);
-      if (functionDeclMatch && typeof functionDeclMatch.index === 'number') {
-        return functionDeclMatch.index + functionDeclMatch[0].length;
-      }
-
-      const arrowDecl = new RegExp(`(?:const|let|var)\\s+${escaped}\\s*=\\s*(?:\\([^)]*\\)|[A-Za-z_$][\\w$]*)\\s*=>\\s*\\{`);
-      const arrowDeclMatch = code.match(arrowDecl);
-      if (arrowDeclMatch && typeof arrowDeclMatch.index === 'number') {
-        return arrowDeclMatch.index + arrowDeclMatch[0].length;
-      }
-    }
-
-    const fallback = code.match(/(?:export\s+default\s+)?function\s+[A-Z][A-Za-z0-9_]*\s*\([^)]*\)\s*\{/);
-    if (fallback && typeof fallback.index === 'number') {
-      return fallback.index + fallback[0].length;
-    }
-
-    return null;
-  };
-
-  const insertPos = findInjectionPoint();
-  if (insertPos === null) {
-    return { code, changed, repairedSetters: [] };
-  }
-  const injectedLines = settersToRepair.map((setter) => {
-    const rawName = setter.slice(3);
-    const stateName = rawName.length > 0
-      ? `${rawName.charAt(0).toLowerCase()}${rawName.slice(1)}`
-      : 'stateValue';
-    return `\n  const [${stateName}, ${setter}] = useState<any>(null);`;
-  }).join('');
-
-  code = `${code.slice(0, insertPos)}${injectedLines}${code.slice(insertPos)}`;
-  changed = true;
-
-  return { code, changed, repairedSetters: settersToRepair };
-}
-
-function applyDeterministicReactStateInferenceRepair(sourceCode: string, errors: string[]): { code: string; changed: boolean; repairs: string[] } {
-  const hasNeverInferenceError = errors.some((rawError) =>
-    /type ['"]never['"]|on type ['"]never['"]|to type ['"]never['"]/.test(rawError.toLowerCase())
-  );
-  const hasUndefinedStateActionError = errors.some((rawError) =>
-    /setstateaction<\s*undefined\s*>|setstateaction<undefined>/.test(rawError.toLowerCase())
-  );
-  const hasNullStateActionError = errors.some((rawError) =>
-    /setstateaction<\s*null\s*>|setstateaction<null>/.test(rawError.toLowerCase())
-  );
-
-  if (!hasNeverInferenceError && !hasUndefinedStateActionError && !hasNullStateActionError) {
-    return { code: sourceCode, changed: false, repairs: [] };
-  }
-
-  let code = sourceCode;
-  const repairs: string[] = [];
-  const applyRepair = (nextCode: string, repairTag: string) => {
-    if (nextCode !== code) {
-      code = nextCode;
-      if (!repairs.includes(repairTag)) {
-        repairs.push(repairTag);
-      }
-    }
-  };
-
-  if (hasNeverInferenceError) {
-    applyRepair(
-      code.replace(/\b(React\.)?useState\s*\(\s*\[\s*\]\s*\)/g, (_full, reactPrefix: string | undefined) => {
-        return `${reactPrefix || ''}useState<any[]>([])`;
-      }),
-      'useState_empty_array_any'
-    );
-
-    applyRepair(
-      code.replace(/\b(React\.)?useState\s*\(\s*\(\s*\)\s*=>\s*\[\s*\]\s*\)/g, (_full, reactPrefix: string | undefined) => {
-        return `${reactPrefix || ''}useState<any[]>(() => [])`;
-      }),
-      'useState_lazy_empty_array_any'
-    );
-
-    applyRepair(
-      code.replace(/\b(const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*\[\s*\](\s*;?)/g, (_full, decl: string, name: string, tail: string) => {
-        return `${decl} ${name}: any[] = []${tail || ''}`;
-      }),
-      'empty_array_declaration_any'
-    );
-  }
-
-  if (hasUndefinedStateActionError) {
-    applyRepair(
-      code.replace(/\b(React\.)?useState\s*\(\s*\)/g, (_full, reactPrefix: string | undefined) => {
-        return `${reactPrefix || ''}useState<any>(undefined)`;
-      }),
-      'useState_no_initial_any'
-    );
-
-    applyRepair(
-      code.replace(/\b(React\.)?useState\s*\(\s*undefined\s*\)/g, (_full, reactPrefix: string | undefined) => {
-        return `${reactPrefix || ''}useState<any>(undefined)`;
-      }),
-      'useState_undefined_any'
-    );
-
-    applyRepair(
-      code.replace(/\b(React\.)?useState\s*\(\s*\(\s*\)\s*=>\s*undefined\s*\)/g, (_full, reactPrefix: string | undefined) => {
-        return `${reactPrefix || ''}useState<any>(() => undefined)`;
-      }),
-      'useState_lazy_undefined_any'
-    );
-  }
-
-  if (hasNullStateActionError) {
-    applyRepair(
-      code.replace(/\b(React\.)?useState\s*\(\s*null\s*\)/g, (_full, reactPrefix: string | undefined) => {
-        return `${reactPrefix || ''}useState<any>(null)`;
-      }),
-      'useState_null_any'
-    );
-
-    applyRepair(
-      code.replace(/\b(React\.)?useState\s*\(\s*\(\s*\)\s*=>\s*null\s*\)/g, (_full, reactPrefix: string | undefined) => {
-        return `${reactPrefix || ''}useState<any>(() => null)`;
-      }),
-      'useState_lazy_null_any'
-    );
-  }
-
-  return {
-    code,
-    changed: code !== sourceCode,
-    repairs,
-  };
-}
-
-export function applyDeterministicDomNullSafetyRepair(sourceCode: string, errors: string[]): { code: string; changed: boolean; repairs: string[] } {
-  const hasDomNullError = errors.some((rawError) =>
-    /is possibly ['"]null['"]|object is possibly ['"]null['"]|property ['"]offsettop['"] does not exist on type ['"]element['"]/i.test(rawError)
-  );
-  if (!hasDomNullError) {
-    return { code: sourceCode, changed: false, repairs: [] };
-  }
-
-  let code = sourceCode;
-  const repairs: string[] = [];
-
-  const replaceWithTracking = (nextCode: string, repairTag: string) => {
-    if (nextCode !== code) {
-      code = nextCode;
-      if (!repairs.includes(repairTag)) {
-        repairs.push(repairTag);
-      }
-    }
-  };
-
-  replaceWithTracking(
-    code.replace(/document\.querySelector(?!<)(\s*\()/g, 'document.querySelector<HTMLElement>$1'),
-    'querySelector_generic'
-  );
-
-  replaceWithTracking(
-    code.replace(
-      /document\.querySelector<HTMLElement>\(([^)]+)\)\.offsetTop/g,
-      '(document.querySelector<HTMLElement>($1)?.offsetTop ?? 0)'
-    ),
-    'querySelector_offsetTop_guard'
-  );
-
-  replaceWithTracking(
-    code.replace(
-      /document\.getElementById\(([^)]+)\)\.offsetTop/g,
-      '(document.getElementById($1)?.offsetTop ?? 0)'
-    ),
-    'getElementById_offsetTop_guard'
-  );
-
-  const possiblyNullVars = new Set<string>();
-  for (const rawError of errors) {
-    const match = rawError.match(/['"]?([A-Za-z_$][\w$]*)['"]?\s+is possibly ['"]null['"]/i);
-    if (match?.[1]) {
-      possiblyNullVars.add(match[1]);
-    }
-  }
-
-  for (const variableName of possiblyNullVars) {
-    const escaped = variableName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const offsetTopAccess = new RegExp(`\\b${escaped}\\.offsetTop\\b`, 'g');
-    replaceWithTracking(
-      code.replace(offsetTopAccess, `(${variableName}?.offsetTop ?? 0)`),
-      `offsetTop_guard:${variableName}`
-    );
-  }
-
-  return {
-    code,
-    changed: code !== sourceCode,
-    repairs,
-  };
-}
-
-async function runStructuredAutoRepairLoop(input: {
-  enabled: boolean;
-  provider: SupportedProvider;
-  generationMode: 'new' | 'edit';
-  baseSystemPrompt?: string;
-  userPrompt: string;
-  currentFiles: Record<string, string>;
-  filePath: string;
-  initialCode: string;
-  initialProcessed: ProcessedCode;
-  validate: boolean;
-  bundle: boolean;
-  maxAttempts: number;
-  repairMaxTokens: number;
-}): Promise<{ code: string; processed: ProcessedCode; summary: AutoRepairSummary }> {
-  const initialErrors = input.initialProcessed.errors.length;
-  const summary: AutoRepairSummary = {
-    enabled: input.enabled,
-    attempted: false,
-    applied: false,
-    maxAttempts: input.maxAttempts,
-    attemptsExecuted: 0,
-    initialErrorCount: initialErrors,
-    finalErrorCount: initialErrors,
-    logs: [],
-  };
-
-  if (!input.enabled || initialErrors === 0 || !input.validate) {
-    return { code: input.initialCode, processed: input.initialProcessed, summary };
-  }
-
-  summary.attempted = true;
-
-  let currentCode = input.initialCode;
-  let currentProcessed = input.initialProcessed;
-  const tryDeterministicRepair = async (repair: {
-    changed: boolean;
-    code: string;
-    description: string;
-  }): Promise<boolean> => {
-    if (!repair.changed) {
-      return false;
-    }
-    const beforeErrors = currentProcessed.errors.length;
-    try {
-      const repairedProcessed = await codeProcessor.process(repair.code, input.filePath, {
-        validate: input.validate,
-        bundle: input.bundle,
-      });
-      const afterErrors = repairedProcessed.errors.length;
-
-      if (afterErrors < beforeErrors) {
-        currentCode = repair.code;
-        currentProcessed = repairedProcessed;
-        summary.logs.push({
-          attempt: 0,
-          beforeErrors,
-          afterErrors,
-          status: afterErrors === 0 ? 'resolved' : 'improved',
-          reason: repair.description,
-        });
-
-        if (afterErrors === 0) {
-          summary.finalErrorCount = 0;
-          summary.applied = true;
-          return true;
-        }
-        return true;
-      } else {
-        summary.logs.push({
-          attempt: 0,
-          beforeErrors,
-          afterErrors,
-          status: 'failed',
-          reason: `${repair.description} did not reduce validation errors`,
-        });
-      }
-    } catch (error: any) {
-      summary.logs.push({
-        attempt: 0,
-        beforeErrors,
-        afterErrors: beforeErrors,
-        status: 'aborted',
-        reason: error?.message || `${repair.description} failed`,
-      });
-    }
-    return false;
-  };
-
-  const deterministicSetterRepair = applyDeterministicReactSetterRepair(
-    currentCode,
-    currentProcessed.errors
-  );
-  await tryDeterministicRepair({
-    changed: deterministicSetterRepair.changed,
-    code: deterministicSetterRepair.code,
-    description: deterministicSetterRepair.repairedSetters.length > 0
-      ? `deterministic setter repair (${deterministicSetterRepair.repairedSetters.join(', ')})`
-      : 'deterministic setter repair',
-  });
-
-  const deterministicDomRepair = applyDeterministicDomNullSafetyRepair(
-    currentCode,
-    currentProcessed.errors
-  );
-  await tryDeterministicRepair({
-    changed: deterministicDomRepair.changed,
-    code: deterministicDomRepair.code,
-    description: deterministicDomRepair.repairs.length > 0
-      ? `deterministic DOM null-safety repair (${deterministicDomRepair.repairs.join(', ')})`
-      : 'deterministic DOM null-safety repair',
-  });
-
-  const deterministicStateInferenceRepair = applyDeterministicReactStateInferenceRepair(
-    currentCode,
-    currentProcessed.errors
-  );
-  await tryDeterministicRepair({
-    changed: deterministicStateInferenceRepair.changed,
-    code: deterministicStateInferenceRepair.code,
-    description: deterministicStateInferenceRepair.repairs.length > 0
-      ? `deterministic React state inference repair (${deterministicStateInferenceRepair.repairs.join(', ')})`
-      : 'deterministic React state inference repair',
-  });
-
-  if (currentProcessed.errors.length === 0) {
-    summary.finalErrorCount = 0;
-    summary.applied = true;
-    return {
-      code: currentCode,
-      processed: currentProcessed,
-      summary,
-    };
-  }
-
-  for (let attempt = 1; attempt <= input.maxAttempts; attempt += 1) {
-    summary.attemptsExecuted = attempt;
-    const beforeErrors = currentProcessed.errors.length;
-    const repairErrorList = currentProcessed.errors.slice(0, 8).map((item) => `- ${item}`).join('\n');
-
-    const repairSystemPrompt = `You are a strict TypeScript repair engine.
-Fix compile/runtime errors only.
-Return only valid source code for ${input.filePath}.
-No markdown fences. No explanations.
-Do not change unrelated structure.`;
-
-    const repairPrompt = `User intent:
-${truncateForPrompt(input.userPrompt, 800)}
-
-Target file:
-${input.filePath}
-
-Current errors:
-${repairErrorList || '- unknown validation error'}
-
-Current code:
-${truncateForPrompt(currentCode, 18000)}
-
-Task:
-Repair the code so validation errors are reduced or fully resolved.`;
-
-    try {
-      const repairedResponse = await llmManager.generate({
-        provider: input.provider,
-        generationMode: input.generationMode,
-        prompt: repairPrompt,
-        systemPrompt: repairSystemPrompt,
-        temperature: 0.2,
-        maxTokens: input.repairMaxTokens,
-        stream: false,
-        currentFiles: input.currentFiles,
-      });
-
-      const repairedRaw = typeof repairedResponse === 'string'
-        ? repairedResponse
-        : (repairedResponse as any)?.content || '';
-
-      if (!repairedRaw || typeof repairedRaw !== 'string') {
-        summary.abortedReason = 'empty_repair_response';
-        summary.logs.push({
-          attempt,
-          beforeErrors,
-          afterErrors: beforeErrors,
-          status: 'aborted',
-          reason: 'empty repair response',
-        });
-        break;
-      }
-
-      const parsed = parseLLMOutput(repairedRaw, input.filePath, input.currentFiles || {});
-      if (parsed.parseError) {
-        const parseFailureReason =
-          parsed.parseError === 'UNAPPLIED_EDIT_OPERATIONS'
-            ? 'repair response operations could not be applied to current file anchors'
-            : parsed.parseError === 'INVALID_HTML_DOCUMENT_OUTPUT'
-              ? 'repair response returned full HTML document for TS/JS module target'
-              : 'repair response contained malformed structured JSON';
-        summary.logs.push({
-          attempt,
-          beforeErrors,
-          afterErrors: beforeErrors,
-          status: 'failed',
-          reason: parseFailureReason,
-        });
-        summary.abortedReason = parsed.parseError === 'UNAPPLIED_EDIT_OPERATIONS'
-          ? 'unapplied_structured_operations'
-          : parsed.parseError === 'INVALID_HTML_DOCUMENT_OUTPUT'
-            ? 'invalid_html_module_output'
-            : 'malformed_structured_output';
-        continue;
-      }
-      const nextCode = parsed.primaryCode?.trim();
-      if (!nextCode || nextCode.length < 20) {
-        summary.abortedReason = 'invalid_repair_code';
-        summary.logs.push({
-          attempt,
-          beforeErrors,
-          afterErrors: beforeErrors,
-          status: 'aborted',
-          reason: 'parsed repair code invalid',
-        });
-        break;
-      }
-
-      if (nextCode === currentCode) {
-        summary.abortedReason = 'repair_no_change';
-        summary.logs.push({
-          attempt,
-          beforeErrors,
-          afterErrors: beforeErrors,
-          status: 'aborted',
-          reason: 'repair generated no code changes',
-        });
-        break;
-      }
-
-      const nextProcessed = await codeProcessor.process(nextCode, input.filePath, {
-        validate: input.validate,
-        bundle: input.bundle,
-      });
-      const afterErrors = nextProcessed.errors.length;
-
-      if (afterErrors === 0) {
-        currentCode = nextCode;
-        currentProcessed = nextProcessed;
-        summary.logs.push({
-          attempt,
-          beforeErrors,
-          afterErrors,
-          status: 'resolved',
-        });
-        break;
-      }
-
-      if (afterErrors >= beforeErrors) {
-        summary.abortedReason = 'no_error_improvement';
-        summary.logs.push({
-          attempt,
-          beforeErrors,
-          afterErrors,
-          status: 'failed',
-          reason: 'repair did not reduce validation errors',
-        });
-        break;
-      }
-
-      currentCode = nextCode;
-      currentProcessed = nextProcessed;
-      summary.logs.push({
-        attempt,
-        beforeErrors,
-        afterErrors,
-        status: 'improved',
-      });
-    } catch (error: any) {
-      summary.abortedReason = 'repair_exception';
-      summary.logs.push({
-        attempt,
-        beforeErrors,
-        afterErrors: beforeErrors,
-        status: 'aborted',
-        reason: error?.message || 'unknown repair error',
-      });
-      break;
-    }
-  }
-
-  summary.finalErrorCount = currentProcessed.errors.length;
-  summary.applied = summary.finalErrorCount < summary.initialErrorCount;
-  return {
-    code: currentCode,
-    processed: currentProcessed,
-    summary,
-  };
-}
-
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // POST /api/generate
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -1638,6 +875,8 @@ type RequestIntegrations = {
 interface GenerateRequest {
   provider: SupportedProvider;
   prompt: string;
+  mode?: 'generate' | 'repair';
+  errorContext?: string;
   generationMode?: 'new' | 'edit';
   templateId?: string;
   systemPrompt?: string;
@@ -1700,9 +939,27 @@ interface GenerateResponse {
     detected: boolean;
     reason: string;
   };
-  rateLimit?: any; // Assuming rateLimit can be any type for now
+  repairStatus?: 'skipped' | 'succeeded' | 'failed';
+  repairError?: string;
+  pipelinePath?: PipelinePath;
+  latencyMs?: number;
+  routing?: {
+    pipeline: PipelinePath;
+    latencyMs: number;
+  };
+  metadata?: {
+    hydratedContext?: HydratedContext | null;
+  };
+  rateLimit?: {
+    remaining?: number;
+    limit?: number;
+    reset?: number;
+    provider?: string;
+  };
   pipeline?: {
     mode: 'template+plan+assemble';
+    path?: PipelinePath;
+    latencyMs?: number;
     generationMode?: 'new' | 'edit';
     templateId?: string;
     selectedBlocks?: string[];
@@ -1802,6 +1059,7 @@ interface GenerateResponse {
         suggestion: string;
       }>;
     };
+    qualitySummary?: QualitySummary;
     deterministicActions?: string[];
     contentPolish?: {
       domain: string;
@@ -1816,9 +1074,19 @@ interface GenerateResponse {
       source: 'ai' | 'fallback';
       confidence: number;
       scope: 'section' | 'global';
+      editScope: RagEditScope;
+      styleRequest: boolean;
       targetedCategories: string[];
+      impactedFiles: string[];
+      forbiddenFiles: string[];
       forceAppUpdate: boolean;
       reasoning: string;
+    };
+    contextInjection?: {
+      selectedPaths: string[];
+      skippedPaths: string[];
+      truncatedPaths: string[];
+      totalChars: number;
     };
     visualAnchor?: {
       provided: boolean;
@@ -1829,6 +1097,7 @@ interface GenerateResponse {
       sectionId?: string;
       sourceId?: string;
     };
+    timingsMs?: Record<string, number>;
     plannedCreate: number;
     plannedUpdate: number;
     templateFiles: number;
@@ -1879,6 +1148,7 @@ type VisualApplyOperation =
 
 router.post('/generate', validateRequest(generateSchema), async (req, res) => {
   const startTime = Date.now();
+  const stageTimings: Record<string, number> = {};
 
   try {
     const activeFeatureFlags = getRequestFeatureFlags(req.body.featureFlags);
@@ -1893,6 +1163,8 @@ router.post('/generate', validateRequest(generateSchema), async (req, res) => {
     const {
       provider,
       prompt,
+      mode,
+      errorContext,
       templateId,
       systemPrompt,
       temperature,
@@ -1910,7 +1182,7 @@ router.post('/generate', validateRequest(generateSchema), async (req, res) => {
     if (!isSupportedProvider(provider)) {
       return res.status(400).json({
         success: false,
-        error: provider ? 'Invalid provider. Must be "gemini", "deepseek" or "openai"' : 'Missing required field: provider',
+        error: provider ? 'Invalid provider. Must be "gemini", "groq", "openai" or "nvidia"' : 'Missing required field: provider',
         code: provider ? 'INVALID_PROVIDER' : 'MISSING_PROVIDER',
         provider: provider || 'unknown',
         timestamp: new Date().toISOString(),
@@ -1929,14 +1201,36 @@ router.post('/generate', validateRequest(generateSchema), async (req, res) => {
       });
     }
 
+    let executionProviderHint = llmManager.getExecutionProviderHint(provider);
+
+    const requestMode = mode === 'repair' ? 'repair' : 'generate';
+    const normalizedErrorContext = typeof errorContext === 'string' ? errorContext.trim() : '';
     const hasEditableFiles = Boolean(files && Object.keys(files).length > 0);
-    const effectiveGenerationMode: 'new' | 'edit' = hasEditableFiles ? 'edit' : 'new';
+    if (requestMode === 'repair' && !hasEditableFiles) {
+      return res.status(400).json({
+        success: false,
+        error: 'Repair mode requires current project files.',
+        code: 'REPAIR_FILES_REQUIRED',
+        provider,
+        timestamp: new Date().toISOString(),
+        duration: Date.now() - startTime,
+      });
+    }
+
+    const effectiveGenerationMode: 'new' | 'edit' = (requestMode === 'repair' || hasEditableFiles) ? 'edit' : 'new';
     const hasVisualAnchorInput = Boolean(
       editAnchor &&
       Object.values(editAnchor).some((value) => typeof value === 'string' && value.trim().length > 0)
     );
     const visualAnchorPrompt = effectiveGenerationMode === 'edit' ? buildVisualAnchorPrompt(editAnchor) : '';
-    const promptForPlanning = visualAnchorPrompt ? `${prompt}\n\n${visualAnchorPrompt}` : prompt;
+    const repairContextSuffix = requestMode === 'repair'
+      ? `\n\nREPAIR_REQUEST:
+- mode: repair
+- errorContext: ${normalizedErrorContext || 'unknown runtime/build error'}
+- Task: Fix runtime/build issues with minimal changes and keep the existing design/content.`
+      : '';
+    const promptForPlanningBase = `${prompt}${repairContextSuffix}`;
+    const promptForPlanning = visualAnchorPrompt ? `${promptForPlanningBase}\n\n${visualAnchorPrompt}` : promptForPlanningBase;
     const supabaseIntegration = integrations?.supabase || null;
     const backendIntentDetected = detectBackendIntent(promptForPlanning);
     const supabaseIntegrationContextPrompt = buildSupabaseIntegrationPrompt(supabaseIntegration, backendIntentDetected);
@@ -1949,6 +1243,18 @@ router.post('/generate', validateRequest(generateSchema), async (req, res) => {
 
     const contextualFiles = effectiveGenerationMode === 'edit' && files ? files : {};
 
+    // -------------------------------------------------------------------------
+    // Start Prompt Understanding Early (Parallel)
+    // -------------------------------------------------------------------------
+    const promptUnderstandingStartedAt = Date.now();
+    const promptUnderstandingPromise = inferPromptUnderstandingWithAI({
+      provider: executionProviderHint,
+      generationMode: effectiveGenerationMode,
+      prompt: promptForPlanning,
+      currentFiles: contextualFiles,
+      requestedMaxTokens: maxTokens,
+    });
+
     const normalizedTemplateId = typeof templateId === 'string' ? templateId : undefined;
     const resolvedProjectPlan = createResolvedProjectPlan({
       prompt: promptForPlanning,
@@ -1956,6 +1262,11 @@ router.post('/generate', validateRequest(generateSchema), async (req, res) => {
       existingFiles: contextualFiles,
       generationMode: effectiveGenerationMode,
       projectId: requestBody.projectId || undefined,
+    });
+    const domainPack = resolveDomainPacks({
+      prompt: promptForPlanning,
+      features: resolvedProjectPlan.finalPlan.features,
+      projectType: resolvedProjectPlan.finalPlan.projectType,
     });
     if (!resolvedProjectPlan.validation.valid) {
       return res.status(422).json({
@@ -1992,19 +1303,23 @@ router.post('/generate', validateRequest(generateSchema), async (req, res) => {
       requiredFiles: resolvedProjectPlan.requiredFiles,
     });
     const templatePlannedFiles = effectiveGenerationMode === 'new' ? Object.keys(composedTemplate.files) : [];
-    const plannedFiles = [...new Set([...filePlan.create, ...filePlan.update, ...templatePlannedFiles])];
-    const promptUnderstanding = await inferPromptUnderstandingWithAI({
-      provider,
-      generationMode: effectiveGenerationMode,
-      prompt: promptForPlanning,
-      currentFiles: contextualFiles,
-    });
+    const plannedFileContract = sanitizePlannedFileContract([
+      ...new Set([...filePlan.create, ...filePlan.update, ...templatePlannedFiles]),
+    ]);
+    const plannedFiles = plannedFileContract.validPaths;
+
+    const promptUnderstanding = await promptUnderstandingPromise;
+    executionProviderHint = llmManager.getExecutionProviderHint(provider);
+    stageTimings.promptUnderstanding = Date.now() - promptUnderstandingStartedAt;
     const aiHint: PromptIntentHint = {
       targetedCategories: promptUnderstanding.targetedCategories,
       scope: promptUnderstanding.scope,
       forceAppUpdate: promptUnderstanding.forceAppUpdate,
       confidence: promptUnderstanding.confidence,
       reasoning: promptUnderstanding.reasoning,
+      impactedFiles: promptUnderstanding.impactedFiles,
+      forbiddenFiles: promptUnderstanding.forbiddenFiles,
+      editScope: promptUnderstanding.editScope,
     };
     const sectionPlan = createSectionRegenerationPlan({
       generationMode: effectiveGenerationMode,
@@ -2014,7 +1329,15 @@ router.post('/generate', validateRequest(generateSchema), async (req, res) => {
       aiHint,
     });
     const llmContextFiles = filterFilesForLLMContext(contextualFiles);
-    const scopedContextFiles = filterFilesForSectionContext(llmContextFiles, sectionPlan);
+    const sectionScopedContextFiles = filterFilesForSectionContext(llmContextFiles, sectionPlan);
+    const ragContextResult = buildRagLightContext({
+      files: sectionScopedContextFiles,
+      impactedFiles: promptUnderstanding.impactedFiles,
+      allowedUpdatePaths: sectionPlan.allowedUpdatePaths,
+      editScope: promptUnderstanding.editScope,
+      maxChars: sectionPlan.semantic.intensity === 'high' ? 42000 : 26000,
+    });
+    const scopedContextFiles = ragContextResult.contextFiles;
     const genomeSeedFiles = effectiveGenerationMode === 'edit' && Object.keys(contextualFiles).length > 0
       ? contextualFiles
       : composedTemplate.files;
@@ -2025,18 +1348,64 @@ router.post('/generate', validateRequest(generateSchema), async (req, res) => {
     const integrationContextSuffix = supabaseIntegrationContextPrompt
       ? `\n\n${supabaseIntegrationContextPrompt}`
       : '';
+    const contractAllowedPaths = Array.from(new Set([
+      ...sectionPlan.allowedUpdatePaths.map(normalizeGeneratedPath),
+      ...ragContextResult.selectedPaths.map(normalizeGeneratedPath),
+    ])).slice(0, 60);
+    const contractReadOnlyFiles = Array.from(new Set([
+      ...Array.from(EDIT_MODE_READ_ONLY_FILES),
+      ...(promptUnderstanding.forbiddenFiles || []).map(normalizeGeneratedPath),
+    ])).slice(0, 80);
+    const contractContextSuffix = `\n\nGeneration contracts:
+- editScope: ${promptUnderstanding.editScope}
+- allowedWritePaths:
+${contractAllowedPaths.length > 0 ? contractAllowedPaths.map((path) => `  - ${path}`).join('\n') : '  - src/App.tsx'}
+- readOnlyFiles:
+${contractReadOnlyFiles.map((path) => `  - ${path}`).join('\n')}
+- Never modify readOnlyFiles.
+- In edit mode, apply minimal diffs only to allowedWritePaths.
+- If a change would require writing readOnlyFiles, return an alternative within allowed files.`;
+    const domainPackSuffix = domainPack.instruction
+      ? `\n\nDomain constraints:\n${domainPack.instruction}`
+      : '';
+    const complexRouteProfile = classifyComplexPromptRoute({
+      generationMode: effectiveGenerationMode,
+      prompt: promptForPlanning,
+      semantic: {
+        intent: sectionPlan.semantic.intent,
+        intensity: sectionPlan.semantic.intensity,
+        touchesStructure: sectionPlan.semantic.touchesStructure,
+      },
+      projectType: resolvedProjectPlan.finalPlan.projectType,
+      pageCount: resolvedProjectPlan.finalPlan.pages.length,
+      features: resolvedProjectPlan.finalPlan.features,
+      domainPackIds: domainPack.packIds,
+      backendIntentDetected,
+      plannedCreates: filePlan.create.length,
+      plannedUpdates: filePlan.update.length,
+    });
+    const complexRouteSuffix = complexRouteProfile.enabled
+      ? `\n\n${buildComplexRouteDirective({
+        profile: complexRouteProfile,
+        filePlan,
+        sectionPlan,
+      })}`
+      : '';
     const promptForGeneration = effectiveGenerationMode === 'new'
-      ? `${promptForPlanning}\n\n${resolvedProjectPlan.planContextPrompt}\n\n${composedTemplate.compositionPrompt}${diversityContext}${integrationContextSuffix}${sectionPlan.instructionSuffix}`
+      ? `${promptForPlanning}\n\n${resolvedProjectPlan.planContextPrompt}\n\n${composedTemplate.compositionPrompt}${domainPackSuffix}${diversityContext}${integrationContextSuffix}${contractContextSuffix}${sectionPlan.instructionSuffix}${complexRouteSuffix}`
       : `${promptForPlanning}\n\n${buildEditModeContextPrompt(
         contextualFiles,
         resolvedProjectPlan.finalPlan.brand,
         resolvedProjectPlan.finalPlan.language
-      )}\n\n${editQualityContext}${diversityContext}${integrationContextSuffix}${sectionPlan.instructionSuffix}`;
+      )}\n\n${editQualityContext}${domainPackSuffix}${diversityContext}${integrationContextSuffix}${contractContextSuffix}${sectionPlan.instructionSuffix}${complexRouteSuffix}`;
+    const classifiedPipelinePath = classifyRequest(prompt, contextualFiles);
 
     const tokenBudget = createTokenBudget({
-      provider,
+      provider: executionProviderHint,
       requestedMaxTokens: maxTokens,
       generationMode: effectiveGenerationMode,
+      pipelinePath: classifiedPipelinePath,
+      prompt: promptForPlanning,
       semantic: {
         intent: sectionPlan.semantic.intent,
         intensity: sectionPlan.semantic.intensity,
@@ -2047,21 +1416,37 @@ router.post('/generate', validateRequest(generateSchema), async (req, res) => {
       `ðŸŽ¯ Token budget: gen=${tokenBudget.generationMaxTokens} repair=${tokenBudget.repairMaxTokens} ` +
       `attempts=${tokenBudget.repairAttempts} (${tokenBudget.reason})`
     );
+    const lowTokenMode = tokenBudget.generationMaxTokens <= 800;
+    const generationPrompt = truncateForPrompt(
+      promptForGeneration,
+      lowTokenMode ? 5000 : complexRouteProfile.promptLimit
+    );
+    const generationSystemPrompt = truncateForPrompt(
+      ensureStackConstraintInSystemPrompt(systemPrompt || ''),
+      lowTokenMode ? 7000 : complexRouteProfile.systemLimit
+    );
 
     // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     // 2. LLM GENERATION
     // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-    console.log(`ðŸ¤– Generating code with ${provider}...`);
+    console.log(`ðŸ¤– Generating code with ${executionProviderHint} (requested: ${provider})...`);
     console.log(`ðŸ“ Prompt: ${prompt.substring(0, 100)}...`);
     console.log(`ðŸ§± Template preset: ${composedTemplate.preset.id} (${composedTemplate.selectedBlocks.length} blocks)`);
     console.log(`ðŸ—ºï¸ Resolved plan: ${resolvedProjectPlan.finalPlan.projectType} | pages=${resolvedProjectPlan.finalPlan.pages.length} | features=${resolvedProjectPlan.finalPlan.features.join(', ') || 'none'}`);
+    if (domainPack.packIds.length > 0) {
+      console.log(`ðŸ§© Domain packs: ${domainPack.packIds.join(', ')}`);
+    }
     if (resolvedProjectPlan.repairLog.length > 0) {
       console.log(`ðŸ› ï¸ Plan repairs: ${resolvedProjectPlan.repairLog.join(' | ')}`);
     }
     console.log(`ðŸ§¬ Section mode: ${sectionPlan.mode} | structural=${sectionPlan.diff.structuralChange} | intent=${sectionPlan.semantic.intent} | scoped updates=${sectionPlan.allowedUpdatePaths.length}`);
     console.log(`ðŸ§  Prompt understanding: source=${promptUnderstanding.source} scope=${promptUnderstanding.scope} forceApp=${promptUnderstanding.forceAppUpdate} categories=${promptUnderstanding.targetedCategories.join(',') || 'none'} conf=${promptUnderstanding.confidence.toFixed(2)}`);
+    console.log(`ðŸ“š Context injector: selected=${ragContextResult.selectedPaths.length} skipped=${ragContextResult.skippedPaths.length} chars=${ragContextResult.totalChars}`);
     console.log(`ðŸ§­ Generation mode: ${effectiveGenerationMode}`);
+    if (complexRouteProfile.enabled) {
+      console.log(`ðŸ§ª Complex route: ${complexRouteProfile.reason}`);
+    }
     if (effectiveGenerationMode === 'edit' && Object.keys(contextualFiles).length > 0) {
       console.log(`ðŸ“‚ Context: ${Object.keys(contextualFiles).length} files provided for iterative editing`);
       console.log(`ðŸ§  LLM context after filtering: ${Object.keys(scopedContextFiles).length} files`);
@@ -2071,18 +1456,22 @@ router.post('/generate', validateRequest(generateSchema), async (req, res) => {
     // LLMManager will automatically use Enhanced System Prompt if systemPrompt is undefined
     // This includes CRITICAL NO-ROUTER and ICON LIBRARY rules + Intent Enhancement
 
-    let rawCode: string;
-    let requestRateLimit: any;
+    let rawCode: string = '';
+    let requestRateLimit: { remaining?: number; limit?: number; reset?: number; provider?: string } | undefined;
     let orchestrationFiles: Array<{ path: string; content: string }> = [];
+    let orchestrationCritique: OrchestratorCritiqueSnapshot | null = null;
+    const llmGenerationStartedAt = Date.now();
 
     // -------------------------------------------------------------------------
     // Enterprise / Intelligence Layer Discovery
     // -------------------------------------------------------------------------
 
     // 1. Feature Flags (env/request) + internal routing policy
-    const { getFeatureFlagsForRequest } = await import('../config/feature-flags.js');
-    const baseFeatureFlags = getFeatureFlagsForRequest(req.body.featureFlags);
+    const baseFeatureFlags = activeFeatureFlags;
 
+    const hasHighComplexityPromptSignal = /kanban|trello|drag-and-drop|drag and drop|dijkstra|pathfinding|inventory|invoice|split-bill|split bill|calculator|dashboard|chart|crypto|router|multi[-\s]?page|backend|api|supabase|fullstack|auth/.test(
+      promptForPlanning.toLowerCase()
+    );
     const shouldAutoElevatePipeline =
       (effectiveGenerationMode === 'edit' && (
         sectionPlan.semantic.intent === 'feature-addition' ||
@@ -2090,7 +1479,12 @@ router.post('/generate', validateRequest(generateSchema), async (req, res) => {
         sectionPlan.semantic.touchesStructure ||
         sectionPlan.semantic.intensity === 'high'
       )) ||
-      effectiveGenerationMode === 'new';
+      (effectiveGenerationMode === 'new' && (
+        complexRouteProfile.enabled ||
+        sectionPlan.semantic.touchesStructure ||
+        sectionPlan.semantic.intensity === 'high' ||
+        hasHighComplexityPromptSignal
+      ));
 
     const shouldRunHeavyPostProcessing =
       effectiveGenerationMode === 'edit' &&
@@ -2098,32 +1492,48 @@ router.post('/generate', validateRequest(generateSchema), async (req, res) => {
       sectionPlan.semantic.intensity === 'high';
 
     const requestPhase3Flags = (req.body as any)?.featureFlags?.phase3 || {};
+    const requestPhase1Flags = (req.body as any)?.featureFlags?.phase1 || {};
     const hasExplicitIntentAgentFlag = typeof requestPhase3Flags.intentAgent === 'boolean';
     const hasExplicitPromptConditioningFlag = typeof requestPhase3Flags.dynamicPromptConditioning === 'boolean';
+    const hasExplicitSpecPassFlag = typeof requestPhase1Flags.specPass === 'boolean';
+    const hasExplicitArchitecturePassFlag = typeof requestPhase1Flags.architecturePass === 'boolean';
+    const hasExplicitSelfCritiqueFlag = typeof requestPhase1Flags.selfCritique === 'boolean';
+    const hasExplicitRepairLoopFlag = typeof requestPhase1Flags.repairLoop === 'boolean';
+    const autoEnablePhase3 = shouldAutoElevatePipeline;
+    const autoEnablePhase1 = shouldAutoElevatePipeline || complexRouteProfile.forcePhase1;
 
     const effectiveFeatureFlags = {
       ...baseFeatureFlags,
       phase1: {
         ...baseFeatureFlags.phase1,
-        specPass: baseFeatureFlags.phase1.specPass || shouldAutoElevatePipeline,
-        architecturePass: baseFeatureFlags.phase1.architecturePass || shouldAutoElevatePipeline,
-        selfCritique: baseFeatureFlags.phase1.selfCritique || shouldAutoElevatePipeline,
-        repairLoop: baseFeatureFlags.phase1.repairLoop || shouldAutoElevatePipeline,
+        specPass: hasExplicitSpecPassFlag
+          ? baseFeatureFlags.phase1.specPass
+          : (baseFeatureFlags.phase1.specPass || autoEnablePhase1),
+        architecturePass: hasExplicitArchitecturePassFlag
+          ? baseFeatureFlags.phase1.architecturePass
+          : (baseFeatureFlags.phase1.architecturePass || autoEnablePhase1),
+        selfCritique: hasExplicitSelfCritiqueFlag
+          ? baseFeatureFlags.phase1.selfCritique
+          : (baseFeatureFlags.phase1.selfCritique || autoEnablePhase1),
+        repairLoop: hasExplicitRepairLoopFlag
+          ? baseFeatureFlags.phase1.repairLoop
+          : (baseFeatureFlags.phase1.repairLoop || autoEnablePhase1),
       },
       phase2: {
         ...baseFeatureFlags.phase2,
         astRewrite: baseFeatureFlags.phase2.astRewrite || shouldRunHeavyPostProcessing,
         qualityScoring: baseFeatureFlags.phase2.qualityScoring || shouldRunHeavyPostProcessing,
-        multiFileGeneration: baseFeatureFlags.phase2.multiFileGeneration || shouldRunHeavyPostProcessing,
+        multiFileGeneration: baseFeatureFlags.phase2.multiFileGeneration || shouldRunHeavyPostProcessing || complexRouteProfile.forceMultiFile,
       },
       phase3: {
         ...baseFeatureFlags.phase3,
         intentAgent: hasExplicitIntentAgentFlag
           ? baseFeatureFlags.phase3.intentAgent
-          : true,
+          : autoEnablePhase3,
+        dependencyIntelligence: baseFeatureFlags.phase3.dependencyIntelligence || complexRouteProfile.forceDependencyAnalysis,
         dynamicPromptConditioning: hasExplicitPromptConditioningFlag
           ? baseFeatureFlags.phase3.dynamicPromptConditioning
-          : (baseFeatureFlags.phase3.dynamicPromptConditioning || shouldAutoElevatePipeline),
+          : (baseFeatureFlags.phase3.dynamicPromptConditioning || autoEnablePhase3),
       },
     };
 
@@ -2147,67 +1557,144 @@ router.post('/generate', validateRequest(generateSchema), async (req, res) => {
       effectiveFeatureFlags.phase3.dependencyIntelligence ||
       effectiveFeatureFlags.phase3.styleDNA ||
       effectiveFeatureFlags.phase3.componentMemory;
-    const useOrchestrator = !useMultiAgent && (usePhase1 || usePhase2 || usePhase3);
+    const useNodeGraphRouter = !useMultiAgent;
+    let hydratedContextForResponse: HydratedContext | null = null;
+    let routedPipelinePath: PipelinePath = useNodeGraphRouter ? classifiedPipelinePath : 'deep';
+    if (useNodeGraphRouter && routedPipelinePath === 'fast') {
+      try {
+        hydratedContextForResponse = await hydratePrompt(promptForPlanning, contextualFiles);
+        if (hydratedContextForResponse.complexity === 'complex') {
+          routedPipelinePath = 'deep';
+          console.log('[Hydration] override: complexity=complex -> forcing DEEP pipeline');
+        }
+      } catch (hydrationError: any) {
+        console.warn(`[Hydration] Pre-routing hydration failed: ${hydrationError?.message || 'unknown error'}`);
+      }
+    }
 
     console.log(
       `ðŸ§­ Pipeline routing: mode=${effectiveGenerationMode} ` +
       `intent=${sectionPlan.semantic.intent}/${sectionPlan.semantic.intensity} ` +
       `phase1=${usePhase1} phase2=${usePhase2} phase3=${usePhase3} ` +
-      `orchestrator=${useOrchestrator} multiAgent=${useMultiAgent} autoElevate=${shouldAutoElevatePipeline}`
+      `nodeGraph=${useNodeGraphRouter} classified=${classifiedPipelinePath} selected=${routedPipelinePath} ` +
+      `hydrationComplexity=${hydratedContextForResponse?.complexity || 'n/a'} ` +
+      `multiAgent=${useMultiAgent} autoElevate=${shouldAutoElevatePipeline}`
     );
 
     // -------------------------------------------------------------------------
-    // Orchestrated Intelligence / Evolution / Elite Features
-    if (useOrchestrator) {
-      console.log('ðŸ§  Using orchestrated AI pipeline...');
+    // NodeGraph Request Router (fast vs deep)
+    if (useNodeGraphRouter) {
+      const isFastPath = routedPipelinePath === 'fast';
+      console.log(`ðŸ§  Using ${isFastPath ? 'FAST' : 'DEEP'} node-graph pipeline...`);
+      const orchestratorTimeoutMs = isFastPath
+        ? 8000
+        : (complexRouteProfile.enabled ? 180000 : 120000);
+      const orchestratorAbortController = new AbortController();
       try {
-        const { orchestrator } = await import('../ai/orchestrator.js');
+        const { runNodeGraph, createDefaultNodes, createFastPathNodes } = await import('../ai/node-graph-executor.js');
+        const selectedNodes = isFastPath ? createFastPathNodes() : createDefaultNodes();
         const orchestrationResult = await withTimeout(
-          orchestrator.orchestrate({
-            provider,
+          runNodeGraph(selectedNodes, {
+            provider: executionProviderHint,
             generationMode: effectiveGenerationMode,
-            prompt: promptForGeneration,
-            systemPrompt,
+            prompt: generationPrompt,
+            systemPrompt: generationSystemPrompt,
             temperature: temperature || 0.7,
             maxTokens: tokenBudget.generationMaxTokens,
-            stream: false,
             currentFiles: scopedContextFiles,
             image,
             knowledgeBase,
             featureFlags: effectiveFeatureFlags,
-          }, `Project Context: ${Object.keys(scopedContextFiles).length > 0 ? `${Object.keys(scopedContextFiles).length} focused files provided` : 'New project'}`),
-          TIMEOUT_MS
+            signal: orchestratorAbortController.signal,
+            hydratedContext: hydratedContextForResponse,
+          }),
+          orchestratorTimeoutMs,
+          () => orchestratorAbortController.abort()
         );
 
         rawCode = orchestrationResult.code;
         orchestrationFiles = orchestrationResult.files || [];
-        console.log('âœ… Orchestrated AI pipeline completed');
-      } catch (orchestratorError: any) {
-        console.error('âŒ Orchestrated AI pipeline failed:', orchestratorError);
-        if (orchestratorError.message?.includes('timeout')) {
-          throw new Error(`Orchestrator timeout: Request took longer than ${TIMEOUT_MS / 1000}s`);
+        requestRateLimit = orchestrationResult.rateLimit || requestRateLimit;
+        hydratedContextForResponse = (orchestrationResult as any)?.metadata?.hydratedContext || hydratedContextForResponse;
+        const nodeGraphQuality = (orchestrationResult as any)?.metadata?.qualityScore;
+        if (nodeGraphQuality && typeof nodeGraphQuality.overall === 'number') {
+          const mappedIssues = Array.isArray(nodeGraphQuality.recommendations)
+            ? nodeGraphQuality.recommendations.map((recommendation: any) => ({
+              severity: recommendation?.priority === 'high'
+                ? 'critical'
+                : recommendation?.priority === 'medium'
+                  ? 'major'
+                  : 'minor',
+            }))
+            : [];
+          orchestrationCritique = {
+            score: nodeGraphQuality.overall,
+            needsRepair: nodeGraphQuality.overall < 70,
+            issues: mappedIssues,
+          };
+        } else {
+          orchestrationCritique = null;
         }
-        // Fallback to standard generation
-        console.log('ðŸ”„ Falling back to standard generation...');
-        const result = await withTimeout(
-          llmManager.generate({
-            provider,
-            generationMode: effectiveGenerationMode,
-            prompt: promptForGeneration,
-            systemPrompt,
-            temperature: temperature || 0.7,
-            maxTokens: tokenBudget.generationMaxTokens,
-            stream: false,
-            currentFiles: scopedContextFiles,
-            image,
-            knowledgeBase
-          }),
-          TIMEOUT_MS
+        console.log(`âœ… ${isFastPath ? 'FAST' : 'DEEP'} node-graph pipeline completed`);
+        stageTimings.llmGeneration = Date.now() - llmGenerationStartedAt;
+      } catch (orchestratorError: any) {
+        console.error(`âŒ ${routedPipelinePath.toUpperCase()} node-graph pipeline failed:`, orchestratorError);
+        const isOrchestratorTimeout = Boolean(
+          orchestratorError?.message &&
+          String(orchestratorError.message).toLowerCase().includes('timeout')
         );
-        rawCode = typeof result === 'string'
-          ? result
-          : (result as any)?.content || '';
-        requestRateLimit = (result as any).rateLimit;
+        let resolvedViaDeterministicFallback = false;
+        if (isOrchestratorTimeout) {
+          console.warn(`Orchestrator timeout after ${orchestratorTimeoutMs / 1000}s. Falling back to standard generation...`);
+          const deterministicTimeoutFallback = applyDeterministicDomainFallback({
+            packIds: domainPack.packIds,
+            files: scopedContextFiles,
+            generationMode: effectiveGenerationMode,
+            report: {
+              issues: [],
+              hasCriticalIssues: false,
+            },
+            forcePacks: effectiveGenerationMode === 'new' ? domainPack.packIds : [],
+          });
+          if (effectiveGenerationMode === 'new' && deterministicTimeoutFallback.applied.length > 0) {
+            console.warn(`[Orchestrator] Timeout fallback resolved via deterministic domain packs: ${deterministicTimeoutFallback.applied.join(', ')}`);
+            const fallbackEntries = Object.entries(deterministicTimeoutFallback.files);
+            rawCode =
+              deterministicTimeoutFallback.files['src/App.tsx'] ||
+              fallbackEntries.find(([path]) => /\.(tsx|ts|jsx|js)$/.test(normalizeGeneratedPath(path)))?.[1] ||
+              '';
+            orchestrationFiles = fallbackEntries.map(([path, content]) => ({
+              path,
+              content,
+            }));
+            stageTimings.llmGeneration = Date.now() - llmGenerationStartedAt;
+            resolvedViaDeterministicFallback = true;
+          }
+        } else {
+          console.log('ðŸ”„ Falling back to standard generation...');
+        }
+        if (!resolvedViaDeterministicFallback) {
+          const result = await withTimeout(
+            llmManager.generate({
+              provider: executionProviderHint,
+              generationMode: effectiveGenerationMode,
+              prompt: generationPrompt,
+              systemPrompt: generationSystemPrompt,
+              temperature: temperature || 0.7,
+              maxTokens: tokenBudget.generationMaxTokens,
+              stream: false,
+              currentFiles: scopedContextFiles,
+              image,
+              knowledgeBase
+            }),
+            TIMEOUT_MS
+          );
+          rawCode = typeof result === 'string'
+            ? result
+            : (result as any)?.content || '';
+          requestRateLimit = (result as any).rateLimit;
+          stageTimings.llmGeneration = Date.now() - llmGenerationStartedAt;
+        }
       }
     } else if (useMultiAgent) {
       console.log('ðŸš€ Using Enterprise Multi-Agent System...');
@@ -2219,10 +1706,10 @@ router.post('/generate', validateRequest(generateSchema), async (req, res) => {
         try {
           rawCode = await withTimeout(
             multiAgentManager.generate({
-              provider,
+              provider: executionProviderHint,
               generationMode: effectiveGenerationMode,
-              prompt: promptForGeneration,
-              systemPrompt,
+              prompt: generationPrompt,
+              systemPrompt: generationSystemPrompt,
               temperature: temperature || 0.7,
               maxTokens: tokenBudget.generationMaxTokens,
               stream: false,
@@ -2241,7 +1728,7 @@ router.post('/generate', validateRequest(generateSchema), async (req, res) => {
         }
 
         // 2. Validate Initial Code
-        const parsedInitial = parseLLMOutput(rawCode, 'src/App.tsx', scopedContextFiles);
+        const parsedInitial = parseLLMOutputWithDebugLogs(rawCode, 'src/App.tsx', scopedContextFiles);
         if (parsedInitial.parseError) {
           throw new Error('MALFORMED_STRUCTURED_OUTPUT: multi-agent returned malformed files/operations JSON');
         }
@@ -2261,10 +1748,10 @@ router.post('/generate', validateRequest(generateSchema), async (req, res) => {
                 parsedInitial.primaryCode,
                 initialValidation.errors,
                 {
-                  provider,
+                  provider: executionProviderHint,
                   generationMode: effectiveGenerationMode,
-                  prompt: promptForGeneration,
-                  systemPrompt,
+                  prompt: generationPrompt,
+                  systemPrompt: generationSystemPrompt,
                   temperature,
                   maxTokens: tokenBudget.repairMaxTokens,
                   stream: false,
@@ -2292,10 +1779,10 @@ router.post('/generate', validateRequest(generateSchema), async (req, res) => {
         console.log('ðŸ”„ Falling back to standard generation...');
         const result = await withTimeout(
           llmManager.generate({
-            provider,
+            provider: executionProviderHint,
             generationMode: effectiveGenerationMode,
-            prompt: promptForGeneration,
-            systemPrompt,
+            prompt: generationPrompt,
+            systemPrompt: generationSystemPrompt,
             temperature: temperature || 0.7,
             maxTokens: tokenBudget.generationMaxTokens,
             stream: false,
@@ -2317,10 +1804,10 @@ router.post('/generate', validateRequest(generateSchema), async (req, res) => {
       // Standard generation (no Phase 1 or Multi-Agent)
       const result = await withTimeout(
         llmManager.generate({
-          provider,
+          provider: executionProviderHint,
           generationMode: effectiveGenerationMode,
-          prompt: promptForGeneration,
-          systemPrompt,
+          prompt: generationPrompt,
+          systemPrompt: generationSystemPrompt,
           temperature: temperature || 0.7,
           maxTokens: tokenBudget.generationMaxTokens,
           stream: false,
@@ -2340,117 +1827,71 @@ router.post('/generate', validateRequest(generateSchema), async (req, res) => {
       }
     }
 
+    if (typeof stageTimings.llmGeneration !== 'number') {
+      stageTimings.llmGeneration = Date.now() - llmGenerationStartedAt;
+    }
+
     // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     // 3. CODE PROCESSING & VALIDATION
     // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     console.log(`ðŸ”§ Processing generated code...`);
 
-    let parsedOutput = parseLLMOutput(rawCode, 'src/App.tsx', scopedContextFiles);
+    let parsedOutput = parseLLMOutputWithDebugLogs(rawCode, 'src/App.tsx', scopedContextFiles);
+    const enforceStructuredMultiFile = effectiveGenerationMode === 'new' && (
+      complexRouteProfile.forceMultiFile ||
+      domainPack.packIds.length > 0 ||
+      resolvedProjectPlan.requiredFiles.length >= 6 ||
+      sectionPlan.semantic.touchesStructure ||
+      /checkout|cart|konfigurator|configurator|modal|sidebar|localstorage|framer\s*motion|confetti|wizard|step/i.test(promptForPlanning)
+    );
+    const structuredPreferredPaths = Array.from(new Set([
+      'src/App.tsx',
+      ...resolvedProjectPlan.requiredFiles.map((path) => normalizeGeneratedPath(path)),
+    ]));
     const structuredOutputFormats = new Set(['json', 'operations']);
-    const requiresStructuredOutput = true;
+    const hasOrchestratedFiles = Array.isArray(orchestrationFiles) && orchestrationFiles.length > 0;
     const requiresEditStructuredOutput = effectiveGenerationMode === 'edit';
+    const requiresStructuredOutput = !hasOrchestratedFiles && (
+      complexRouteProfile.enabled ||
+      enforceStructuredMultiFile ||
+      (
+        requiresEditStructuredOutput &&
+        promptUnderstanding.editScope === 'refactor'
+      )
+    );
     const hasValidStructuredOutput = structuredOutputFormats.has(parsedOutput.detectedFormat);
     const hasRuntimeModulePayload = Boolean(
       (typeof parsedOutput.primaryCode === 'string' && parsedOutput.primaryCode.trim().length > 0) ||
       parsedOutput.extractedFiles.some((file) => /\.(tsx|ts|jsx|js)$/.test(normalizeGeneratedPath(file.path))) ||
       (parsedOutput.astPatches && parsedOutput.astPatches.length > 0)
     );
-    const missingRuntimePayloadInNew = effectiveGenerationMode === 'new' && !hasRuntimeModulePayload;
-    const needsStructuredRetry = Boolean(parsedOutput.parseError)
+    const missingRuntimePayloadInNew = !hasOrchestratedFiles && effectiveGenerationMode === 'new' && !hasRuntimeModulePayload;
+    const needsStructuredRetry = !hasOrchestratedFiles && (Boolean(parsedOutput.parseError)
       || (requiresStructuredOutput && !hasValidStructuredOutput)
-      || missingRuntimePayloadInNew;
+      || missingRuntimePayloadInNew);
     if (needsStructuredRetry) {
-      console.warn('[Parser] Structured output required but missing/invalid. Running strict JSON retries...');
-      let repairedRaw = rawCode;
-      for (let retry = 1; retry <= 3; retry += 1) {
-        const strictSystemPrompt = `${systemPrompt || ''}
-
-CRITICAL OUTPUT ENFORCEMENT:
-- Return strict valid JSON only.
-- Do not use markdown fences.
-- Do not include explanatory text.
-- If you return "files", every file content must be a valid JSON string with escaped newlines (\\n).
-${requiresEditStructuredOutput ? '- EDIT MODE: Prefer "operations" JSON. If anchors are uncertain, return "files" JSON instead of invalid operations. Never return raw code/markdown.' : '- NEW MODE: Return structured "files" JSON (or "operations"), never raw code or markdown.'}`;
-
-        const unresolvedOperationHints = parsedOutput.operationsReport?.unresolved
-          ?.slice(0, 4)
-          .map((entry) => `- #${entry.index + 1}${entry.path ? ` @ ${entry.path}` : ''}: ${entry.reason}`)
-          .join('\n');
-
-        const strictUserPrompt = requiresEditStructuredOutput
-          ? `${promptForGeneration}
-
-Your previous response was invalid for edit mode or could not be applied to current files.
-Use selector-based AST operations when possible (especially with sourceId/data-source-id anchors).
-If you use replace operations, all "find" anchors must already exist exactly in the current file content.
-${unresolvedOperationHints ? `Unapplied operations:\n${unresolvedOperationHints}\n` : ''}
-Return strict valid JSON now in this exact format:
-{"operations":[{"op":"add_class","path":"src/App.tsx","selector":"[data-source-id=\"src/App.tsx:12:5\"]","classes":["bg-amber-400"]}]}
-or
-{"operations":[{"op":"replace_text","path":"src/App.tsx","find":"...","replace":"..."}]}
-Fallback if operations cannot be applied safely:
-{"files":[{"path":"src/App.tsx","content":"..."}]}`
-          : `${promptForGeneration}
-
-Your previous response had malformed structured JSON.
-Return strict valid JSON now in one of these formats:
-1) {"files":[{"path":"src/App.tsx","content":"..."}]}
-2) {"operations":[{"op":"replace_text","path":"src/App.tsx","find":"...","replace":"..."}]}`;
-
-        const retryResult = await withTimeout(
-          llmManager.generate({
-            provider,
-            generationMode: effectiveGenerationMode,
-            prompt: strictUserPrompt,
-            systemPrompt: strictSystemPrompt,
-            temperature: 0.2,
-            maxTokens: tokenBudget.generationMaxTokens,
-            stream: false,
-            currentFiles: scopedContextFiles,
-            image,
-            knowledgeBase
-          }),
-          TIMEOUT_MS
-        );
-
-        if (typeof retryResult === 'object' && 'content' in retryResult && !('getReader' in retryResult)) {
-          repairedRaw = (retryResult as any).content || '';
-          requestRateLimit = (retryResult as any).rateLimit || requestRateLimit;
-        } else {
-          break;
-        }
-
-        parsedOutput = parseLLMOutput(repairedRaw, 'src/App.tsx', scopedContextFiles);
-        const retryStructuredOk = structuredOutputFormats.has(parsedOutput.detectedFormat);
-        const retryHasRuntimeModulePayload = Boolean(
-          (typeof parsedOutput.primaryCode === 'string' && parsedOutput.primaryCode.trim().length > 0) ||
-          parsedOutput.extractedFiles.some((file) => /\.(tsx|ts|jsx|js)$/.test(normalizeGeneratedPath(file.path))) ||
-          (parsedOutput.astPatches && parsedOutput.astPatches.length > 0)
-        );
-        const retryMissingRuntimeInNew = effectiveGenerationMode === 'new' && !retryHasRuntimeModulePayload;
-        const retryValid = !parsedOutput.parseError
-          && (!requiresStructuredOutput || retryStructuredOk)
-          && !retryMissingRuntimeInNew;
-        if (retryValid) {
-          rawCode = repairedRaw;
-          console.log(`[Parser] Strict JSON retry succeeded on attempt ${retry}.`);
-          break;
-        }
-
-        const coercedRetry = coerceToStructuredFilesFallback({
-          parsedOutput,
-          generationMode: effectiveGenerationMode,
-          fallbackPath: 'src/App.tsx',
-          existingFiles: scopedContextFiles,
-        });
-        if (coercedRetry) {
-          parsedOutput = coercedRetry.parsedOutput;
-          rawCode = repairedRaw;
-          console.warn(`[Parser] Structured retry recovered via ${coercedRetry.reason} on attempt ${retry}.`);
-          break;
-        }
-      }
+      const retryResult = await executeStructuredRetryLoop({
+        rawCode,
+        parsedOutput,
+        executionProviderHint,
+        effectiveGenerationMode,
+        tokenBudget,
+        scopedContextFiles,
+        image,
+        knowledgeBase,
+        requiresEditStructuredOutput,
+        generationSystemPrompt,
+        generationPrompt,
+        enforceStructuredMultiFile,
+        structuredPreferredPaths,
+        requestRateLimit,
+        structuredOutputFormats,
+        parseOutputWithLogsFunc: parseLLMOutputWithDebugLogs,
+      });
+      rawCode = retryResult.rawCode;
+      parsedOutput = retryResult.parsedOutput;
+      requestRateLimit = retryResult.requestRateLimit || requestRateLimit;
 
       const finalStructuredOk = structuredOutputFormats.has(parsedOutput.detectedFormat);
       const finalHasRuntimeModulePayload = Boolean(
@@ -2466,13 +1907,57 @@ Return strict valid JSON now in one of these formats:
           generationMode: effectiveGenerationMode,
           fallbackPath: 'src/App.tsx',
           existingFiles: scopedContextFiles,
+          rawOutput: rawCode,
+          allowSingleFileWrap: !enforceStructuredMultiFile,
+          preferredPaths: structuredPreferredPaths,
         });
         if (coercedFinal) {
           parsedOutput = coercedFinal.parsedOutput;
           console.warn(`[Parser] Final structured fallback recovery applied via ${coercedFinal.reason}.`);
         } else {
-          throw new Error('MALFORMED_STRUCTURED_OUTPUT: LLM returned invalid files/operations JSON after retries');
+          if (effectiveGenerationMode === 'new') {
+            const rescueResult = await attemptTsxRescue({
+              executionProviderHint,
+              effectiveGenerationMode,
+              tokenBudget,
+              scopedContextFiles,
+              image,
+              knowledgeBase,
+              generationSystemPrompt,
+              generationPrompt,
+              enforceStructuredMultiFile,
+              structuredPreferredPaths,
+              requestRateLimit,
+              parseOutputWithLogsFunc: parseLLMOutputWithDebugLogs,
+            });
+            if (rescueResult.success) {
+              parsedOutput = rescueResult.parsedOutput;
+              rawCode = rescueResult.rawCode;
+              requestRateLimit = rescueResult.requestRateLimit || requestRateLimit;
+            } else {
+              throw new Error('MALFORMED_STRUCTURED_OUTPUT: LLM returned invalid files/operations JSON after retries');
+            }
+          } else {
+            throw new Error('MALFORMED_STRUCTURED_OUTPUT: LLM returned invalid files/operations JSON after retries');
+          }
         }
+      }
+    }
+    const parsedAppGuard = ensureAppDefaultExportInFiles(parsedOutput.extractedFiles || []);
+    if (parsedAppGuard.hasAppFile) {
+      const ensuredAppFile = parsedAppGuard.files.find((file) => isAppModulePath(file.path));
+      const shouldReplacePrimaryWithAppFallback =
+        !hasDefaultExport(parsedOutput.primaryCode || '') &&
+        Boolean(ensuredAppFile?.content);
+      parsedOutput = {
+        ...parsedOutput,
+        extractedFiles: parsedAppGuard.files,
+        primaryCode: shouldReplacePrimaryWithAppFallback
+          ? (ensuredAppFile?.content || parsedOutput.primaryCode)
+          : parsedOutput.primaryCode,
+      };
+      if (parsedAppGuard.patched) {
+        console.warn('[Parser] src/App.tsx missing default export. Injected fallback App wrapper.');
       }
     }
     let parsedOperationsReport = parsedOutput.operationsReport;
@@ -2481,12 +1966,10 @@ Return strict valid JSON now in one of these formats:
       parsedOperationsReport &&
       parsedOperationsReport.unresolvedOperations > 0
     ) {
-      for (let i = 0; i < parsedOperationsReport.unresolvedOperations; i += 1) {
-        editTelemetry.record('unapplied_op', {
-          projectId: requestBody.projectId,
-          unresolved: parsedOperationsReport.unresolvedOperations,
-        });
-      }
+      editTelemetry.record('unapplied_op', {
+        projectId: requestBody.projectId,
+        count: parsedOperationsReport.unresolvedOperations,
+      });
     }
     if (parsedOutput.extractedFiles.length > 0) {
       const parsedByPath = new Map<string, string>();
@@ -2532,11 +2015,13 @@ Return strict valid JSON now in one of these formats:
       }
     }
     if (effectiveGenerationMode === 'edit' && astPatchStats) {
-      for (let i = 0; i < Math.max(0, Number(astPatchStats.applied || 0)); i += 1) {
-        editTelemetry.record('ast_patch_applied', { projectId: requestBody.projectId });
+      const appliedCount = Math.max(0, Number(astPatchStats.applied || 0));
+      const failedCount = Math.max(0, Number(astPatchStats.failed || 0));
+      if (appliedCount > 0) {
+        editTelemetry.record('ast_patch_applied', { projectId: requestBody.projectId, count: appliedCount });
       }
-      for (let i = 0; i < Math.max(0, Number(astPatchStats.failed || 0)); i += 1) {
-        editTelemetry.record('ast_patch_failed', { projectId: requestBody.projectId });
+      if (failedCount > 0) {
+        editTelemetry.record('ast_patch_failed', { projectId: requestBody.projectId, count: failedCount });
       }
     }
     if (sectionPlan.mode === 'section-isolated' && !sectionPlan.allowAppUpdate) {
@@ -2559,6 +2044,57 @@ Return strict valid JSON now in one of these formats:
           validationTargetPath = normalizedPath;
           codeToProcess = contextualFiles[normalizedPath];
         }
+      }
+    }
+
+    if (normalizeGeneratedPath(validationTargetPath) === 'src/App.tsx' && !hasDefaultExport(codeToProcess || '')) {
+      const injected = tryInjectDefaultExportForApp(codeToProcess || '');
+      if (injected) {
+        console.warn('[Parser] src/App.tsx had no default export. Injected "export default App;" before processing.');
+        codeToProcess = injected;
+        normalizedGeneratedCode = injected;
+        parsedOutput.primaryCode = injected;
+      } else {
+        console.warn('[Parser] src/App.tsx has no default export before processing. Applying emergency fallback component.');
+        codeToProcess = APP_DEFAULT_EXPORT_FALLBACK;
+        normalizedGeneratedCode = APP_DEFAULT_EXPORT_FALLBACK;
+        parsedOutput.primaryCode = APP_DEFAULT_EXPORT_FALLBACK;
+      }
+
+      let appFileUpdated = false;
+      orchestrationFiles = orchestrationFiles.map((file) => {
+        if (!isAppModulePath(file.path)) return file;
+        appFileUpdated = true;
+        return {
+          ...file,
+          path: 'src/App.tsx',
+          content: codeToProcess,
+        };
+      });
+      if (!appFileUpdated) {
+        orchestrationFiles.push({
+          path: 'src/App.tsx',
+          content: codeToProcess,
+        });
+      }
+    }
+
+    const normalizedValidationPathForSanitize = normalizeGeneratedPath(validationTargetPath);
+    if (/\.(tsx|ts|jsx|js)$/.test(normalizedValidationPathForSanitize || '')) {
+      const sanitizedValidationCode = sanitizeGeneratedModuleCode(codeToProcess || '');
+      if (sanitizedValidationCode && sanitizedValidationCode !== codeToProcess) {
+        codeToProcess = sanitizedValidationCode;
+        if (normalizedValidationPathForSanitize === 'src/App.tsx') {
+          normalizedGeneratedCode = sanitizedValidationCode;
+          parsedOutput.primaryCode = sanitizedValidationCode;
+        }
+        orchestrationFiles = orchestrationFiles.map((file) => {
+          const normalizedPath = normalizeGeneratedPath(file.path);
+          if (normalizedPath === normalizedValidationPathForSanitize) {
+            return { ...file, content: sanitizedValidationCode };
+          }
+          return file;
+        });
       }
     }
 
@@ -2588,7 +2124,7 @@ Return strict valid JSON now in one of these formats:
         console.warn(`[StylePolicy] Non-compliant style edit detected. Retrying (${styleRetryAttempts}/2)...`);
 
         const styleRetryPrompt = buildStyleRetryPrompt(stylePolicyPrompt, stylePolicyCheck.violations);
-        const styleRetrySystemPrompt = `${systemPrompt || ''}
+        const styleRetrySystemPrompt = `${generationSystemPrompt || ''}
 
 CRITICAL STYLE ENFORCEMENT:
 - Return strict valid JSON only (no markdown).
@@ -2598,7 +2134,7 @@ CRITICAL STYLE ENFORCEMENT:
         try {
           const styleRetryResult = await withTimeout(
             llmManager.generate({
-              provider,
+              provider: executionProviderHint,
               generationMode: effectiveGenerationMode,
               prompt: styleRetryPrompt,
               systemPrompt: styleRetrySystemPrompt,
@@ -2619,7 +2155,7 @@ CRITICAL STYLE ENFORCEMENT:
             continue;
           }
 
-          const styleRetryParsed = parseLLMOutput(styleRetryRaw, validationTargetPath, scopedContextFiles);
+          const styleRetryParsed = parseLLMOutputWithDebugLogs(styleRetryRaw, validationTargetPath, scopedContextFiles);
           if (styleRetryParsed.parseError) {
             continue;
           }
@@ -2720,22 +2256,46 @@ CRITICAL STYLE ENFORCEMENT:
     if (preProcessStyleWarning) {
       processed.warnings.push(preProcessStyleWarning);
     }
+    const autoRepairMaxAttempts = 1;
     const autoRepairResult = await runStructuredAutoRepairLoop({
       enabled: Boolean(validate && processed.errors.length > 0),
-      provider,
+      provider: executionProviderHint,
       generationMode: effectiveGenerationMode,
-      baseSystemPrompt: systemPrompt,
-      userPrompt: promptForGeneration,
+      baseSystemPrompt: generationSystemPrompt,
+      userPrompt: generationPrompt,
       currentFiles: scopedContextFiles,
       filePath: validationTargetPath,
       initialCode: codeToProcess,
       initialProcessed: processed,
       validate,
       bundle,
-      maxAttempts: tokenBudget.repairAttempts,
+      maxAttempts: autoRepairMaxAttempts,
       repairMaxTokens: tokenBudget.repairMaxTokens,
+      parseOutputWithLogs: parseLLMOutputWithDebugLogs,
     });
     const autoRepair = autoRepairResult.summary;
+    let repairStatus: 'skipped' | 'succeeded' | 'failed' = 'skipped';
+    let repairError: string | undefined;
+    let repairLastAttemptFiles: ProcessedFile[] | undefined;
+    if (autoRepair.attempted) {
+      repairStatus = autoRepair.applied || autoRepair.finalErrorCount === 0 ? 'succeeded' : 'failed';
+      if (repairStatus === 'failed') {
+        const latestRepairLog = [...(autoRepair.logs || [])]
+          .reverse()
+          .find((entry) => entry.status === 'failed' || entry.status === 'aborted');
+        repairError = latestRepairLog?.reason || autoRepair.abortedReason || autoRepairResult.processed.errors[0];
+
+        const lastAttemptFileMap: Record<string, string> = { ...scopedContextFiles };
+        orchestrationFiles.forEach((file) => {
+          const normalizedPath = normalizeGeneratedPath(file.path);
+          if (!normalizedPath) return;
+          lastAttemptFileMap[normalizedPath] = file.content;
+        });
+        const targetPath = normalizeGeneratedPath(validationTargetPath);
+        lastAttemptFileMap[targetPath] = autoRepairResult.code;
+        repairLastAttemptFiles = toProcessedFiles(sanitizeProjectSourceFiles(lastAttemptFileMap)) as ProcessedFile[];
+      }
+    }
     if (autoRepair.applied) {
       codeToProcess = autoRepairResult.code;
       processed = autoRepairResult.processed;
@@ -2777,7 +2337,11 @@ CRITICAL STYLE ENFORCEMENT:
     let rollbackSnapshotId: string | undefined;
     let rollbackFileMap: Record<string, string> | null = null;
 
-    if (effectiveGenerationMode === 'edit' && processed.errors.length > 0) {
+    const rollbackErrorBreakdown = classifyValidationErrors(processed.errors);
+    const hasCriticalValidationErrors = rollbackErrorBreakdown.byType.syntax > 0
+      || rollbackErrorBreakdown.byType.import > 0
+      || rollbackErrorBreakdown.byType.runtime > 0;
+    if (effectiveGenerationMode === 'edit' && hasCriticalValidationErrors) {
       const hasContextFiles = Object.keys(contextualFiles).length > 0;
       if (hasContextFiles) {
         rollbackApplied = true;
@@ -2798,12 +2362,16 @@ CRITICAL STYLE ENFORCEMENT:
       }
     }
     const allowedUpdateSet = new Set(sectionPlan.allowedUpdatePaths.map(normalizeGeneratedPath));
+    const architectForbiddenSet = new Set(
+      (promptUnderstanding.forbiddenFiles || []).map((file) => normalizeGeneratedPath(file))
+    );
     const validationPathNormalized = normalizeGeneratedPath(validationTargetPath);
     const isAllowedEditOutputPath = (rawPath: string): boolean => {
       const normalizedPath = normalizeGeneratedPath(rawPath || '');
       if (!normalizedPath) return false;
       if (effectiveGenerationMode !== 'edit') return true;
       if (isEditProtectedRootFile(normalizedPath)) return false;
+      if (architectForbiddenSet.has(normalizedPath)) return false;
       if (sectionPlan.mode !== 'section-isolated') return true;
       if (normalizedPath === 'src/App.tsx') {
         return sectionPlan.allowAppUpdate;
@@ -2813,21 +2381,49 @@ CRITICAL STYLE ENFORCEMENT:
       return false;
     };
 
+    const contractValidationStartedAt = Date.now();
     const filteredProcessedFiles = (processed.files as any[]).filter((file) => {
       const normalizedPath = normalizeGeneratedPath(file.path || '');
       if (!normalizedPath) return false;
+      if (!isStructuredContractPath(normalizedPath)) return false;
       return isAllowedEditOutputPath(normalizedPath);
     });
-    const filteredOrchestrationFiles = orchestrationFiles.filter((file) => isAllowedEditOutputPath(file.path || ''));
-    const blockedByScopeCount = Math.max(0, orchestrationFiles.length - filteredOrchestrationFiles.length);
-    if (effectiveGenerationMode === 'edit' && blockedByScopeCount > 0) {
+    const generatedFileContract = validateGeneratedFilesAgainstContract({
+      files: orchestrationFiles,
+      generationMode: effectiveGenerationMode,
+      plannedFileSet: new Set(plannedFiles.map((path) => normalizeContractPath(path))),
+      templateFileSet: new Set(Object.keys(templateFiles).map((path) => normalizeContractPath(path))),
+      isAllowedEditOutputPath,
+    });
+    const filteredOrchestrationFiles = generatedFileContract.accepted;
+    const blockedByScopeCount = generatedFileContract.rejected.filter((entry) => entry.reason === 'scope_blocked').length;
+    if (plannedFileContract.discardedPaths.length > 0) {
       processed.warnings = [
         ...processed.warnings,
-        `Scope guard blocked ${blockedByScopeCount} generated file update(s) outside the allowed edit paths.`,
+        `[Contract] Dropped ${plannedFileContract.discardedPaths.length} invalid planned path(s): ${plannedFileContract.discardedPaths.slice(0, 4).join(', ')}${plannedFileContract.discardedPaths.length > 4 ? ', ...' : ''}`,
       ];
     }
+    if (generatedFileContract.rejected.length > 0) {
+      const rejectedPreview = generatedFileContract.rejected
+        .slice(0, 4)
+        .map((entry) => `${entry.path} (${entry.reason})`)
+        .join(', ');
+      processed.warnings = [
+        ...processed.warnings,
+        `[Contract] Rejected ${generatedFileContract.rejected.length} generated file update(s): ${rejectedPreview}${generatedFileContract.rejected.length > 4 ? ', ...' : ''}`,
+      ];
+    }
+    if (effectiveGenerationMode === 'new' && generatedFileContract.unplanned.length > 0) {
+      processed.warnings = [
+        ...processed.warnings,
+        `[Contract] Accepted ${generatedFileContract.unplanned.length} unplanned src path(s): ${generatedFileContract.unplanned.slice(0, 5).join(', ')}${generatedFileContract.unplanned.length > 5 ? ', ...' : ''}`,
+      ];
+    }
+    stageTimings.contractValidation = Date.now() - contractValidationStartedAt;
 
     const duration = Date.now() - startTime;
+    stageTimings.total = duration;
+    const assemblyStartedAt = Date.now();
     let assembledFileMap = assembleProjectFiles({
       templateFiles,
       existingFiles: files || {},
@@ -2837,6 +2433,7 @@ CRITICAL STYLE ENFORCEMENT:
       processedFiles: filteredProcessedFiles as any,
       dependencies: processed.dependencies,
     });
+    stageTimings.assembly = Date.now() - assemblyStartedAt;
     if (rollbackApplied && rollbackFileMap) {
       assembledFileMap = { ...rollbackFileMap };
     }
@@ -2858,6 +2455,36 @@ CRITICAL STYLE ENFORCEMENT:
       processed.metadata.hasErrors = false;
       console.warn(`â†©ï¸ Rollback applied (${rollbackSource})${rollbackSnapshotId ? ` snapshot=${rollbackSnapshotId}` : ''}`);
     }
+
+    const postAssemblyAppGuard = ensureAppDefaultExportInFileMap(sanitizedFileMap);
+    if (postAssemblyAppGuard.patched) {
+      let patchedFiles = postAssemblyAppGuard.files;
+      let reasonLabel = postAssemblyAppGuard.reason || 'normalized';
+
+      if (postAssemblyAppGuard.reason === 'missing' || postAssemblyAppGuard.reason === 'invalid_html') {
+        const recoveredApp = buildAppFromGeneratedSections(patchedFiles);
+        if (recoveredApp) {
+          patchedFiles = {
+            ...patchedFiles,
+            'src/App.tsx': recoveredApp,
+          };
+          const verifiedRecovery = ensureAppDefaultExportInFileMap(patchedFiles);
+          patchedFiles = verifiedRecovery.files;
+          reasonLabel = `recovered_from_sections:${postAssemblyAppGuard.reason}`;
+        }
+      }
+
+      sanitizedFileMap = sanitizeProjectSourceFiles(patchedFiles);
+      processed.warnings = [
+        ...processed.warnings,
+        `[Contract] Normalized src/App.tsx after assemble (${reasonLabel}).`,
+      ];
+      if (normalizeGeneratedPath(validationTargetPath) === 'src/App.tsx') {
+        codeToProcess = sanitizedFileMap['src/App.tsx'] || APP_DEFAULT_EXPORT_FALLBACK;
+        normalizedGeneratedCode = codeToProcess;
+      }
+    }
+
     let contentPolishSummary: { domain: string; changes: string[] } = {
       domain: 'default',
       changes: [],
@@ -2867,7 +2494,7 @@ CRITICAL STYLE ENFORCEMENT:
     if (!rollbackApplied) {
       const polished = polishGeneratedContent({
         files: sanitizedFileMap,
-        prompt: promptForGeneration,
+        prompt: generationPrompt,
         brand: resolvedProjectPlan.finalPlan.brand,
         injectMotion: true,
       });
@@ -2886,6 +2513,133 @@ CRITICAL STYLE ENFORCEMENT:
         sanitizedFileMap = sanitizeProjectSourceFiles(deterministicResult.files);
       }
     }
+
+    if (!rollbackApplied) {
+      const hydration = hydrateMissingLocalImports({ ...sanitizedFileMap });
+      sanitizedFileMap = sanitizeProjectSourceFiles(hydration.files);
+      if (hydration.addedPaths.length > 0) {
+        processed.warnings = [
+          ...processed.warnings,
+          `[ImportGraph] Added ${hydration.addedPaths.length} missing local module placeholder(s): ${hydration.addedPaths.slice(0, 5).join(', ')}${hydration.addedPaths.length > 5 ? ' ...' : ''}`,
+        ];
+      }
+    }
+
+    const domainCoverageBeforeFallback = evaluateDomainCoverage({
+      packIds: domainPack.packIds,
+      files: sanitizedFileMap,
+    });
+    let domainFallbackApplied = false;
+    const shouldForceKanbanFallback = Boolean(
+      !rollbackApplied &&
+      domainPack.packIds.includes('kanban') &&
+      processed.errors.length > 0
+    );
+    if (!rollbackApplied && (domainCoverageBeforeFallback.hasCriticalIssues || shouldForceKanbanFallback)) {
+      const fallbackResult = applyDeterministicDomainFallback({
+        packIds: domainPack.packIds,
+        files: sanitizedFileMap,
+        generationMode: effectiveGenerationMode,
+        report: domainCoverageBeforeFallback,
+        forcePacks: shouldForceKanbanFallback ? ['kanban'] : [],
+      });
+      if (fallbackResult.applied.length > 0) {
+        sanitizedFileMap = sanitizeProjectSourceFiles(fallbackResult.files);
+        domainFallbackApplied = true;
+        processed.warnings = [
+          ...processed.warnings,
+          `[DomainFallback] Applied: ${fallbackResult.applied.join(', ')}`,
+        ];
+      }
+    }
+
+    if (!rollbackApplied && domainFallbackApplied) {
+      const hydration = hydrateMissingLocalImports({ ...sanitizedFileMap });
+      sanitizedFileMap = sanitizeProjectSourceFiles(hydration.files);
+    }
+
+    let forcedCriticalErrors: string[] = [];
+
+    const preValidationAppGuard = ensureAppDefaultExportInFileMap(sanitizedFileMap);
+    if (preValidationAppGuard.patched) {
+      let patchedFiles = preValidationAppGuard.files;
+      let reasonLabel = preValidationAppGuard.reason || 'normalized';
+
+      if (preValidationAppGuard.reason === 'missing' || preValidationAppGuard.reason === 'invalid_html') {
+        const recoveredApp = buildAppFromGeneratedSections(patchedFiles);
+        if (recoveredApp) {
+          patchedFiles = {
+            ...patchedFiles,
+            'src/App.tsx': recoveredApp,
+          };
+          const verifiedRecovery = ensureAppDefaultExportInFileMap(patchedFiles);
+          patchedFiles = verifiedRecovery.files;
+          reasonLabel = `recovered_from_sections:${preValidationAppGuard.reason}`;
+        }
+      }
+
+      sanitizedFileMap = sanitizeProjectSourceFiles(patchedFiles);
+      processed.warnings = [
+        ...processed.warnings,
+        `[Contract] Normalized src/App.tsx before final validation (${reasonLabel}).`,
+      ];
+      if (normalizeGeneratedPath(validationTargetPath) === 'src/App.tsx') {
+        codeToProcess = sanitizedFileMap['src/App.tsx'] || APP_DEFAULT_EXPORT_FALLBACK;
+        normalizedGeneratedCode = codeToProcess;
+      }
+    }
+
+    if (!rollbackApplied && isFallbackAppPlaceholder(sanitizedFileMap['src/App.tsx'])) {
+      const recoveredApp = buildAppFromGeneratedSections(sanitizedFileMap);
+      if (recoveredApp) {
+        sanitizedFileMap = sanitizeProjectSourceFiles({
+          ...sanitizedFileMap,
+          'src/App.tsx': recoveredApp,
+        });
+        if (normalizeGeneratedPath(validationTargetPath) === 'src/App.tsx') {
+          codeToProcess = sanitizedFileMap['src/App.tsx'] || codeToProcess;
+          normalizedGeneratedCode = codeToProcess;
+        }
+        processed.warnings = [
+          ...processed.warnings,
+          '[Contract] Recovered src/App.tsx from generated section components.',
+        ];
+      }
+    }
+
+    const appFallbackPlaceholderDetected = isFallbackAppPlaceholder(sanitizedFileMap['src/App.tsx']);
+
+    if (!rollbackApplied && appFallbackPlaceholderDetected) {
+      const fallbackErrorMessage = 'Generation incomplete: App scaffold fallback placeholder was produced.';
+      const hasContextFiles = Object.keys(contextualFiles).length > 0;
+      if (effectiveGenerationMode === 'edit' && hasContextFiles) {
+        rollbackApplied = true;
+        rollbackTrigger = 'validation';
+        rollbackSource = 'context-files';
+        rollbackReason = `${fallbackErrorMessage} Keeping previous project state.`;
+        sanitizedFileMap = sanitizeProjectSourceFiles({ ...contextualFiles });
+        const rollbackTargetPath = normalizeGeneratedPath(validationTargetPath);
+        codeToProcess =
+          sanitizedFileMap[rollbackTargetPath] ||
+          sanitizedFileMap['src/App.tsx'] ||
+          codeToProcess;
+        normalizedGeneratedCode = codeToProcess;
+        processed.errors = [];
+        processed.metadata.hasErrors = false;
+      } else {
+        forcedCriticalErrors = [...forcedCriticalErrors, fallbackErrorMessage];
+      }
+
+      processed.warnings = [
+        ...processed.warnings,
+        '[Contract] Blocked fallback placeholder App from being returned as successful output.',
+      ];
+    }
+
+    const domainCoverage = evaluateDomainCoverage({
+      packIds: domainPack.packIds,
+      files: sanitizedFileMap,
+    });
 
     const finalValidationPathCandidate = normalizeGeneratedPath(validationTargetPath);
     const finalValidationPath = /\.(tsx|ts|jsx|js)$/.test(finalValidationPathCandidate)
@@ -2940,6 +2694,18 @@ CRITICAL STYLE ENFORCEMENT:
       primaryPath: finalValidationPath,
       prompt: stylePolicyPrompt,
     });
+    if (domainCoverage.issues.length > 0) {
+      qualityGate.findings.push(
+        ...domainCoverage.issues.map((issue, index) => ({
+          id: `domain-${issue.packId}-${issue.id}-${index}`,
+          severity: issue.severity,
+          message: `[Domain/${issue.packId}] ${issue.message}`,
+          suggestion: issue.severity === 'critical'
+            ? 'Complete missing domain requirements before returning generated project files.'
+            : 'Improve domain-specific behavior coverage for this prompt.',
+        }))
+      );
+    }
 
     // ── ENTERPRISE QUALITY GATES (Features 3 & 4) ───────────────────
     if (activeFeatureFlags.enterprise.stylePolicy && isStylePrompt(stylePolicyPrompt)) {
@@ -3035,32 +2801,11 @@ CRITICAL STYLE ENFORCEMENT:
       ];
     }
 
-    if (
-      qualityCriticalCount > 0 &&
-      !rollbackApplied &&
-      effectiveGenerationMode === 'edit' &&
-      Object.keys(contextualFiles).length > 0
-    ) {
-      rollbackApplied = true;
-      rollbackTrigger = 'quality';
-      rollbackSource = 'context-files';
-      rollbackReason = 'Quality gate detected critical issues in edit mode; restored previous project state.';
-      sanitizedFileMap = sanitizeProjectSourceFiles({ ...contextualFiles });
-      const rollbackTargetPath = normalizeGeneratedPath(validationTargetPath);
-      codeToProcess =
-        sanitizedFileMap[rollbackTargetPath] ||
-        sanitizedFileMap['src/App.tsx'] ||
-        codeToProcess;
-      processed.warnings = [...processed.warnings, rollbackReason];
-      processed.errors = [];
-      processed.metadata.hasErrors = false;
-      qualityGate = await evaluateQualityGates({
-        files: sanitizedFileMap,
-        primaryPath: finalValidationPath,
-        prompt: stylePolicyPrompt,
-      });
-      qualityCriticalCount = qualityGate.findings.filter((finding) => finding.severity === 'critical').length;
-      console.warn('â†©ï¸ Rollback applied due to quality gate critical findings (context-files)');
+    if (qualityCriticalCount > 0) {
+      processed.warnings = [
+        ...processed.warnings,
+        'Quality gate detected critical findings. No automatic post-quality repair/rollback was applied.',
+      ];
     }
 
     storeDesignGenome(requestBody.projectId, extractDesignGenomeFromFiles(sanitizedFileMap));
@@ -3128,7 +2873,7 @@ CRITICAL STYLE ENFORCEMENT:
       : 'Changes detected and applied.';
     if (effectiveGenerationMode === 'edit') {
       if (rollbackApplied) {
-        if (rollbackTrigger === 'quality') {
+        if ((rollbackTrigger as string) === 'quality') {
           editOutcomeStatus = 'rolled_back_quality';
         } else if (rollbackTrigger === 'final_validation') {
           editOutcomeStatus = 'rolled_back_final_validation';
@@ -3191,10 +2936,23 @@ CRITICAL STYLE ENFORCEMENT:
     const qualityCriticalMessages = qualityGate.findings
       .filter((finding) => finding.severity === 'critical')
       .map((finding) => `[Quality/critical] ${finding.message}`);
-    const combinedErrors = rollbackApplied
+    let combinedErrors = rollbackApplied
       ? []
-      : [...processed.errors, ...qualityCriticalMessages];
-    const isSuccess = combinedErrors.length === 0;
+      : [...processed.errors, ...qualityCriticalMessages, ...forcedCriticalErrors];
+    const malformedStructuredOnly = combinedErrors.length > 0
+      && combinedErrors.every((entry) => /LLM returned malformed structured JSON/i.test(String(entry || '')));
+    if (malformedStructuredOnly && responseFiles.length > 0) {
+      processed.warnings = [
+        ...processed.warnings,
+        'Structured-output fallback was used after malformed JSON; final code was recovered successfully.',
+      ];
+      combinedErrors = [];
+    }
+    if (repairStatus === 'failed' && repairLastAttemptFiles && repairLastAttemptFiles.length > 0) {
+      responseFiles = repairLastAttemptFiles;
+    }
+    const shouldSurfaceRepairFailure = repairStatus === 'failed' && responseFiles.length > 0;
+    const isSuccess = combinedErrors.length === 0 || shouldSurfaceRepairFailure;
 
     console.log(`${isSuccess ? 'âœ…' : 'âš ï¸'} Code generation & processing completed in ${duration}ms`);
 
@@ -3210,161 +2968,209 @@ CRITICAL STYLE ENFORCEMENT:
       };
     }
 
-    const dedupedWarnings = [...new Set([...processed.warnings, ...integrationWarnings])];
-    const responseWarnings = dedupedWarnings.length > 0 ? dedupedWarnings : undefined;
-    const responseErrors = rollbackApplied
-      ? undefined
-      : (combinedErrors.length > 0 ? combinedErrors : undefined);
+    const responseWarnings = buildResponseWarnings(processed.warnings, integrationWarnings);
+    const responseErrors = buildResponseErrors(rollbackApplied, combinedErrors);
+    const responseDependencies = collectProjectDependencies(sanitizedFileMap, processed.dependencies);
+    const qualitySummary = buildQualitySummary({
+      qualityGate,
+      autoRepair,
+      critique: orchestrationCritique,
+    });
 
-    const response: GenerateResponse = {
-      success: isSuccess,
-      code: codeToProcess,
-      files: responseFiles,
-      dependencies: processed.dependencies,
-      components: processed.components,
-      errors: responseErrors,
-      warnings: responseWarnings,
-      provider,
-      timestamp: new Date().toISOString(),
-      duration,
-      processingTime: processed.metadata.processingTime,
-      noOp: {
-        detected: isNoOpGeneration,
-        reason: isNoOpGeneration ? noOpReason : editOutcomeMessage,
+    const pipelinePayload = {
+      mode: 'template+plan+assemble',
+      path: routedPipelinePath,
+      latencyMs: duration,
+      generationMode: effectiveGenerationMode,
+      templateId: composedTemplate.preset.id,
+      selectedBlocks: composedTemplate.selectedBlocks.map((block) => block.id),
+      plan: {
+        projectType: resolvedProjectPlan.finalPlan.projectType,
+        features: resolvedProjectPlan.finalPlan.features,
+        pages: resolvedProjectPlan.finalPlan.pages.map((page) => page.path),
+        repairs: resolvedProjectPlan.repairLog,
+        dependencyExpansion: resolvedProjectPlan.expandedDependencies,
+        valid: resolvedProjectPlan.validation.valid,
+        warnings: resolvedProjectPlan.validation.warnings,
+        errors: resolvedProjectPlan.validation.errors,
       },
-      rateLimit: finalRateLimit,
-      pipeline: {
-        mode: 'template+plan+assemble',
-        generationMode: effectiveGenerationMode,
-        templateId: composedTemplate.preset.id,
-        selectedBlocks: composedTemplate.selectedBlocks.map((block) => block.id),
-        plan: {
-          projectType: resolvedProjectPlan.finalPlan.projectType,
-          features: resolvedProjectPlan.finalPlan.features,
-          pages: resolvedProjectPlan.finalPlan.pages.map((page) => page.path),
-          repairs: resolvedProjectPlan.repairLog,
-          dependencyExpansion: resolvedProjectPlan.expandedDependencies,
-          valid: resolvedProjectPlan.validation.valid,
-          warnings: resolvedProjectPlan.validation.warnings,
-          errors: resolvedProjectPlan.validation.errors,
+      sectionDiff: {
+        mode: sectionPlan.mode,
+        structuralChange: sectionPlan.diff.structuralChange,
+        targetedCategories: sectionPlan.diff.targetedCategories,
+        semantic: {
+          intent: sectionPlan.semantic.intent,
+          scope: sectionPlan.semantic.scope,
+          intensity: sectionPlan.semantic.intensity,
+          confidence: sectionPlan.semantic.confidence,
+          touchesStructure: sectionPlan.semantic.touchesStructure,
+          reasons: sectionPlan.semantic.reasons,
         },
-        sectionDiff: {
-          mode: sectionPlan.mode,
-          structuralChange: sectionPlan.diff.structuralChange,
-          targetedCategories: sectionPlan.diff.targetedCategories,
-          semantic: {
-            intent: sectionPlan.semantic.intent,
-            scope: sectionPlan.semantic.scope,
-            intensity: sectionPlan.semantic.intensity,
-            confidence: sectionPlan.semantic.confidence,
-            touchesStructure: sectionPlan.semantic.touchesStructure,
-            reasons: sectionPlan.semantic.reasons,
-          },
-          added: sectionPlan.diff.added,
-          removed: sectionPlan.diff.removed,
-          unchanged: sectionPlan.diff.unchanged,
-          allowAppUpdate: sectionPlan.allowAppUpdate,
-          allowedUpdatePaths: sectionPlan.allowedUpdatePaths,
-          validationTargetPath,
-        },
-        operations: parsedOperationsReport ? {
-          total: parsedOperationsReport.totalOperations,
-          applied: parsedOperationsReport.appliedOperations,
-          unresolved: parsedOperationsReport.unresolvedOperations,
-          unresolvedPreview: parsedOperationsReport.unresolved.slice(0, 5),
-        } : undefined,
-        smartDiff: {
-          added: smartDiff.added,
-          removed: smartDiff.removed,
-          updated: smartDiff.updated,
-          unchangedCount: smartDiff.unchangedCount,
-          changedCount: smartDiff.changedCount,
-          changeRatio: smartDiff.changeRatio,
-          structuralChange: smartDiff.structuralChange,
-          contentOnlyChange: smartDiff.contentOnlyChange,
-          configChange: smartDiff.configChange,
-          styleIntentDetected,
-          styleAnchorDelta,
-          styleRecoveryApplied,
-        },
-        snapshot: {
-          currentId: snapshotWrite.current.id,
-          previousId: snapshotWrite.previous?.id,
-          createdAt: snapshotWrite.current.createdAt,
-          projectId: snapshotWrite.current.projectId,
-          fileCount: snapshotWrite.current.fileCount,
-        },
-        validation: validationBeforeRollback,
-        rollback: {
-          applied: rollbackApplied,
-          reason: rollbackReason,
-          source: rollbackSource,
-          snapshotId: rollbackSnapshotId,
-        },
-        editOutcome: {
-          status: editOutcomeStatus,
-          message: editOutcomeMessage,
-          blockedFileCount: blockedByScopeCount > 0 ? blockedByScopeCount : undefined,
-        },
-        tokenBudget: {
-          provider: tokenBudget.provider,
-          requestedMaxTokens: tokenBudget.requestedMaxTokens,
-          generationMaxTokens: tokenBudget.generationMaxTokens,
-          repairMaxTokens: tokenBudget.repairMaxTokens,
-          repairAttempts: tokenBudget.repairAttempts,
-          reason: tokenBudget.reason,
-        },
-        autoRepair,
-        qualityGate: {
-          pass: qualityGate.pass,
-          overall: qualityGate.overall,
-          visualScore: qualityGate.visual.score,
-          accessibilityScore: qualityGate.accessibility.score,
-          performanceScore: qualityGate.performance.score,
-          criticalCount: qualityGate.findings.filter((finding) => finding.severity === 'critical').length,
-          warningCount: qualityGate.findings.filter((finding) => finding.severity === 'warning').length,
-          findings: qualityGate.findings,
-        },
-        deterministicActions,
-        contentPolish: contentPolishSummary,
-        designGenome: {
-          similarityToRecent: diversityAdvice.similarityToRecent,
-          avoidTraits: diversityAdvice.avoidTraits,
-          directive: diversityAdvice.directive,
-        },
-        promptUnderstanding: {
-          source: promptUnderstanding.source,
-          confidence: promptUnderstanding.confidence,
-          scope: promptUnderstanding.scope,
-          targetedCategories: promptUnderstanding.targetedCategories,
-          forceAppUpdate: promptUnderstanding.forceAppUpdate,
-          reasoning: promptUnderstanding.reasoning,
-        },
-        visualAnchor: {
-          provided: Boolean(visualAnchorPrompt),
-          nodeId: trimAnchorValue(editAnchor?.nodeId, 120) || undefined,
-          selector: trimAnchorValue(editAnchor?.selector, 220) || undefined,
-          domPath: trimAnchorValue(editAnchor?.domPath, 220) || undefined,
-          routePath: trimAnchorValue(editAnchor?.routePath, 120) || undefined,
-          sectionId: trimAnchorValue(editAnchor?.sectionId, 120) || undefined,
-          sourceId: trimAnchorValue(editAnchor?.sourceId, 220) || undefined,
-        },
-        plannedCreate: filePlan.create.length,
-        plannedUpdate: filePlan.update.length,
-        templateFiles: Object.keys(templateFiles).length,
-        llmContextFiles: Object.keys(scopedContextFiles).length,
-        integrations: {
-          supabase: {
-            backendIntentDetected,
-            connected: Boolean(supabaseIntegration?.connected),
-            environment: supabaseIntegration?.environment || null,
-            projectRef: supabaseIntegration?.projectRef || null,
-            hasTestConnection: Boolean(supabaseIntegration?.hasTestConnection),
-            hasLiveConnection: Boolean(supabaseIntegration?.hasLiveConnection),
-          }
+        added: sectionPlan.diff.added,
+        removed: sectionPlan.diff.removed,
+        unchanged: sectionPlan.diff.unchanged,
+        allowAppUpdate: sectionPlan.allowAppUpdate,
+        allowedUpdatePaths: sectionPlan.allowedUpdatePaths,
+        validationTargetPath,
+      },
+      operations: parsedOperationsReport ? {
+        total: parsedOperationsReport.totalOperations,
+        applied: parsedOperationsReport.appliedOperations,
+        unresolved: parsedOperationsReport.unresolvedOperations,
+        unresolvedPreview: parsedOperationsReport.unresolved.slice(0, 5),
+      } : undefined,
+      smartDiff: {
+        added: smartDiff.added,
+        removed: smartDiff.removed,
+        updated: smartDiff.updated,
+        unchangedCount: smartDiff.unchangedCount,
+        changedCount: smartDiff.changedCount,
+        changeRatio: smartDiff.changeRatio,
+        structuralChange: smartDiff.structuralChange,
+        contentOnlyChange: smartDiff.contentOnlyChange,
+        configChange: smartDiff.configChange,
+        styleIntentDetected,
+        styleAnchorDelta,
+        styleRecoveryApplied,
+      },
+      snapshot: {
+        currentId: snapshotWrite.current.id,
+        previousId: snapshotWrite.previous?.id,
+        createdAt: snapshotWrite.current.createdAt,
+        projectId: snapshotWrite.current.projectId,
+        fileCount: snapshotWrite.current.fileCount,
+      },
+      validation: validationBeforeRollback,
+      rollback: {
+        applied: rollbackApplied,
+        reason: rollbackReason,
+        source: rollbackSource,
+        snapshotId: rollbackSnapshotId,
+      },
+      editOutcome: {
+        status: editOutcomeStatus,
+        message: editOutcomeMessage,
+        blockedFileCount: blockedByScopeCount > 0 ? blockedByScopeCount : undefined,
+      },
+      tokenBudget: {
+        provider: tokenBudget.provider,
+        requestedMaxTokens: tokenBudget.requestedMaxTokens,
+        generationMaxTokens: tokenBudget.generationMaxTokens,
+        repairMaxTokens: tokenBudget.repairMaxTokens,
+        repairAttempts: tokenBudget.repairAttempts,
+        reason: tokenBudget.reason,
+      },
+      autoRepair,
+      qualityGate: {
+        pass: qualityGate.pass,
+        overall: qualityGate.overall,
+        visualScore: qualityGate.visual.score,
+        accessibilityScore: qualityGate.accessibility.score,
+        performanceScore: qualityGate.performance.score,
+        criticalCount: qualityGate.findings.filter((finding) => finding.severity === 'critical').length,
+        warningCount: qualityGate.findings.filter((finding) => finding.severity === 'warning').length,
+        findings: qualityGate.findings,
+      },
+      qualitySummary,
+      deterministicActions,
+      contentPolish: contentPolishSummary,
+      designGenome: {
+        similarityToRecent: diversityAdvice.similarityToRecent,
+        avoidTraits: diversityAdvice.avoidTraits,
+        directive: diversityAdvice.directive,
+      },
+      promptUnderstanding: {
+        source: promptUnderstanding.source,
+        confidence: promptUnderstanding.confidence,
+        scope: promptUnderstanding.scope,
+        editScope: promptUnderstanding.editScope,
+        styleRequest: promptUnderstanding.styleRequest,
+        targetedCategories: promptUnderstanding.targetedCategories,
+        impactedFiles: promptUnderstanding.impactedFiles,
+        forbiddenFiles: promptUnderstanding.forbiddenFiles,
+        forceAppUpdate: promptUnderstanding.forceAppUpdate,
+        reasoning: promptUnderstanding.reasoning,
+      },
+      contextInjection: {
+        selectedPaths: ragContextResult.selectedPaths,
+        skippedPaths: ragContextResult.skippedPaths,
+        truncatedPaths: ragContextResult.truncatedPaths,
+        totalChars: ragContextResult.totalChars,
+      },
+      visualAnchor: {
+        provided: Boolean(visualAnchorPrompt),
+        nodeId: trimAnchorValue(editAnchor?.nodeId, 120) || undefined,
+        selector: trimAnchorValue(editAnchor?.selector, 220) || undefined,
+        domPath: trimAnchorValue(editAnchor?.domPath, 220) || undefined,
+        routePath: trimAnchorValue(editAnchor?.routePath, 120) || undefined,
+        sectionId: trimAnchorValue(editAnchor?.sectionId, 120) || undefined,
+        sourceId: trimAnchorValue(editAnchor?.sourceId, 220) || undefined,
+      },
+      timingsMs: stageTimings as any,
+      plannedCreate: filePlan.create.length,
+      plannedUpdate: filePlan.update.length,
+      templateFiles: Object.keys(templateFiles).length,
+      llmContextFiles: Object.keys(scopedContextFiles).length,
+      integrations: {
+        supabase: {
+          backendIntentDetected,
+          connected: Boolean(supabaseIntegration?.connected),
+          environment: supabaseIntegration?.environment || null,
+          projectRef: supabaseIntegration?.projectRef || null,
+          hasTestConnection: Boolean(supabaseIntegration?.hasTestConnection),
+          hasLiveConnection: Boolean(supabaseIntegration?.hasLiveConnection),
         }
       }
     };
+
+    const response = buildGenerateSuccessResponse({
+      isSuccess,
+      codeToProcess,
+      responseFiles,
+      responseDependencies,
+      components: processed.components,
+      responseErrors,
+      responseWarnings,
+      executionProviderHint,
+      duration,
+      processingTime: processed.metadata.processingTime,
+      isNoOpGeneration,
+      noOpReason,
+      editOutcomeMessage,
+      repairStatus,
+      repairError,
+      routedPipelinePath,
+      hydratedContextForResponse,
+      finalRateLimit,
+      pipeline: pipelinePayload,
+    }) as GenerateResponse;
+
+    const estimatedInputTokens =
+      estimateTokensFromText(generationPrompt) +
+      estimateTokensFromText(generationSystemPrompt) +
+      estimateTokensFromFiles(scopedContextFiles);
+    const estimatedOutputTokens = estimateTokensFromText(codeToProcess);
+    const responseErrorCategory = !isSuccess
+      ? (qualityCriticalMessages.length > 0
+        ? 'quality_gate'
+        : (processed.errors.length > 0 ? 'validation_error' : 'pipeline_error'))
+      : undefined;
+    const fallbackApplied =
+      Boolean((finalRateLimit as any)?.fallbackFrom) ||
+      provider !== executionProviderHint;
+
+    generateObservability.record({
+      requestedProvider: toObservedProvider(provider),
+      effectiveProvider: toObservedProvider(executionProviderHint),
+      generationMode: effectiveGenerationMode,
+      success: isSuccess,
+      durationMs: duration,
+      processingTimeMs: Number(processed.metadata.processingTime) || 0,
+      fallbackApplied,
+      errorCategory: responseErrorCategory,
+      inputTokens: estimatedInputTokens,
+      outputTokens: estimatedOutputTokens,
+    });
 
     // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     // 5. AUDIT LOGGING (Async - Fire & Forget)
@@ -3434,6 +3240,7 @@ CRITICAL STYLE ENFORCEMENT:
 
           // 1. Update Token Usage in DB (if usageId exists from middleware)
           const usageId = (req as any).usageId;
+          const projectUsageId = (req as any).projectUsageId;
           const tokensUsed = Math.ceil((codeToProcess?.length || 0) / 4); // Estimate output tokens
 
           if (usageId) {
@@ -3444,14 +3251,30 @@ CRITICAL STYLE ENFORCEMENT:
             if (usageError) console.error('âš ï¸ Failed to update token usage:', usageError);
           }
 
+          if (projectUsageId) {
+            const { error: projectUsageError } = await supabase.rpc('update_project_token_usage', {
+              p_usage_id: projectUsageId,
+              p_tokens_used: tokensUsed
+            });
+            if (projectUsageError && !isMissingRpcError(projectUsageError)) {
+              console.error('âš ï¸ Failed to update project token usage:', projectUsageError);
+            }
+          }
+
           // 2. Write Audit Log
           await supabase.from('audit_logs').insert({
             user_id: userId,
             action: 'generate_code',
             details: {
               provider,
-              model: provider === 'openai' ? 'gpt-4o' :
-                provider === 'deepseek' ? 'deepseek-coder' : 'gemini-pro',
+              model:
+                provider === 'openai'
+                  ? 'gpt-4o'
+                  : provider === 'groq'
+                    ? 'llama-4-maverick'
+                    : provider === 'nvidia'
+                      ? 'qwen3.5-397b-a17b'
+                      : 'gemini-pro',
               tokens_input: (prompt.length / 4), // Estimate
               tokens_output: tokensUsed,
               duration,
@@ -3480,45 +3303,50 @@ CRITICAL STYLE ENFORCEMENT:
     // 5. ERROR HANDLING
     // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-    console.error('âŒ Generation Error:', error);
+    console.error('âŒ Generation Error:', {
+      message: sanitizeErrorForLog(error),
+      status: Number(error?.status) || undefined,
+      code: typeof error?.code === 'string' ? error.code : undefined,
+      provider: typeof error?.provider === 'string' ? error.provider : undefined,
+    });
 
     const duration = Date.now() - startTime;
-
-    // Check for Rate Limit / Quota Exceeded errors
-    const isRateLimit =
-      error.status === 429 ||
-      error.code === 429 ||
-      error.code === 'RESOURCE_EXHAUSTED' ||
-      (error.message && error.message.includes('429')) ||
-      (error.message && error.message.includes('Quota exceeded'));
-
-    // Check for timeout errors
-    const isTimeout =
-      error.message?.includes('timeout') ||
-      error.message?.includes('Timeout') ||
-      error.code === 'ETIMEDOUT';
 
     const isMalformedOutput =
       error.message?.includes('MALFORMED_STRUCTURED_OUTPUT') ||
       error.code === 'MALFORMED_STRUCTURED_OUTPUT';
 
-    const statusCode = isRateLimit ? 429 : isTimeout ? 504 : isMalformedOutput ? 422 : 500;
-    const errorCode = isRateLimit
-      ? 'RATE_LIMIT_EXCEEDED'
-      : isTimeout
-        ? 'REQUEST_TIMEOUT'
-        : isMalformedOutput
-          ? 'MALFORMED_STRUCTURED_OUTPUT'
-          : 'GENERATION_ERROR';
-
-    res.status(statusCode).json({
-      success: false,
-      error: error.message || 'Code generation failed',
-      provider: req.body?.provider || 'unknown',
-      timestamp: new Date().toISOString(),
+    const classified = classifyProviderError(error, req.body?.provider);
+    const { statusCode, payload } = buildGenerateErrorResponse({
+      error,
       duration,
-      code: errorCode
+      requestedProvider: req.body?.provider,
+      isMalformedOutput,
+      classified,
     });
+
+    const requestProvider = toObservedProvider(req.body?.provider);
+    const requestMode = req.body?.generationMode === 'new' || req.body?.generationMode === 'edit'
+      ? req.body.generationMode
+      : (req.body?.files && Object.keys(req.body.files || {}).length > 0 ? 'edit' : 'unknown');
+    const failureInputTokens =
+      estimateTokensFromText(req.body?.prompt) +
+      estimateTokensFromFiles(req.body?.files);
+
+    generateObservability.record({
+      requestedProvider: requestProvider,
+      effectiveProvider: requestProvider,
+      generationMode: requestMode,
+      success: false,
+      durationMs: duration,
+      processingTimeMs: 0,
+      fallbackApplied: false,
+      errorCategory: isMalformedOutput ? 'malformed_output' : classified.category,
+      inputTokens: failureInputTokens,
+      outputTokens: 0,
+    });
+
+    res.status(statusCode).json(payload);
   }
 });
 
@@ -4074,6 +3902,28 @@ router.get('/generate/telemetry', (req: Request, res: Response) => {
   });
 });
 
+router.get('/generate/observability', (req: Request, res: Response) => {
+  const windowMsRaw = Number(req.query.windowMs || 3600_000);
+  const windowMs = Number.isFinite(windowMsRaw) ? Math.max(60_000, windowMsRaw) : 3600_000;
+  const metrics = generateObservability.getMetrics(windowMs);
+
+  res.json({
+    success: true,
+    metrics,
+  });
+});
+
+router.get('/generate/slo', (req: Request, res: Response) => {
+  const windowMsRaw = Number(req.query.windowMs || 3600_000);
+  const windowMs = Number.isFinite(windowMsRaw) ? Math.max(60_000, windowMsRaw) : 3600_000;
+  const slo = generateObservability.getSloStatus(windowMs);
+
+  res.json({
+    success: true,
+    slo,
+  });
+});
+
 router.post('/generate/rollback', (req: Request, res: Response) => {
   const projectId = typeof req.body?.projectId === 'string' ? req.body.projectId : '';
   const snapshotId = typeof req.body?.snapshotId === 'string' ? req.body.snapshotId : '';
@@ -4114,11 +3964,11 @@ router.get('/generate/info', (_req: Request, res: Response) => {
     method: 'POST',
     description: 'Generate and process React code with LLM',
     requiredFields: ['provider', 'prompt'],
-    optionalFields: ['generationMode', 'templateId', 'temperature', 'maxTokens', 'validate', 'bundle', 'featureFlags'],
+    optionalFields: ['mode', 'errorContext', 'generationMode', 'templateId', 'temperature', 'maxTokens', 'validate', 'bundle', 'featureFlags'],
     templatesEndpoint: '/api/generate/templates',
-    providers: ['gemini', 'deepseek', 'openai'],
+    providers: ['gemini', 'groq', 'openai', 'nvidia'],
     features: [
-      'Code generation with Gemini/DeepSeek/OpenAI',
+      'Code generation with Gemini/Groq/OpenAI/NVIDIA',
       'TypeScript validation',
       'esbuild bundling',
       'Dependency extraction',

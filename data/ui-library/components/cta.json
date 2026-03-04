@@ -1,0 +1,868 @@
+{
+  "category": "cta",
+  "components": [
+    {
+      "id": "cta-gradient-band-01",
+      "name": "CTA Gradient Band Dark",
+      "category": "cta",
+      "subcategory": "band",
+      "tags": {
+        "industry": [
+          "saas",
+          "startup",
+          "ecommerce"
+        ],
+        "tone": [
+          "bold",
+          "conversion",
+          "premium"
+        ],
+        "theme": [
+          "dark"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function CtaGradientBand01() {\n  return (\n    <section className=\"px-6 py-16\">\n      <div className=\"relative mx-auto max-w-5xl overflow-hidden rounded-3xl bg-gradient-to-r from-violet-700 via-fuchsia-600 to-rose-500 p-12 text-center text-white shadow-2xl\">\n        <div className=\"pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.15),transparent_70%)]\" />\n        <p className=\"relative text-sm font-bold uppercase tracking-[0.3em] text-white/70\">Jetzt loslegen</p>\n        <h2 className=\"relative mt-4 text-3xl font-black sm:text-4xl\">\n          Bereit für den nächsten Schritt?\n        </h2>\n        <p className=\"relative mx-auto mt-4 max-w-xl text-white/80\">\n          Tritt über 15.000 Teams bei, die mit {{projectName}} schneller, smarter und profitabler arbeiten.\n        </p>\n        <div className=\"relative mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center\">\n          <button className=\"w-full rounded-2xl bg-white px-8 py-3.5 text-sm font-bold text-violet-700 shadow-lg transition hover:bg-white/90 sm:w-auto\">\n            14 Tage kostenlos testen\n          </button>\n          <button className=\"w-full rounded-2xl border border-white/30 px-8 py-3.5 text-sm font-semibold text-white transition hover:bg-white/10 sm:w-auto\">\n            Demo vereinbaren\n          </button>\n        </div>\n      </div>\n    </section>\n  );\n}"
+      }
+    },
+    {
+      "id": "cta-simple-centered-01",
+      "name": "CTA Simple Centered Light",
+      "category": "cta",
+      "subcategory": "simple",
+      "tags": {
+        "industry": [
+          "portfolio",
+          "studio",
+          "services"
+        ],
+        "tone": [
+          "minimal",
+          "clean"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function CtaSimpleCentered01() {\n  return (\n    <section className=\"border-t border-slate-100 bg-white px-6 py-24 text-center\">\n      <div className=\"mx-auto max-w-2xl\">\n        <h2 className=\"text-3xl font-extrabold text-slate-900\">\n          Lass uns zusammenarbeiten\n        </h2>\n        <p className=\"mt-4 text-lg text-slate-500\">\n          Hast du ein Projekt, eine Idee oder eine Frage? Wir freuen uns darauf, von dir zu hören.\n        </p>\n        <div className=\"mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center\">\n          <input\n            className=\"w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 sm:w-64\"\n           \n          />\n          <button className=\"w-full rounded-xl bg-slate-900 px-6 py-3 text-sm font-bold text-white transition hover:bg-slate-700 sm:w-auto\">\n            Nachricht senden\n          </button>\n        </div>\n        <p className=\"mt-4 text-xs text-slate-400\">Wir antworten innerhalb von 24 Stunden.</p>\n      </div>\n    </section>\n  );\n}"
+      }
+    },
+    {
+      "id": "corp-cta-light-01",
+      "name": "CtaLightCorporate01",
+      "category": "cta",
+      "subcategory": "centered-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function CtaLightCorporate01() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto flex max-w-5xl flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-8\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Cta Section 01</h2>\n        <p className=\"text-sm text-slate-600\">Focused call-to-action with enterprise clarity.</p>\n        <div>\n          <button className=\"rounded-lg bg-slate-600 px-5 py-3 text-sm font-semibold text-white\">Book a demo</button>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-cta-light-02",
+      "name": "CtaLightCorporate02",
+      "category": "cta",
+      "subcategory": "split-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function CtaLightCorporate02() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto flex max-w-5xl flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-8\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Cta Section 02</h2>\n        <p className=\"text-sm text-slate-600\">Focused call-to-action with enterprise clarity.</p>\n        <div>\n          <button className=\"rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white\">Book a demo</button>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-cta-light-03",
+      "name": "CtaLightCorporate03",
+      "category": "cta",
+      "subcategory": "inline-cta",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function CtaLightCorporate03() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto flex max-w-5xl flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-8\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Cta Section 03</h2>\n        <p className=\"text-sm text-slate-600\">Focused call-to-action with enterprise clarity.</p>\n        <div>\n          <button className=\"rounded-lg bg-slate-600 px-5 py-3 text-sm font-semibold text-white\">Book a demo</button>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-cta-light-04",
+      "name": "CtaLightCorporate04",
+      "category": "cta",
+      "subcategory": "centered-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function CtaLightCorporate04() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto flex max-w-5xl flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-8\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Cta Section 04</h2>\n        <p className=\"text-sm text-slate-600\">Focused call-to-action with enterprise clarity.</p>\n        <div>\n          <button className=\"rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white\">Book a demo</button>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-cta-light-05",
+      "name": "CtaLightCorporate05",
+      "category": "cta",
+      "subcategory": "split-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function CtaLightCorporate05() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto flex max-w-5xl flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-8\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Cta Section 05</h2>\n        <p className=\"text-sm text-slate-600\">Focused call-to-action with enterprise clarity.</p>\n        <div>\n          <button className=\"rounded-lg bg-slate-600 px-5 py-3 text-sm font-semibold text-white\">Book a demo</button>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-cta-light-06",
+      "name": "CtaLightCorporate06",
+      "category": "cta",
+      "subcategory": "inline-cta",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function CtaLightCorporate06() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto flex max-w-5xl flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-8\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Cta Section 06</h2>\n        <p className=\"text-sm text-slate-600\">Focused call-to-action with enterprise clarity.</p>\n        <div>\n          <button className=\"rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white\">Book a demo</button>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-cta-light-07",
+      "name": "CtaLightCorporate07",
+      "category": "cta",
+      "subcategory": "centered-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function CtaLightCorporate07() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto flex max-w-5xl flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-8\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Cta Section 07</h2>\n        <p className=\"text-sm text-slate-600\">Focused call-to-action with enterprise clarity.</p>\n        <div>\n          <button className=\"rounded-lg bg-slate-600 px-5 py-3 text-sm font-semibold text-white\">Book a demo</button>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-cta-light-08",
+      "name": "CtaLightCorporate08",
+      "category": "cta",
+      "subcategory": "split-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function CtaLightCorporate08() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto flex max-w-5xl flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-8\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Cta Section 08</h2>\n        <p className=\"text-sm text-slate-600\">Focused call-to-action with enterprise clarity.</p>\n        <div>\n          <button className=\"rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white\">Book a demo</button>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-cta-light-09",
+      "name": "CtaLightCorporate09",
+      "category": "cta",
+      "subcategory": "inline-cta",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function CtaLightCorporate09() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto flex max-w-5xl flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-8\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Cta Section 09</h2>\n        <p className=\"text-sm text-slate-600\">Focused call-to-action with enterprise clarity.</p>\n        <div>\n          <button className=\"rounded-lg bg-slate-600 px-5 py-3 text-sm font-semibold text-white\">Book a demo</button>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-cta-light-10",
+      "name": "CtaLightCorporate10",
+      "category": "cta",
+      "subcategory": "centered-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function CtaLightCorporate10() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto flex max-w-5xl flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-8\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Cta Section 10</h2>\n        <p className=\"text-sm text-slate-600\">Focused call-to-action with enterprise clarity.</p>\n        <div>\n          <button className=\"rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white\">Book a demo</button>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-cta-light-11",
+      "name": "CtaLightCorporate11",
+      "category": "cta",
+      "subcategory": "split-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function CtaLightCorporate11() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto flex max-w-5xl flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-8\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Cta Section 11</h2>\n        <p className=\"text-sm text-slate-600\">Focused call-to-action with enterprise clarity.</p>\n        <div>\n          <button className=\"rounded-lg bg-slate-600 px-5 py-3 text-sm font-semibold text-white\">Book a demo</button>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-cta-light-12",
+      "name": "CtaLightCorporate12",
+      "category": "cta",
+      "subcategory": "inline-cta",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function CtaLightCorporate12() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto flex max-w-5xl flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-8\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Cta Section 12</h2>\n        <p className=\"text-sm text-slate-600\">Focused call-to-action with enterprise clarity.</p>\n        <div>\n          <button className=\"rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white\">Book a demo</button>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-cta-light-13",
+      "name": "CtaLightCorporate13",
+      "category": "cta",
+      "subcategory": "centered-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function CtaLightCorporate13() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto flex max-w-5xl flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-8\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Cta Section 13</h2>\n        <p className=\"text-sm text-slate-600\">Focused call-to-action with enterprise clarity.</p>\n        <div>\n          <button className=\"rounded-lg bg-slate-600 px-5 py-3 text-sm font-semibold text-white\">Book a demo</button>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-cta-light-14",
+      "name": "CtaLightCorporate14",
+      "category": "cta",
+      "subcategory": "split-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function CtaLightCorporate14() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto flex max-w-5xl flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-8\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Cta Section 14</h2>\n        <p className=\"text-sm text-slate-600\">Focused call-to-action with enterprise clarity.</p>\n        <div>\n          <button className=\"rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white\">Book a demo</button>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-cta-light-15",
+      "name": "CtaLightCorporate15",
+      "category": "cta",
+      "subcategory": "inline-cta",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function CtaLightCorporate15() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto flex max-w-5xl flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-8\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Cta Section 15</h2>\n        <p className=\"text-sm text-slate-600\">Focused call-to-action with enterprise clarity.</p>\n        <div>\n          <button className=\"rounded-lg bg-slate-600 px-5 py-3 text-sm font-semibold text-white\">Book a demo</button>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-cta-light-16",
+      "name": "CtaLightCorporate16",
+      "category": "cta",
+      "subcategory": "centered-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function CtaLightCorporate16() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto flex max-w-5xl flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-8\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Cta Section 16</h2>\n        <p className=\"text-sm text-slate-600\">Focused call-to-action with enterprise clarity.</p>\n        <div>\n          <button className=\"rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white\">Book a demo</button>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-cta-light-17",
+      "name": "CtaLightCorporate17",
+      "category": "cta",
+      "subcategory": "split-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function CtaLightCorporate17() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto flex max-w-5xl flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-8\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Cta Section 17</h2>\n        <p className=\"text-sm text-slate-600\">Focused call-to-action with enterprise clarity.</p>\n        <div>\n          <button className=\"rounded-lg bg-slate-600 px-5 py-3 text-sm font-semibold text-white\">Book a demo</button>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-cta-light-18",
+      "name": "CtaLightCorporate18",
+      "category": "cta",
+      "subcategory": "inline-cta",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function CtaLightCorporate18() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto flex max-w-5xl flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-8\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Cta Section 18</h2>\n        <p className=\"text-sm text-slate-600\">Focused call-to-action with enterprise clarity.</p>\n        <div>\n          <button className=\"rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white\">Book a demo</button>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-cta-light-19",
+      "name": "CtaLightCorporate19",
+      "category": "cta",
+      "subcategory": "centered-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function CtaLightCorporate19() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto flex max-w-5xl flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-8\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Cta Section 19</h2>\n        <p className=\"text-sm text-slate-600\">Focused call-to-action with enterprise clarity.</p>\n        <div>\n          <button className=\"rounded-lg bg-slate-600 px-5 py-3 text-sm font-semibold text-white\">Book a demo</button>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-cta-light-20",
+      "name": "CtaLightCorporate20",
+      "category": "cta",
+      "subcategory": "split-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function CtaLightCorporate20() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto flex max-w-5xl flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-8\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Cta Section 20</h2>\n        <p className=\"text-sm text-slate-600\">Focused call-to-action with enterprise clarity.</p>\n        <div>\n          <button className=\"rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white\">Book a demo</button>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-cta-light-21",
+      "name": "CtaLightCorporate21",
+      "category": "cta",
+      "subcategory": "inline-cta",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function CtaLightCorporate21() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto flex max-w-5xl flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-8\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Cta Section 21</h2>\n        <p className=\"text-sm text-slate-600\">Focused call-to-action with enterprise clarity.</p>\n        <div>\n          <button className=\"rounded-lg bg-slate-600 px-5 py-3 text-sm font-semibold text-white\">Book a demo</button>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-cta-light-22",
+      "name": "CtaLightCorporate22",
+      "category": "cta",
+      "subcategory": "centered-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function CtaLightCorporate22() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto flex max-w-5xl flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-8\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Cta Section 22</h2>\n        <p className=\"text-sm text-slate-600\">Focused call-to-action with enterprise clarity.</p>\n        <div>\n          <button className=\"rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white\">Book a demo</button>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-cta-light-23",
+      "name": "CtaLightCorporate23",
+      "category": "cta",
+      "subcategory": "split-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function CtaLightCorporate23() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto flex max-w-5xl flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-8\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Cta Section 23</h2>\n        <p className=\"text-sm text-slate-600\">Focused call-to-action with enterprise clarity.</p>\n        <div>\n          <button className=\"rounded-lg bg-slate-600 px-5 py-3 text-sm font-semibold text-white\">Book a demo</button>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-cta-light-24",
+      "name": "CtaLightCorporate24",
+      "category": "cta",
+      "subcategory": "inline-cta",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function CtaLightCorporate24() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto flex max-w-5xl flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-8\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Cta Section 24</h2>\n        <p className=\"text-sm text-slate-600\">Focused call-to-action with enterprise clarity.</p>\n        <div>\n          <button className=\"rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white\">Book a demo</button>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-cta-light-25",
+      "name": "CtaLightCorporate25",
+      "category": "cta",
+      "subcategory": "centered-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function CtaLightCorporate25() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto flex max-w-5xl flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-8\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Cta Section 25</h2>\n        <p className=\"text-sm text-slate-600\">Focused call-to-action with enterprise clarity.</p>\n        <div>\n          <button className=\"rounded-lg bg-slate-600 px-5 py-3 text-sm font-semibold text-white\">Book a demo</button>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-cta-light-26",
+      "name": "CtaLightCorporate26",
+      "category": "cta",
+      "subcategory": "split-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function CtaLightCorporate26() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto flex max-w-5xl flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-8\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Cta Section 26</h2>\n        <p className=\"text-sm text-slate-600\">Focused call-to-action with enterprise clarity.</p>\n        <div>\n          <button className=\"rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white\">Book a demo</button>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-cta-light-27",
+      "name": "CtaLightCorporate27",
+      "category": "cta",
+      "subcategory": "inline-cta",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function CtaLightCorporate27() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto flex max-w-5xl flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-8\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Cta Section 27</h2>\n        <p className=\"text-sm text-slate-600\">Focused call-to-action with enterprise clarity.</p>\n        <div>\n          <button className=\"rounded-lg bg-slate-600 px-5 py-3 text-sm font-semibold text-white\">Book a demo</button>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-cta-light-28",
+      "name": "CtaLightCorporate28",
+      "category": "cta",
+      "subcategory": "centered-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function CtaLightCorporate28() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto flex max-w-5xl flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-8\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Cta Section 28</h2>\n        <p className=\"text-sm text-slate-600\">Focused call-to-action with enterprise clarity.</p>\n        <div>\n          <button className=\"rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white\">Book a demo</button>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-cta-light-29",
+      "name": "CtaLightCorporate29",
+      "category": "cta",
+      "subcategory": "split-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function CtaLightCorporate29() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto flex max-w-5xl flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-8\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Cta Section 29</h2>\n        <p className=\"text-sm text-slate-600\">Focused call-to-action with enterprise clarity.</p>\n        <div>\n          <button className=\"rounded-lg bg-slate-600 px-5 py-3 text-sm font-semibold text-white\">Book a demo</button>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-cta-light-30",
+      "name": "CtaLightCorporate30",
+      "category": "cta",
+      "subcategory": "inline-cta",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "b2b"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function CtaLightCorporate30() {\n  return (\n    <section className=\"px-6 py-20\">\n      <div className=\"mx-auto flex max-w-5xl flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-8\">\n        <h2 className=\"text-3xl font-bold text-slate-900\">Cta Section 30</h2>\n        <p className=\"text-sm text-slate-600\">Focused call-to-action with enterprise clarity.</p>\n        <div>\n          <button className=\"rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white\">Book a demo</button>\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+      }
+    }
+  ]
+}

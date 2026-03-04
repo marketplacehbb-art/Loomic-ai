@@ -1,0 +1,102 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 20% 7%;
+    --foreground: 40 20% 90%;
+
+    --card: 220 18% 10%;
+    --card-foreground: 40 20% 90%;
+
+    --popover: 220 18% 12%;
+    --popover-foreground: 40 20% 90%;
+
+    --primary: 43 56% 52%;
+    --primary-foreground: 220 20% 7%;
+
+    --secondary: 220 15% 16%;
+    --secondary-foreground: 40 20% 90%;
+
+    --muted: 220 15% 14%;
+    --muted-foreground: 220 10% 55%;
+
+    --accent: 0 65% 35%;
+    --accent-foreground: 40 20% 95%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 220 15% 18%;
+    --input: 220 15% 18%;
+    --ring: 43 56% 52%;
+
+    --radius: 0.5rem;
+
+    --gold: 43 56% 52%;
+    --gold-light: 43 60% 65%;
+    --gold-dark: 43 50% 40%;
+    --deep-red: 0 65% 35%;
+    --deep-red-light: 0 55% 45%;
+
+    --sidebar-background: 220 20% 7%;
+    --sidebar-foreground: 40 20% 90%;
+    --sidebar-primary: 43 56% 52%;
+    --sidebar-primary-foreground: 220 20% 7%;
+    --sidebar-accent: 220 15% 16%;
+    --sidebar-accent-foreground: 40 20% 90%;
+    --sidebar-border: 220 15% 18%;
+    --sidebar-ring: 43 56% 52%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Lora', serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', serif;
+  }
+}
+
+@layer utilities {
+  .text-gradient-gold {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(43 60% 65%), hsl(43 56% 52%), hsl(43 50% 40%));
+  }
+
+  .bg-gradient-dark {
+    background: linear-gradient(180deg, hsl(220 20% 7%) 0%, hsl(220 18% 10%) 100%);
+  }
+
+  .bg-gradient-card {
+    background: linear-gradient(145deg, hsl(220 18% 12%) 0%, hsl(220 18% 8%) 100%);
+  }
+
+  .border-gold {
+    border-color: hsl(43 56% 52% / 0.3);
+  }
+
+  .shadow-gold {
+    box-shadow: 0 4px 30px hsl(43 56% 52% / 0.1);
+  }
+
+  .shadow-gold-lg {
+    box-shadow: 0 8px 40px hsl(43 56% 52% / 0.15);
+  }
+
+  .glass-dark {
+    background: hsl(220 20% 7% / 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+}

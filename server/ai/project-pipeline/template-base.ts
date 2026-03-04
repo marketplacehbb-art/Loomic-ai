@@ -1,5 +1,14 @@
 export type TemplateFiles = Record<string, string>;
 
+const isProd = process.env.NODE_ENV === 'production';
+const defaultRobots = isProd
+  ? `User-agent: *
+Allow: /
+`
+  : `User-agent: *
+Disallow: /
+`;
+
 const BASE_TEMPLATE: TemplateFiles = {
   '.gitignore': `node_modules
 dist
@@ -14,6 +23,12 @@ Generated with AI Builder project pipeline.
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Generated with AI Builder." />
+    <meta property="og:title" content="AI Builder App" />
+    <meta property="og:description" content="Generated with AI Builder." />
+    <meta property="og:image" content="/assets/placeholder.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="/assets/placeholder.svg" />
     <title>AI Builder App</title>
   </head>
   <body>
@@ -120,10 +135,22 @@ html, body, #root {
 `,
   'src/vite-env.d.ts': `/// <reference types="vite/client" />
 `,
-  'public/robots.txt': `User-agent: *
-Allow: /
+  'public/robots.txt': defaultRobots,
+  'public/sitemap.xml': `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://example.com/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+</urlset>
 `,
   'public/placeholder.svg': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <rect width="200" height="200" fill="#e2e8f0" />
+  <text x="100" y="100" text-anchor="middle" dominant-baseline="middle" fill="#334155" font-size="16">AI Builder</text>
+</svg>
+`,
+  'public/assets/placeholder.svg': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
   <rect width="200" height="200" fill="#e2e8f0" />
   <text x="100" y="100" text-anchor="middle" dominant-baseline="middle" fill="#334155" font-size="16">AI Builder</text>
 </svg>

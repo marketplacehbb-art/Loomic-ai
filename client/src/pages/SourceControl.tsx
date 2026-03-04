@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { api } from '../lib/api';
 import clsx from 'clsx';
+import { useSearchParams } from 'react-router-dom';
+import Sidebar from '../components/Sidebar';
 
 interface GitStatus {
     status: {
@@ -25,35 +27,53 @@ interface BranchInfo {
 }
 
 export default function SourceControl() {
+    const [searchParams] = useSearchParams();
     const [loading, setLoading] = useState(false);
     const [gitState, setGitState] = useState<GitStatus | null>(null);
     const [commitMessage, setCommitMessage] = useState('');
     const [branchInfo, setBranchInfo] = useState<BranchInfo | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [success, setSuccess] = useState<string | null>(null);
     // Branch Ops
     const [isCreatingBranch, setIsCreatingBranch] = useState(false);
     const [newBranchName, setNewBranchName] = useState('');
 
     // Push Config
     const [remoteUrl, setRemoteUrl] = useState(() => localStorage.getItem('git_remote_url') || '');
-    const [pushToken, setPushToken] = useState(() => localStorage.getItem('git_push_token') || '');
+    const [pushToken, setPushToken] = useState('');
     const [showPushSettings, setShowPushSettings] = useState(false);
+    const projectId = useMemo(() => {
+        const fromQuery = (searchParams.get('project_id') || '').trim();
+        const fromStorage = (localStorage.getItem('active_project_id') || '').trim();
+        const resolved = fromQuery || fromStorage;
+        if (resolved) {
+            localStorage.setItem('active_project_id', resolved);
+            return resolved;
+        }
+        return null;
+    }, [searchParams]);
 
     useEffect(() => {
+        if (!projectId) {
+            setError('No project selected. Open Source Control from a specific project.');
+            return;
+        }
+        setError(null);
+        setSuccess(null);
         loadStatus();
         loadBranches();
-    }, []);
+    }, [projectId]);
 
     // Persist settings
     useEffect(() => {
         localStorage.setItem('git_remote_url', remoteUrl);
-        localStorage.setItem('git_push_token', pushToken);
-    }, [remoteUrl, pushToken]);
+    }, [remoteUrl]);
 
     const loadStatus = async () => {
+        if (!projectId) return;
         try {
             setLoading(true);
-            const data = await api.git.status();
+            const data = await api.git.status(projectId);
             // Data structure from server is { success: true, status: ... }
             if (data.status) {
                 setGitState({ status: data.status, log: { all: [] } }); // Log fetched separately usually or via status if combined
@@ -68,8 +88,9 @@ export default function SourceControl() {
     };
 
     const loadHistory = async () => {
+        if (!projectId) return;
         try {
-            const historyData = await api.git.history(); // { success: true, history: { all: [] } }
+            const historyData = await api.git.history(projectId); // { success: true, history: { all: [] } }
             setGitState(prev => prev ? { ...prev, log: historyData.history } : { status: {} as any, log: historyData.history });
         } catch (e) {
             console.error(e);
@@ -77,8 +98,9 @@ export default function SourceControl() {
     }
 
     const loadBranches = async () => {
+        if (!projectId) return;
         try {
-            const data = await api.git.getBranches();
+            const data = await api.git.getBranches(projectId);
             // data is { success: true, branches: { current: string, all: string[] } }
             if (data.branches) {
                 setBranchInfo(data.branches);
@@ -89,9 +111,10 @@ export default function SourceControl() {
     };
 
     const handleInit = async () => {
+        if (!projectId) return;
         try {
             setLoading(true);
-            await api.git.init();
+            await api.git.init(projectId);
             await loadStatus();
             await loadBranches();
             setError(null);
@@ -103,12 +126,13 @@ export default function SourceControl() {
     };
 
     const handleCommit = async () => {
+        if (!projectId) return;
         if (!commitMessage) return;
         try {
             setLoading(true);
             // Auto-stage all for now (simplified flow)
-            await api.git.add('.');
-            await api.git.commit(commitMessage);
+            await api.git.add('.', projectId);
+            await api.git.commit(commitMessage, projectId);
             setCommitMessage('');
             await loadStatus();
             await loadBranches();
@@ -120,10 +144,11 @@ export default function SourceControl() {
     };
 
     const handleCreateBranch = async () => {
+        if (!projectId) return;
         if (!newBranchName) return;
         try {
             setLoading(true);
-            const res = await api.git.checkout(newBranchName, true);
+            const res = await api.git.checkout(newBranchName, true, projectId);
 
             if (!res.success) throw new Error(res.error);
 
@@ -139,10 +164,11 @@ export default function SourceControl() {
     };
 
     const handleSwitchBranch = async (branch: string) => {
+        if (!projectId) return;
         if (branch === branchInfo?.current) return;
         try {
             setLoading(true);
-            await api.git.checkout(branch);
+            await api.git.checkout(branch, false, projectId);
             await loadBranches();
             await loadStatus();
         } catch (e: any) {
@@ -153,11 +179,12 @@ export default function SourceControl() {
     };
 
     const handlePush = async () => {
+        if (!projectId) return;
         try {
             setLoading(true);
             const branch = branchInfo?.current || 'main';
-            await api.git.push(remoteUrl || 'origin', branch, pushToken);
-            alert('Push successful!');
+            await api.git.push(remoteUrl || 'origin', branch, pushToken, projectId);
+            setSuccess(`Push successful on ${branch}.`);
         } catch (e: any) {
             setError(e.message);
         } finally {
@@ -170,17 +197,26 @@ export default function SourceControl() {
 
     return (
         <div className="flex bg-slate-50 dark:bg-background-dark min-h-screen">
+            <Sidebar />
             <div className="flex-1 p-8 ml-64 overflow-y-auto w-full">
                 <header className="flex justify-between items-center mb-8">
                     <div>
                         <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Source Control</h1>
-                        <p className="text-slate-500 dark:text-slate-400">Manage version control for your project.</p>
+                        <p className="text-slate-500 dark:text-slate-400">
+                            Manage version control for your project.
+                            {projectId ? ` Active project: ${projectId}` : ''}
+                        </p>
                     </div>
                 </header>
 
                 {error && !noRepo && (
                     <div className="bg-red-50 text-red-600 p-4 rounded-lg mb-6 border border-red-200">
                         {error}
+                    </div>
+                )}
+                {success && (
+                    <div className="bg-emerald-50 text-emerald-700 p-4 rounded-lg mb-6 border border-emerald-200">
+                        {success}
                     </div>
                 )}
 

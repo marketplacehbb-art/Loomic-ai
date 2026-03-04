@@ -37,9 +37,21 @@ export class SQLGenerator {
             // Enable RLS by default
             sql += `ALTER TABLE public.${tableName} ENABLE ROW LEVEL SECURITY;\n\n`;
 
-            // Basic Policy
-            sql += `CREATE POLICY "Enable all access for authenticated users" \n`;
-            sql += `ON public.${tableName} FOR ALL USING (auth.role() = 'authenticated');\n\n`;
+            const ownerColumn = columns.find((col) => col.name === 'user_id' || col.name === 'owner_id')?.name;
+            if (ownerColumn) {
+                sql += `CREATE POLICY "${tableName}_owner_access" \n`;
+                sql += `ON public.${tableName} \n`;
+                sql += `FOR ALL TO authenticated \n`;
+                sql += `USING (auth.uid() = ${ownerColumn}) \n`;
+                sql += `WITH CHECK (auth.uid() = ${ownerColumn});\n\n`;
+            } else {
+                sql += `CREATE POLICY "${tableName}_deny_all_default" \n`;
+                sql += `ON public.${tableName} \n`;
+                sql += `FOR ALL TO authenticated \n`;
+                sql += `USING (false) \n`;
+                sql += `WITH CHECK (false);\n\n`;
+                sql += `-- NOTE: Add user_id/owner_id and owner-scoped policy for this table.\n\n`;
+            }
         });
 
         // 2. Create Relations (Foreign Keys)

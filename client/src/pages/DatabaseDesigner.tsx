@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
     ReactFlow,
     Background,
@@ -14,6 +14,7 @@ import {
     type NodeTypes
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import { useSearchParams } from 'react-router-dom';
 import TableNode, { type TableNodeData } from '../components/db-designer/TableNode';
 import { SQLGenerator } from '../utils/sql-generator';
 
@@ -34,8 +35,16 @@ const initialNodes: Node<TableNodeData>[] = [
 ];
 
 export default function DatabaseDesigner() {
+    const [searchParams] = useSearchParams();
     const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
     const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+    const [hydrated, setHydrated] = useState(false);
+    const projectId = useMemo(() => {
+        const fromQuery = (searchParams.get('project_id') || '').trim();
+        const fromStorage = (localStorage.getItem('active_project_id') || '').trim();
+        return fromQuery || fromStorage || 'default';
+    }, [searchParams]);
+    const persistenceKey = useMemo(() => `db_designer_state:${projectId}`, [projectId]);
 
     // Custom Node Types
     const nodeTypes = useMemo<NodeTypes>(() => ({
@@ -64,6 +73,37 @@ export default function DatabaseDesigner() {
             data: { ...n.data, onUpdate: onNodeUpdate }
         })));
     }, [onNodeUpdate, setNodes]);
+
+    useEffect(() => {
+        try {
+            const raw = localStorage.getItem(persistenceKey);
+            if (!raw) return;
+            const parsed = JSON.parse(raw) as { nodes?: Node<TableNodeData>[]; edges?: Edge[] };
+            if (Array.isArray(parsed?.nodes)) {
+                setNodes(parsed.nodes.map((n) => ({
+                    ...n,
+                    data: { ...n.data, onUpdate: onNodeUpdate }
+                })));
+            }
+            if (Array.isArray(parsed?.edges)) {
+                setEdges(parsed.edges);
+            }
+        } catch {
+            // Ignore malformed local state and continue with defaults.
+        } finally {
+            setHydrated(true);
+        }
+    }, [onNodeUpdate, persistenceKey, setEdges, setNodes]);
+
+    useEffect(() => {
+        if (!hydrated) return;
+        try {
+            const payload = JSON.stringify({ nodes, edges });
+            localStorage.setItem(persistenceKey, payload);
+        } catch {
+            // Best-effort persistence only.
+        }
+    }, [edges, hydrated, nodes, persistenceKey]);
 
 
     const onConnect = useCallback(
@@ -115,7 +155,9 @@ export default function DatabaseDesigner() {
                     </div>
                     <div>
                         <h1 className="text-lg font-bold text-slate-800 dark:text-white">Database Designer</h1>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">Visually model your Supabase Schema</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                            Visually model your Supabase Schema · Project {projectId}
+                        </p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">

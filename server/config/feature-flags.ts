@@ -76,42 +76,39 @@ const defaultFlags: FeatureFlags = {
  * Get feature flags from environment or use defaults
  */
 export function getFeatureFlags(): FeatureFlags {
-  // Check environment variables for feature flags
-  const envFlags = {
+  // Helper: only override default when the env variable is explicitly set.
+  // Without this, `process.env.X === 'true'` evaluates to `false` for
+  // unset variables, which silently overrides any future default changes.
+  const envBool = (envKey: string, fallback: boolean): boolean =>
+    process.env[envKey] !== undefined ? process.env[envKey] === 'true' : fallback;
+
+  return {
     phase1: {
-      specPass: process.env.FEATURE_SPEC_PASS === 'true',
-      architecturePass: process.env.FEATURE_ARCHITECTURE_PASS === 'true',
-      selfCritique: process.env.FEATURE_SELF_CRITIQUE === 'true',
-      repairLoop: process.env.FEATURE_REPAIR_LOOP === 'true',
+      specPass: envBool('FEATURE_SPEC_PASS', defaultFlags.phase1.specPass),
+      architecturePass: envBool('FEATURE_ARCHITECTURE_PASS', defaultFlags.phase1.architecturePass),
+      selfCritique: envBool('FEATURE_SELF_CRITIQUE', defaultFlags.phase1.selfCritique),
+      repairLoop: envBool('FEATURE_REPAIR_LOOP', defaultFlags.phase1.repairLoop),
     },
     phase2: {
-      astRewrite: process.env.FEATURE_AST_REWRITE === 'true',
-      qualityScoring: process.env.FEATURE_QUALITY_SCORING === 'true',
-      multiFileGeneration: process.env.FEATURE_MULTI_FILE === 'true',
+      astRewrite: envBool('FEATURE_AST_REWRITE', defaultFlags.phase2.astRewrite),
+      qualityScoring: envBool('FEATURE_QUALITY_SCORING', defaultFlags.phase2.qualityScoring),
+      multiFileGeneration: envBool('FEATURE_MULTI_FILE', defaultFlags.phase2.multiFileGeneration),
     },
     phase3: {
-      dynamicPromptConditioning: process.env.FEATURE_DYNAMIC_PROMPT === 'true',
-      intentAgent: process.env.FEATURE_INTENT_AGENT === 'true',
-      dependencyIntelligence: process.env.FEATURE_DEPENDENCY_INTELLIGENCE === 'true',
-      styleDNA: process.env.FEATURE_STYLE_DNA === 'true',
-      componentMemory: process.env.FEATURE_COMPONENT_MEMORY === 'true',
+      dynamicPromptConditioning: envBool('FEATURE_DYNAMIC_PROMPT', defaultFlags.phase3.dynamicPromptConditioning),
+      intentAgent: envBool('FEATURE_INTENT_AGENT', defaultFlags.phase3.intentAgent),
+      dependencyIntelligence: envBool('FEATURE_DEPENDENCY_INTELLIGENCE', defaultFlags.phase3.dependencyIntelligence),
+      styleDNA: envBool('FEATURE_STYLE_DNA', defaultFlags.phase3.styleDNA),
+      componentMemory: envBool('FEATURE_COMPONENT_MEMORY', defaultFlags.phase3.componentMemory),
     },
     enterprise: {
-      astPatchExecutor: process.env.FEATURE_AST_PATCH === 'true',
-      stylePolicy: process.env.FEATURE_STYLE_POLICY === 'true',
-      libraryQuality: process.env.FEATURE_LIBRARY_QUALITY === 'true',
-      diffPreview: process.env.FEATURE_DIFF_PREVIEW === 'true',
-      operationUndo: process.env.FEATURE_OPERATION_UNDO === 'true',
-      editTelemetry: process.env.FEATURE_EDIT_TELEMETRY === 'true',
+      astPatchExecutor: envBool('FEATURE_AST_PATCH', defaultFlags.enterprise.astPatchExecutor),
+      stylePolicy: envBool('FEATURE_STYLE_POLICY', defaultFlags.enterprise.stylePolicy),
+      libraryQuality: envBool('FEATURE_LIBRARY_QUALITY', defaultFlags.enterprise.libraryQuality),
+      diffPreview: envBool('FEATURE_DIFF_PREVIEW', defaultFlags.enterprise.diffPreview),
+      operationUndo: envBool('FEATURE_OPERATION_UNDO', defaultFlags.enterprise.operationUndo),
+      editTelemetry: envBool('FEATURE_EDIT_TELEMETRY', defaultFlags.enterprise.editTelemetry),
     },
-  };
-
-  // Merge with defaults (env vars override defaults)
-  return {
-    phase1: { ...defaultFlags.phase1, ...envFlags.phase1 },
-    phase2: { ...defaultFlags.phase2, ...envFlags.phase2 },
-    phase3: { ...defaultFlags.phase3, ...envFlags.phase3 },
-    enterprise: { ...defaultFlags.enterprise, ...envFlags.enterprise },
   };
 }
 

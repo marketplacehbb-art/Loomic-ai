@@ -1,4 +1,5 @@
 import { iconRegistry } from '../../utils/icon-registry.js';
+import { getDeepSeekApiKey, getGeminiApiKey, getGroqApiKey, getNvidiaApiKey, getOpenAIApiKey, getOpenRouterApiKey } from '../../utils/env-security.js';
 
 /**
  * LLM Manager - Multi-Provider Support
@@ -6,7 +7,7 @@ import { iconRegistry } from '../../utils/icon-registry.js';
  */
 
 export interface LLMProvider {
-  name: 'gemini' | 'deepseek' | 'openai';
+  name: 'deepseek' | 'gemini' | 'openai' | 'groq' | 'nvidia';
   apiKey: string;
   model: string;
   endpoint: string;
@@ -15,7 +16,7 @@ export interface LLMProvider {
 import { FeatureFlags } from '../../config/feature-flags.js';
 
 export interface LLMRequest {
-  provider: 'gemini' | 'deepseek' | 'openai';
+  provider: 'deepseek' | 'gemini' | 'openai' | 'groq' | 'nvidia';
   prompt: string;
   generationMode?: 'new' | 'edit';
   systemPrompt?: string;
@@ -26,7 +27,11 @@ export interface LLMRequest {
   image?: string; // Base64 encoded image
   knowledgeBase?: Array<{ path: string, content: string }>; // Context files
   featureFlags?: Partial<FeatureFlags>; // Optional feature flags override
+  signal?: AbortSignal;
 }
+
+type ProviderName = LLMRequest['provider'];
+type ExternalProviderName = Exclude<ProviderName, 'deepseek'>;
 
 export interface LLMResponse {
   content: string;
@@ -40,33 +45,234 @@ export interface LLMResponse {
 }
 
 export class LLMManager {
+  private readonly providerFallbackTtlMs = 10 * 60 * 1000;
+  private readonly providerHardBlockTtlMs = 30 * 60 * 1000;
+  private readonly providerRateLimitBlockTtlMs = 90 * 1000;
+  private readonly generationPrimaryProvider: ProviderName = 'deepseek';
+  private providerFallbackState = new Map<ProviderName, {
+    fallbackProvider: ProviderName;
+    expiresAt: number;
+    reason: string;
+  }>();
+  private providerHardBlockState = new Map<ProviderName, {
+    expiresAt: number;
+    reason: string;
+  }>();
+
+  private isRetryableProviderError(error: any): boolean {
+    const status = Number(error?.status);
+    const message = String(error?.message || '').toLowerCase();
+
+    if ([402, 408, 409, 425, 429].includes(status)) return true;
+    if (Number.isFinite(status) && status >= 500) return true;
+
+    if (
+      /timeout|timed out|temporarily unavailable|rate limit|insufficient|quota|too many requests|gateway timeout|network|terminated|econnreset|socket|aborted/i.test(
+        message
+      )
+    ) {
+      return true;
+    }
+
+    return false;
+  }
+
+  private isQuotaOrCreditError(error: any): boolean {
+    const status = Number(error?.status);
+    const message = String(error?.message || '').toLowerCase();
+    const body = String(error?.body || '').toLowerCase();
+    if (status === 402) return true;
+    return /insufficient_quota|quota|credits|billing|exceeded your current quota/.test(`${message} ${body}`);
+  }
+
+  private isRateLimitError(error: any): boolean {
+    const status = Number(error?.status);
+    const message = String(error?.message || '').toLowerCase();
+    const body = String(error?.body || '').toLowerCase();
+    if (status === 429) return true;
+    return /rate limit|too many requests|tpm|rpm|try again in/.test(`${message} ${body}`);
+  }
+
+  private applyProviderFailureBlock(provider: ProviderName, error: any): void {
+    if (this.isQuotaOrCreditError(error)) {
+      this.markProviderHardBlocked(provider, 'credits_or_quota', this.providerHardBlockTtlMs);
+      return;
+    }
+    if (this.isRateLimitError(error)) {
+      this.markProviderHardBlocked(provider, 'rate_limited', this.providerRateLimitBlockTtlMs);
+    }
+  }
+
+  private getFallbackOrder(primary: ProviderName): ProviderName[] {
+    // Groq is reserved for hydration-only workloads.
+    if (primary === 'deepseek') return ['nvidia', 'gemini', 'openai'];
+    if (primary === 'gemini') return ['openai', 'nvidia'];
+    if (primary === 'groq') return ['openai', 'nvidia', 'gemini'];
+    if (primary === 'openai') return ['nvidia', 'gemini'];
+    return ['openai', 'gemini'];
+  }
+
+  private shouldAllowGenerationFallbackProvider(primary: ProviderName, candidate: ProviderName): boolean {
+    if (candidate === primary) return false;
+    if (candidate === 'groq') return false;
+    return true;
+  }
+
+  private hasProviderKey(provider: ProviderName): boolean {
+    try {
+      const cfg = this.getProviderConfig(provider);
+      return typeof cfg.apiKey === 'string' && cfg.apiKey.trim().length > 0;
+    } catch {
+      return false;
+    }
+  }
+
+  private async callProvider(
+    providerName: ProviderName,
+    request: LLMRequest
+  ): Promise<{ content: string, rateLimit?: any } | ReadableStream<any>> {
+    const provider = this.getProviderConfig(providerName);
+    if (!provider.apiKey) {
+      const error: any = new Error(`API Key missing for provider: ${providerName}`);
+      error.status = 401;
+      error.code = 'PROVIDER_AUTH_ERROR';
+      error.provider = providerName;
+      throw error;
+    }
+
+    if (providerName === 'deepseek') {
+      return this.callDeepSeek(provider, request);
+    }
+    if (providerName === 'gemini') {
+      return this.callGemini(provider, request);
+    }
+    if (providerName === 'groq') {
+      return this.callGroq(provider, request);
+    }
+    if (providerName === 'nvidia') {
+      return this.callOpenAI(provider, request, 'nvidia');
+    }
+    return this.callOpenAI(provider, request, 'openai');
+  }
+
+  private resolveActiveFallbackProvider(primary: ProviderName): ProviderName | null {
+    const state = this.providerFallbackState.get(primary);
+    if (!state) return null;
+    if (Date.now() > state.expiresAt) {
+      this.providerFallbackState.delete(primary);
+      return null;
+    }
+    if (!this.hasProviderKey(state.fallbackProvider)) {
+      this.providerFallbackState.delete(primary);
+      return null;
+    }
+    return state.fallbackProvider;
+  }
+
+  private rememberFallbackProvider(
+    primary: ProviderName,
+    fallbackProvider: ProviderName,
+    reason: string
+  ): void {
+    this.providerFallbackState.set(primary, {
+      fallbackProvider,
+      expiresAt: Date.now() + this.providerFallbackTtlMs,
+      reason,
+    });
+  }
+
+  private clearFallbackProvider(primary: ProviderName): void {
+    this.providerFallbackState.delete(primary);
+  }
+
+  private markProviderHardBlocked(
+    primary: ProviderName,
+    reason: string,
+    ttlMs: number = this.providerHardBlockTtlMs
+  ): void {
+    this.providerHardBlockState.set(primary, {
+      expiresAt: Date.now() + ttlMs,
+      reason,
+    });
+  }
+
+  private clearProviderHardBlocked(primary: ProviderName): void {
+    this.providerHardBlockState.delete(primary);
+  }
+
+  private isProviderHardBlocked(primary: ProviderName): boolean {
+    const state = this.providerHardBlockState.get(primary);
+    if (!state) return false;
+    if (Date.now() > state.expiresAt) {
+      this.providerHardBlockState.delete(primary);
+      return false;
+    }
+    return true;
+  }
+
+  public getExecutionProviderHint(primary: ExternalProviderName): ExternalProviderName {
+    const cachedFallback = this.resolveActiveFallbackProvider(primary);
+    if (cachedFallback && cachedFallback !== 'deepseek') return cachedFallback;
+
+    if (!this.isProviderHardBlocked(primary)) return primary;
+
+    const fallback = this.getFallbackOrder(primary).find((candidate) =>
+      candidate !== 'deepseek' && this.hasProviderKey(candidate)
+    );
+    return (fallback as ExternalProviderName | undefined) || primary;
+  }
+
+  private prepareFallbackRequest(
+    request: LLMRequest,
+    fallbackProvider: ProviderName
+  ): LLMRequest {
+    return { ...request, provider: fallbackProvider };
+  }
+
   /**
    * Dynamically get provider configuration
    * Reads from environment variables at request time (not at initialization)
    */
   private getProviderConfig(name: string): LLMProvider {
-    if (name === 'gemini') {
+    if (name === 'deepseek') {
+      return {
+        name: 'deepseek',
+        apiKey: getDeepSeekApiKey() || '',
+        model: process.env.DEEPSEEK_MODEL || 'deepseek-chat',
+        endpoint: process.env.DEEPSEEK_ENDPOINT || 'https://api.deepseek.com/v1/chat/completions',
+      };
+    } else if (name === 'gemini') {
+      const openRouterKey = getOpenRouterApiKey();
+      const geminiKey = getGeminiApiKey();
       return {
         name: 'gemini',
         // Gemini provider is routed via OpenRouter in this project.
-        apiKey: process.env.VITE_OPENROUTER_API_KEY || process.env.VITE_GEMINI_API_KEY || '',
+        apiKey: openRouterKey || geminiKey || '',
         // Keep aligned with UI label "Gemini 2.0 Flash" and current OpenRouter catalog.
         model: 'google/gemini-2.0-flash-001',
         endpoint: 'https://openrouter.ai/api/v1/chat/completions'
       };
-    } else if (name === 'deepseek') {
+    } else if (name === 'groq') {
       return {
-        name: 'deepseek',
-        apiKey: process.env.VITE_DEEPSEEK_API_KEY || '',
-        model: 'deepseek-coder',
-        endpoint: 'https://api.deepseek.com/chat/completions'
+        name: 'groq',
+        apiKey: getGroqApiKey() || '',
+        // Strongest generally available Llama class model on Groq.
+        model: process.env.GROQ_MODEL || 'meta-llama/llama-4-maverick-17b-128e-instruct',
+        endpoint: 'https://api.groq.com/openai/v1/chat/completions',
       };
     } else if (name === 'openai') {
       return {
         name: 'openai',
-        apiKey: process.env.VITE_OPENAI_API_KEY || '',
+        apiKey: getOpenAIApiKey() || '',
         model: 'gpt-4o',
         endpoint: 'https://api.openai.com/v1/chat/completions'
+      };
+    } else if (name === 'nvidia') {
+      return {
+        name: 'nvidia',
+        apiKey: getNvidiaApiKey() || '',
+        model: process.env.NVIDIA_MODEL || 'qwen/qwen3.5-397b-a17b',
+        endpoint: process.env.NVIDIA_ENDPOINT || 'https://integrate.api.nvidia.com/v1/chat/completions'
       };
     } else {
       throw new Error(`Unknown provider: ${name}`);
@@ -582,30 +788,237 @@ Requirements:
   }
 
   async generate(request: LLMRequest): Promise<{ content: string, rateLimit?: any } | ReadableStream<any>> {
-    // Get provider config dynamically at request time
-    const provider = this.getProviderConfig(request.provider);
+    const requestedProvider = request.provider;
+    const primaryProvider: ProviderName = this.generationPrimaryProvider;
+    const effectiveRequest = this.prepareFallbackRequest(request, primaryProvider);
+    if (requestedProvider !== primaryProvider) {
+      console.log(
+        `[LLMManager] Requested provider "${requestedProvider}" routed to primary "${primaryProvider}".`
+      );
+    }
+    const activeFallback = this.resolveActiveFallbackProvider(primaryProvider);
+    const providerHardBlocked = this.isProviderHardBlocked(primaryProvider) || !this.hasProviderKey(primaryProvider);
 
-    if (!provider.apiKey) {
-      throw new Error(`API Key missing for provider: ${request.provider}`);
+    if (providerHardBlocked) {
+      if (!this.hasProviderKey(primaryProvider)) {
+        console.warn(
+          `[LLMManager] Primary provider "${primaryProvider}" has no API key configured. Falling back by priority.`
+        );
+      }
+      const forcedFallbackOrder = [
+        ...(activeFallback ? [activeFallback] : []),
+        ...this.getFallbackOrder(primaryProvider),
+      ]
+        .filter((candidate, index, list) => list.indexOf(candidate) === index)
+        .filter((candidate) => this.shouldAllowGenerationFallbackProvider(primaryProvider, candidate))
+        .filter((candidate) => this.hasProviderKey(candidate));
+
+      if (forcedFallbackOrder.length > 0) {
+        console.warn(
+          `[LLMManager] Provider "${primaryProvider}" is hard-blocked (quota/credits). ` +
+          `Skipping primary and using fallbacks: ${forcedFallbackOrder.join(', ')}`
+        );
+      }
+
+      for (const fallbackProvider of forcedFallbackOrder) {
+        try {
+          const result = await this.callProvider(
+            fallbackProvider,
+            this.prepareFallbackRequest(effectiveRequest, fallbackProvider)
+          );
+          this.rememberFallbackProvider(
+            primaryProvider,
+            fallbackProvider,
+            'primary-hard-blocked'
+          );
+
+          if (result && typeof result === 'object' && 'content' in result) {
+            const existingRateLimit = (result as any).rateLimit || {};
+            return {
+              ...(result as any),
+              rateLimit: {
+                ...existingRateLimit,
+                effectiveProvider: fallbackProvider,
+                fallbackFrom: primaryProvider,
+                fallbackCached: true,
+                primaryHardBlocked: true,
+              },
+            };
+          }
+
+          return result;
+        } catch (error: any) {
+          this.applyProviderFailureBlock(fallbackProvider, error);
+          console.warn(
+            `[LLMManager] Forced fallback "${fallbackProvider}" failed while "${primaryProvider}" is blocked: ` +
+            `${error?.message || 'unknown error'}`
+          );
+        }
+      }
     }
 
-    if (request.provider === 'gemini') {
-      return this.callGemini(provider, request);
-    } else if (request.provider === 'deepseek') {
-      return this.callDeepSeek(provider, request);
-    } else if (request.provider === 'openai') {
-      return this.callOpenAI(provider, request);
+    if (activeFallback) {
+      try {
+        console.warn(
+          `[LLMManager] Using cached fallback "${activeFallback}" for "${primaryProvider}".`
+        );
+        const result = await this.callProvider(
+          activeFallback,
+          this.prepareFallbackRequest(effectiveRequest, activeFallback)
+        );
+
+        if (result && typeof result === 'object' && 'content' in result) {
+          const existingRateLimit = (result as any).rateLimit || {};
+          return {
+            ...(result as any),
+            rateLimit: {
+              ...existingRateLimit,
+              effectiveProvider: activeFallback,
+              fallbackFrom: primaryProvider,
+              fallbackCached: true,
+            },
+          };
+        }
+
+        return result;
+      } catch (cachedFallbackError: any) {
+        this.applyProviderFailureBlock(activeFallback, cachedFallbackError);
+        console.warn(
+          `[LLMManager] Cached fallback "${activeFallback}" failed for "${primaryProvider}": ` +
+          `${cachedFallbackError?.message || 'unknown error'}. Re-trying primary provider.`
+        );
+        this.clearFallbackProvider(primaryProvider);
+      }
     }
 
-    throw new Error('Invalid provider');
+    try {
+      const result = await this.callProvider(primaryProvider, effectiveRequest);
+      this.clearFallbackProvider(primaryProvider);
+      this.clearProviderHardBlocked(primaryProvider);
+      return result;
+    } catch (primaryError: any) {
+      this.applyProviderFailureBlock(primaryProvider, primaryError);
+      if (!this.isRetryableProviderError(primaryError)) {
+        throw primaryError;
+      }
+
+      const fallbacks = this.getFallbackOrder(primaryProvider).filter((candidate) =>
+        this.hasProviderKey(candidate) &&
+        this.shouldAllowGenerationFallbackProvider(primaryProvider, candidate)
+      );
+
+      if (fallbacks.length === 0) {
+        throw primaryError;
+      }
+
+      const fallbackErrors: Array<{ provider: string; error: string }> = [];
+      console.warn(
+        `[LLMManager] Provider "${primaryProvider}" failed (${primaryError?.status || 'no-status'}). ` +
+        `Trying fallbacks: ${fallbacks.join(', ')}`
+      );
+
+      for (const fallbackProvider of fallbacks) {
+        try {
+          const result = await this.callProvider(
+            fallbackProvider,
+            this.prepareFallbackRequest(effectiveRequest, fallbackProvider)
+          );
+          this.rememberFallbackProvider(
+            primaryProvider,
+            fallbackProvider,
+            `primary_error:${primaryError?.status || 'unknown'}`
+          );
+
+          if (result && typeof result === 'object' && 'content' in result) {
+            const existingRateLimit = (result as any).rateLimit || {};
+            return {
+              ...(result as any),
+              rateLimit: {
+                ...existingRateLimit,
+                effectiveProvider: fallbackProvider,
+                fallbackFrom: primaryProvider,
+              },
+            };
+          }
+
+          return result;
+        } catch (fallbackError: any) {
+          this.applyProviderFailureBlock(fallbackProvider, fallbackError);
+          fallbackErrors.push({
+            provider: fallbackProvider,
+            error: fallbackError?.message || 'unknown fallback error',
+          });
+        }
+      }
+
+      const aggregated = new Error(
+        `Primary provider "${primaryProvider}" failed and all fallbacks failed: ` +
+        fallbackErrors.map((entry) => `${entry.provider}: ${entry.error}`).join(' | ')
+      ) as any;
+      aggregated.status = primaryError?.status;
+      aggregated.primaryError = primaryError;
+      aggregated.fallbackErrors = fallbackErrors;
+      throw aggregated;
+    }
+  }
+
+  private async callDeepSeek(
+    provider: LLMProvider,
+    request: LLMRequest
+  ): Promise<{ content: string, rateLimit?: any } | ReadableStream<any>> {
+    const deepSeekJsonSystemPrefix = `You are a strict JSON code generation engine.
+Return exactly ONE valid JSON object and nothing else.
+No markdown, no prose, no comments, no code fences, no trailing text.
+
+Allowed output shapes:
+1) {"files":[{"path":"src/App.tsx","content":"..."}],"notes":[]}
+2) {"operations":[{"op":"replace_text","path":"src/App.tsx","find":"...","replace":"..."}],"notes":[]}
+3) {"files":{"src/App.tsx":"...","src/components/X.tsx":"..."}}
+
+Strict rules:
+- JSON must be parseable by JSON.parse without preprocessing.
+- Do not output trailing commas.
+- In JSON strings, escape newlines as \\n and escape quotes.
+- Never return partial/truncated JSON.
+- Never return HTML documents for TS/JS module targets.
+- Every file content must be complete implementation (no placeholders like "...", "TODO", or "rest of code").`;
+
+    const baseSystemPrompt = request.systemPrompt || this.getEnhancedSystemPrompt();
+    const alreadyHasDeepSeekJsonContract =
+      baseSystemPrompt.includes('You are a strict JSON code generation engine.')
+      || baseSystemPrompt.includes('You are a code generation API. You MUST respond with ONLY a valid JSON object.');
+    const systemPrompt = alreadyHasDeepSeekJsonContract
+      ? baseSystemPrompt
+      : `${deepSeekJsonSystemPrefix}\n\n${baseSystemPrompt}`;
+
+    const requestedMaxTokens = Number.isFinite(request.maxTokens as number)
+      ? Math.floor(Number(request.maxTokens))
+      : 8000;
+    const deepSeekMaxTokens = Math.max(128, Math.min(8000, requestedMaxTokens));
+
+    const deepSeekRequest: LLMRequest = {
+      ...request,
+      systemPrompt,
+      maxTokens: deepSeekMaxTokens,
+      temperature: Math.min(typeof request.temperature === 'number' ? request.temperature : 0.2, 0.25),
+    };
+
+    return this.callOpenAI(provider, deepSeekRequest, 'deepseek', 8000);
   }
 
   private async callOpenAI(
     provider: LLMProvider,
-    request: LLMRequest
+    request: LLMRequest,
+    providerTag: 'openai' | 'nvidia' | 'deepseek' = 'openai',
+    defaultMaxTokens: number = 4096
   ): Promise<{ content: string, rateLimit?: any } | ReadableStream<any>> {
-    console.log('[OpenAI] Preparing request...');
-    console.log('[OpenAI] Model:', provider.model);
+    const logLabel = providerTag === 'nvidia'
+      ? 'NVIDIA'
+      : providerTag === 'deepseek'
+        ? 'DeepSeek'
+        : 'OpenAI';
+    console.log(`[${logLabel}] Preparing request...`);
+    console.log(`[${logLabel}] Model:`, provider.model);
 
     const headers: Record<string, string> = {
       Authorization: `Bearer ${provider.apiKey}`,
@@ -651,8 +1064,11 @@ Requirements:
       model: provider.model,
       messages: messages,
       temperature: request.temperature || 0.7,
-      max_tokens: request.maxTokens || 4096,
-      stream: false
+      max_tokens: request.maxTokens || defaultMaxTokens,
+      stream: false,
+      ...(providerTag === 'deepseek'
+        ? { response_format: { type: 'json_object' as const } }
+        : {})
     };
 
     // console.log('[OpenAI] Payload:', JSON.stringify(payload, null, 2));
@@ -661,15 +1077,17 @@ Requirements:
       const response = await fetch(provider.endpoint, {
         method: 'POST',
         headers,
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        signal: request.signal,
       });
 
-      console.log('[OpenAI] Response Status:', response.status);
+      console.log(`[${logLabel}] Response Status:`, response.status);
 
       if (!response.ok) {
         const text = await response.text();
-        console.error('❌ [OpenAI] API Error Body:', text); // CRITICAL DEBUG LOG
+        console.error(`❌ [${logLabel}] API Error Body:`, text); // CRITICAL DEBUG LOG
         const isInsufficientQuota =
+          providerTag === 'openai' &&
           response.status === 429 &&
           (
             text.includes('insufficient_quota') ||
@@ -678,13 +1096,17 @@ Requirements:
           );
 
         if (isInsufficientQuota) {
-          const openRouterKey = process.env.VITE_OPENROUTER_API_KEY || process.env.VITE_GEMINI_API_KEY;
+          const openRouterKey = getOpenRouterApiKey() || getGeminiApiKey();
           if (openRouterKey) {
             console.warn('[OpenAI] Insufficient quota on OpenAI. Falling back to OpenRouter openai/gpt-4o-mini...');
             return this.callOpenAIViaOpenRouter(request, openRouterKey, systemPrompt, userPrompt);
           }
         }
-        throw new Error(`OpenAI API error: ${response.status} - ${text}`);
+        const apiError: any = new Error(`${logLabel} API error: ${response.status} - ${text}`);
+        apiError.status = response.status;
+        apiError.body = text;
+        apiError.provider = providerTag;
+        throw apiError;
       }
 
       const text = await response.text();
@@ -694,15 +1116,102 @@ Requirements:
         throw new Error('OpenAI returned invalid response structure');
       }
 
-      console.log('[OpenAI] Success! Content length:', data.choices[0].message.content.length);
+      console.log(`[${logLabel}] Success! Content length:`, data.choices[0].message.content.length);
 
       return {
         content: data.choices[0].message.content,
-        rateLimit: { provider: 'openai', unknown: true }
+        rateLimit: { provider: providerTag, unknown: true }
       };
 
     } catch (error: any) {
-      console.error('[OpenAI] Exception:', error);
+      console.error(`[${logLabel}] Exception:`, error);
+      throw error;
+    }
+  }
+
+  private async callGroq(
+    provider: LLMProvider,
+    request: LLMRequest
+  ): Promise<{ content: string, rateLimit?: any } | ReadableStream<any>> {
+    console.log('[Groq] Preparing request...');
+    console.log('[Groq] Endpoint:', provider.endpoint);
+    console.log('[Groq] Model:', provider.model);
+
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${provider.apiKey}`,
+      'Content-Type': 'application/json',
+    };
+
+    const systemPrompt = request.systemPrompt || this.getEnhancedSystemPrompt();
+    let userPrompt = this.enhancePromptWithIntent(request.prompt);
+    userPrompt = this.appendCurrentFilesContext(userPrompt, request);
+
+    if (request.knowledgeBase && request.knowledgeBase.length > 0) {
+      const knowledgeContext = request.knowledgeBase
+        .map(file => `// --- CONTENT FROM: ${file.path} ---\n${file.content}`)
+        .join('\n\n');
+      userPrompt = `${userPrompt}\n\nAdditional Context / Documentation:\n${knowledgeContext}\n\nPlease use this additional information to guide your implementation.`;
+    }
+
+    const messages: any[] = [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt },
+    ];
+
+    const payload = {
+      model: provider.model,
+      messages,
+      temperature: request.temperature || 0.7,
+      max_tokens: request.maxTokens || 4096,
+      stream: false
+    };
+
+    const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+    const maxAttempts = 2;
+
+    try {
+      for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+        const response = await fetch(provider.endpoint, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(payload),
+          signal: request.signal,
+        });
+
+        const text = await response.text();
+        console.log('[Groq] Response Status:', response.status);
+
+        if (!response.ok) {
+          if (response.status === 429 && attempt < maxAttempts && !request.signal?.aborted) {
+            const retryAfterHeader = Number(response.headers.get('retry-after') || '0');
+            const bodyRetryMatch = text.match(/try again in\s+([\d.]+)s/i);
+            const bodyRetrySeconds = bodyRetryMatch ? Number(bodyRetryMatch[1]) : 0;
+            const retrySeconds = Math.max(retryAfterHeader, bodyRetrySeconds, 1);
+            const retryMs = Math.min(60_000, Math.ceil(retrySeconds * 1000));
+            console.warn(`[Groq] 429 rate limit. Retrying in ${retryMs}ms (attempt ${attempt + 1}/${maxAttempts})...`);
+            await sleep(retryMs);
+            continue;
+          }
+          const apiError: any = new Error(`Groq API error: ${response.status} - ${text}`);
+          apiError.status = response.status;
+          apiError.body = text;
+          apiError.provider = 'groq';
+          throw apiError;
+        }
+
+        const data = JSON.parse(text);
+        if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+          throw new Error('Groq returned invalid response structure');
+        }
+
+        return {
+          content: data.choices[0].message.content,
+          rateLimit: { provider: 'groq', unknown: true }
+        };
+      }
+      throw new Error('Groq returned no response after retries');
+    } catch (error: any) {
+      console.error('[Groq] Exception:', error);
       throw error;
     }
   }
@@ -744,12 +1253,18 @@ Requirements:
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers,
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      signal: request.signal,
     });
 
     const text = await response.text();
     if (!response.ok) {
-      throw new Error(`OpenRouter(OpenAI) API error: ${response.status} - ${text}`);
+      const apiError: any = new Error(`OpenRouter(OpenAI) API error: ${response.status} - ${text}`);
+      apiError.status = response.status;
+      apiError.body = text;
+      apiError.provider = 'openai';
+      apiError.gateway = 'openrouter';
+      throw apiError;
     }
 
     const data = JSON.parse(text);
@@ -760,104 +1275,11 @@ Requirements:
     return {
       content: data.choices[0].message.content,
       rateLimit: {
-        provider: 'openrouter-openai',
-        unknown: true
+        provider: 'openai',
+        unknown: true,
+        gateway: 'openrouter'
       }
     };
-  }
-
-  private async callDeepSeek(
-    provider: LLMProvider,
-    request: LLMRequest
-  ): Promise<{ content: string, rateLimit?: any } | ReadableStream<any>> {
-    console.log('[DeepSeek] Preparing request...');
-    console.log('[DeepSeek] Endpoint:', provider.endpoint);
-    console.log('[DeepSeek] Model:', provider.model);
-
-    // DeepSeek uses OpenAI-compatible API
-    const headers: Record<string, string> = {
-      Authorization: `Bearer ${provider.apiKey}`,
-      'Content-Type': 'application/json'
-    };
-
-    const systemPrompt = request.systemPrompt || this.getEnhancedSystemPrompt();
-    let userPrompt = this.enhancePromptWithIntent(request.prompt);
-
-    // Iterative Editing Context
-    userPrompt = this.appendCurrentFilesContext(userPrompt, request);
-
-    // Knowledge Base Context
-    if (request.knowledgeBase && request.knowledgeBase.length > 0) {
-      const knowledgeContext = request.knowledgeBase
-        .map(file => `// --- CONTENT FROM: ${file.path} ---\n${file.content}`)
-        .join('\n\n');
-
-      userPrompt = `${userPrompt}\n\nAdditional Context / Documentation:\n${knowledgeContext}\n\nPlease use this additional information to guide your implementation.`;
-    }
-
-    const payload = {
-      model: provider.model, // deepseek-coder
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt }
-      ],
-      temperature: request.temperature || 0.0, // Lower temperature for coding
-      max_tokens: request.maxTokens || 4096,
-      stream: false // Streaming supported but for now consistent with others
-    };
-
-    console.log('[DeepSeek] Sending request payload (summary):', {
-      model: payload.model,
-      messageCount: payload.messages.length,
-      systemPromptLength: systemPrompt.length,
-      userPromptLength: userPrompt.length
-    });
-
-    try {
-      const response = await fetch(provider.endpoint, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(payload)
-      });
-
-      console.log('[DeepSeek] Response Status:', response.status);
-      console.log('[DeepSeek] Response Headers:', Object.fromEntries(response.headers.entries()));
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('[DeepSeek] API Error Body:', errorText);
-        throw new Error(`DeepSeek API error: ${response.status} - ${errorText}`);
-      }
-
-      const text = await response.text();
-      if (!text) {
-        throw new Error('DeepSeek returned empty response');
-      }
-
-      const data = JSON.parse(text);
-
-      if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-        console.error('[DeepSeek] Invalid response format:', JSON.stringify(data, null, 2));
-        throw new Error('DeepSeek returned invalid response structure');
-      }
-
-      // DeepSeek usually doesn't send standard ratelimit headers in same way, or varies.
-      // Check if headers exist
-      const rateLimit = {
-        provider: 'deepseek',
-        unknown: true
-      };
-
-      console.log('[DeepSeek] Success! Content length:', data.choices[0].message.content.length);
-
-      return {
-        content: data.choices[0].message.content,
-        rateLimit
-      };
-    } catch (error: any) {
-      console.error('[DeepSeek] Exception during fetch:', error);
-      throw error;
-    }
   }
 
   /**
@@ -930,7 +1352,8 @@ Requirements:
       const response = await fetch(provider.endpoint, {
         method: 'POST',
         headers,
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        signal: request.signal,
       });
 
       console.log('[OpenRouter/Gemini] Response Status:', response.status);
@@ -966,8 +1389,9 @@ Requirements:
       }
 
       const rateLimit = {
-        provider: 'openrouter',
-        unknown: true
+        provider: 'gemini',
+        unknown: true,
+        gateway: 'openrouter'
       };
 
       console.log('[OpenRouter/Gemini] Success! Content length:', data.choices[0].message.content.length);
@@ -989,7 +1413,7 @@ Requirements:
   }
 
   private async checkOpenRouterModels() {
-    const apiKey = process.env.VITE_GEMINI_API_KEY;
+    const apiKey = getOpenRouterApiKey() || getGeminiApiKey();
     if (!apiKey) return;
 
     try {
@@ -1014,7 +1438,7 @@ Requirements:
   }
 
   getAvailableProviders(): string[] {
-    return ['gemini', 'deepseek', 'openai'];
+    return ['deepseek', 'nvidia', 'groq', 'gemini', 'openai'];
   }
 
   getProviderInfo(name: string): LLMProvider | undefined {

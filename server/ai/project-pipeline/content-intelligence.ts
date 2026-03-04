@@ -9,6 +9,7 @@ interface DomainCopySet {
   heroSubtitle: string;
   ctaPrimary: string;
   featureTitlePrefix: string;
+  footerTagline: string;
 }
 
 const DOMAIN_COPY: Record<string, DomainCopySet> = {
@@ -17,30 +18,35 @@ const DOMAIN_COPY: Record<string, DomainCopySet> = {
     heroSubtitle: 'Launch a high-converting storefront with clear navigation, trust signals and a polished checkout flow.',
     ctaPrimary: 'Shop now',
     featureTitlePrefix: 'Shopping',
+    footerTagline: 'A storefront crafted for conversion and repeat orders.',
   },
   restaurant: {
     heroTitle: 'Crafted flavors, delivered with consistency',
     heroSubtitle: 'Present your menu, story and ordering flow in a premium experience across all devices.',
     ctaPrimary: 'View menu',
     featureTitlePrefix: 'Menu',
+    footerTagline: 'Fresh ingredients, hot delivery, and a seamless ordering experience.',
   },
   saas: {
     heroTitle: 'Ship product experiences that convert',
     heroSubtitle: 'Structure your pages with reusable sections and keep quality high with deterministic planning.',
     ctaPrimary: 'Start free',
     featureTitlePrefix: 'Product',
+    footerTagline: 'Design-forward product experiences.',
   },
   agency: {
     heroTitle: 'Design systems that move your brand forward',
     heroSubtitle: 'Showcase services, proof and outcomes with sharp hierarchy and modern interaction patterns.',
     ctaPrimary: 'Book a call',
     featureTitlePrefix: 'Service',
+    footerTagline: 'Creative execution with measurable business outcomes.',
   },
   default: {
     heroTitle: 'Build a modern digital experience',
     heroSubtitle: 'Combine structure, clarity and motion to create a polished interface with real business impact.',
     ctaPrimary: 'Get started',
     featureTitlePrefix: 'Feature',
+    footerTagline: 'Design-forward product experiences.',
   },
 };
 
@@ -67,8 +73,15 @@ function polishSingleFile(content: string, copy: DomainCopySet, brand: string): 
     { pattern: /Lorem ipsum[^"'<\n]*/gi, replacement: copy.heroSubtitle, label: 'lorem_removed' },
     { pattern: /\bFeature\s+[0-9]+\b/g, replacement: `${copy.featureTitlePrefix}`, label: 'generic_feature_name' },
     { pattern: /Welcome to\s+[A-Za-z0-9 _-]+/g, replacement: copy.heroTitle, label: 'generic_hero_title' },
+    { pattern: /Design and launch polished products faster\./gi, replacement: copy.heroTitle, label: 'hero_template_replaced' },
+    { pattern: /Curated sections \+ AI customization\. Keep full control over code and structure\./gi, replacement: copy.heroSubtitle, label: 'hero_subtitle_template_replaced' },
+    { pattern: /Design-forward product experiences\./gi, replacement: copy.footerTagline, label: 'footer_copy_replaced' },
+    { pattern: /\bFast setup\b/gi, replacement: `${copy.featureTitlePrefix} setup`, label: 'feature_title_replaced' },
+    { pattern: /\bReusable sections\b/gi, replacement: `${copy.featureTitlePrefix} modules`, label: 'feature_title_replaced' },
+    { pattern: /\bConversion focus\b/gi, replacement: `${copy.featureTitlePrefix} conversion`, label: 'feature_title_replaced' },
     { pattern: /\bGet started\b/gi, replacement: copy.ctaPrimary, label: 'cta_upgraded' },
     { pattern: /\bLearn more\b/gi, replacement: copy.ctaPrimary, label: 'cta_upgraded' },
+    { pattern: /\bStart free\b/gi, replacement: copy.ctaPrimary, label: 'cta_upgraded' },
   ];
 
   replacements.forEach(({ pattern, replacement, label }) => {

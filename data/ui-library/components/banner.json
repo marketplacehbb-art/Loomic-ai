@@ -1,0 +1,841 @@
+{
+  "category": "banner",
+  "components": [
+    {
+      "id": "banner-announcement-01",
+      "name": "Banner Announcement Top",
+      "category": "banner",
+      "subcategory": "top",
+      "tags": {
+        "industry": [
+          "saas",
+          "ecommerce",
+          "startup"
+        ],
+        "tone": [
+          "bold",
+          "conversion"
+        ],
+        "theme": [
+          "dark"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "import { useState } from \"react\";\n\nexport default function BannerAnnouncement01() {\n  const [visible, setVisible] = useState(true);\n  if (!visible) return null;\n  return (\n    <div className=\"relative flex items-center justify-center gap-3 bg-gradient-to-r from-violet-700 to-fuchsia-600 px-6 py-2.5 text-sm text-white\">\n      <span className=\"rounded-full bg-white/20 px-2 py-0.5 text-xs font-bold\">NEU</span>\n      <p className=\"font-medium\">\n        {{projectName}} v3.0 ist live — jetzt mit KI-Copilot.{\" \"}\n        <a href=\"#\" className=\"font-bold underline underline-offset-2 hover:no-underline\">\n          Mehr erfahren →\n        </a>\n      </p>\n      <button\n        onClick={() => setVisible(false)}\n        className=\"absolute right-4 text-white/60 transition hover:text-white\"\n        aria-label=\"Schließen\"\n      >\n        ✕\n      </button>\n    </div>\n  );\n}"
+      }
+    },
+    {
+      "id": "corp-banner-light-01",
+      "name": "BannerLightCorporate01",
+      "category": "banner",
+      "subcategory": "announcement",
+      "tags": {
+        "industry": [
+          "saas",
+          "ecommerce",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function BannerLightCorporate01() {\n  return (\n    <section className=\"border-y border-slate-200 bg-slate-50 px-6 py-3 text-center text-sm text-slate-700\">\n      Banner Section 01 - Trusted by modern teams across operations and product.\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-banner-light-02",
+      "name": "BannerLightCorporate02",
+      "category": "banner",
+      "subcategory": "promo-strip",
+      "tags": {
+        "industry": [
+          "saas",
+          "ecommerce",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function BannerLightCorporate02() {\n  return (\n    <section className=\"border-y border-slate-200 bg-slate-50 px-6 py-3 text-center text-sm text-slate-700\">\n      Banner Section 02 - Trusted by modern teams across operations and product.\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-banner-light-03",
+      "name": "BannerLightCorporate03",
+      "category": "banner",
+      "subcategory": "status-bar",
+      "tags": {
+        "industry": [
+          "saas",
+          "ecommerce",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function BannerLightCorporate03() {\n  return (\n    <section className=\"border-y border-slate-200 bg-slate-50 px-6 py-3 text-center text-sm text-slate-700\">\n      Banner Section 03 - Trusted by modern teams across operations and product.\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-banner-light-04",
+      "name": "BannerLightCorporate04",
+      "category": "banner",
+      "subcategory": "announcement",
+      "tags": {
+        "industry": [
+          "saas",
+          "ecommerce",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function BannerLightCorporate04() {\n  return (\n    <section className=\"border-y border-slate-200 bg-slate-50 px-6 py-3 text-center text-sm text-slate-700\">\n      Banner Section 04 - Trusted by modern teams across operations and product.\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-banner-light-05",
+      "name": "BannerLightCorporate05",
+      "category": "banner",
+      "subcategory": "promo-strip",
+      "tags": {
+        "industry": [
+          "saas",
+          "ecommerce",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function BannerLightCorporate05() {\n  return (\n    <section className=\"border-y border-slate-200 bg-slate-50 px-6 py-3 text-center text-sm text-slate-700\">\n      Banner Section 05 - Trusted by modern teams across operations and product.\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-banner-light-06",
+      "name": "BannerLightCorporate06",
+      "category": "banner",
+      "subcategory": "status-bar",
+      "tags": {
+        "industry": [
+          "saas",
+          "ecommerce",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function BannerLightCorporate06() {\n  return (\n    <section className=\"border-y border-slate-200 bg-slate-50 px-6 py-3 text-center text-sm text-slate-700\">\n      Banner Section 06 - Trusted by modern teams across operations and product.\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-banner-light-07",
+      "name": "BannerLightCorporate07",
+      "category": "banner",
+      "subcategory": "announcement",
+      "tags": {
+        "industry": [
+          "saas",
+          "ecommerce",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function BannerLightCorporate07() {\n  return (\n    <section className=\"border-y border-slate-200 bg-slate-50 px-6 py-3 text-center text-sm text-slate-700\">\n      Banner Section 07 - Trusted by modern teams across operations and product.\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-banner-light-08",
+      "name": "BannerLightCorporate08",
+      "category": "banner",
+      "subcategory": "promo-strip",
+      "tags": {
+        "industry": [
+          "saas",
+          "ecommerce",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function BannerLightCorporate08() {\n  return (\n    <section className=\"border-y border-slate-200 bg-slate-50 px-6 py-3 text-center text-sm text-slate-700\">\n      Banner Section 08 - Trusted by modern teams across operations and product.\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-banner-light-09",
+      "name": "BannerLightCorporate09",
+      "category": "banner",
+      "subcategory": "status-bar",
+      "tags": {
+        "industry": [
+          "saas",
+          "ecommerce",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function BannerLightCorporate09() {\n  return (\n    <section className=\"border-y border-slate-200 bg-slate-50 px-6 py-3 text-center text-sm text-slate-700\">\n      Banner Section 09 - Trusted by modern teams across operations and product.\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-banner-light-10",
+      "name": "BannerLightCorporate10",
+      "category": "banner",
+      "subcategory": "announcement",
+      "tags": {
+        "industry": [
+          "saas",
+          "ecommerce",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function BannerLightCorporate10() {\n  return (\n    <section className=\"border-y border-slate-200 bg-slate-50 px-6 py-3 text-center text-sm text-slate-700\">\n      Banner Section 10 - Trusted by modern teams across operations and product.\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-banner-light-11",
+      "name": "BannerLightCorporate11",
+      "category": "banner",
+      "subcategory": "promo-strip",
+      "tags": {
+        "industry": [
+          "saas",
+          "ecommerce",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function BannerLightCorporate11() {\n  return (\n    <section className=\"border-y border-slate-200 bg-slate-50 px-6 py-3 text-center text-sm text-slate-700\">\n      Banner Section 11 - Trusted by modern teams across operations and product.\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-banner-light-12",
+      "name": "BannerLightCorporate12",
+      "category": "banner",
+      "subcategory": "status-bar",
+      "tags": {
+        "industry": [
+          "saas",
+          "ecommerce",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function BannerLightCorporate12() {\n  return (\n    <section className=\"border-y border-slate-200 bg-slate-50 px-6 py-3 text-center text-sm text-slate-700\">\n      Banner Section 12 - Trusted by modern teams across operations and product.\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-banner-light-13",
+      "name": "BannerLightCorporate13",
+      "category": "banner",
+      "subcategory": "announcement",
+      "tags": {
+        "industry": [
+          "saas",
+          "ecommerce",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function BannerLightCorporate13() {\n  return (\n    <section className=\"border-y border-slate-200 bg-slate-50 px-6 py-3 text-center text-sm text-slate-700\">\n      Banner Section 13 - Trusted by modern teams across operations and product.\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-banner-light-14",
+      "name": "BannerLightCorporate14",
+      "category": "banner",
+      "subcategory": "promo-strip",
+      "tags": {
+        "industry": [
+          "saas",
+          "ecommerce",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function BannerLightCorporate14() {\n  return (\n    <section className=\"border-y border-slate-200 bg-slate-50 px-6 py-3 text-center text-sm text-slate-700\">\n      Banner Section 14 - Trusted by modern teams across operations and product.\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-banner-light-15",
+      "name": "BannerLightCorporate15",
+      "category": "banner",
+      "subcategory": "status-bar",
+      "tags": {
+        "industry": [
+          "saas",
+          "ecommerce",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function BannerLightCorporate15() {\n  return (\n    <section className=\"border-y border-slate-200 bg-slate-50 px-6 py-3 text-center text-sm text-slate-700\">\n      Banner Section 15 - Trusted by modern teams across operations and product.\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-banner-light-16",
+      "name": "BannerLightCorporate16",
+      "category": "banner",
+      "subcategory": "announcement",
+      "tags": {
+        "industry": [
+          "saas",
+          "ecommerce",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function BannerLightCorporate16() {\n  return (\n    <section className=\"border-y border-slate-200 bg-slate-50 px-6 py-3 text-center text-sm text-slate-700\">\n      Banner Section 16 - Trusted by modern teams across operations and product.\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-banner-light-17",
+      "name": "BannerLightCorporate17",
+      "category": "banner",
+      "subcategory": "promo-strip",
+      "tags": {
+        "industry": [
+          "saas",
+          "ecommerce",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function BannerLightCorporate17() {\n  return (\n    <section className=\"border-y border-slate-200 bg-slate-50 px-6 py-3 text-center text-sm text-slate-700\">\n      Banner Section 17 - Trusted by modern teams across operations and product.\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-banner-light-18",
+      "name": "BannerLightCorporate18",
+      "category": "banner",
+      "subcategory": "status-bar",
+      "tags": {
+        "industry": [
+          "saas",
+          "ecommerce",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function BannerLightCorporate18() {\n  return (\n    <section className=\"border-y border-slate-200 bg-slate-50 px-6 py-3 text-center text-sm text-slate-700\">\n      Banner Section 18 - Trusted by modern teams across operations and product.\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-banner-light-19",
+      "name": "BannerLightCorporate19",
+      "category": "banner",
+      "subcategory": "announcement",
+      "tags": {
+        "industry": [
+          "saas",
+          "ecommerce",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function BannerLightCorporate19() {\n  return (\n    <section className=\"border-y border-slate-200 bg-slate-50 px-6 py-3 text-center text-sm text-slate-700\">\n      Banner Section 19 - Trusted by modern teams across operations and product.\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-banner-light-20",
+      "name": "BannerLightCorporate20",
+      "category": "banner",
+      "subcategory": "promo-strip",
+      "tags": {
+        "industry": [
+          "saas",
+          "ecommerce",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function BannerLightCorporate20() {\n  return (\n    <section className=\"border-y border-slate-200 bg-slate-50 px-6 py-3 text-center text-sm text-slate-700\">\n      Banner Section 20 - Trusted by modern teams across operations and product.\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-banner-light-21",
+      "name": "BannerLightCorporate21",
+      "category": "banner",
+      "subcategory": "status-bar",
+      "tags": {
+        "industry": [
+          "saas",
+          "ecommerce",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function BannerLightCorporate21() {\n  return (\n    <section className=\"border-y border-slate-200 bg-slate-50 px-6 py-3 text-center text-sm text-slate-700\">\n      Banner Section 21 - Trusted by modern teams across operations and product.\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-banner-light-22",
+      "name": "BannerLightCorporate22",
+      "category": "banner",
+      "subcategory": "announcement",
+      "tags": {
+        "industry": [
+          "saas",
+          "ecommerce",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function BannerLightCorporate22() {\n  return (\n    <section className=\"border-y border-slate-200 bg-slate-50 px-6 py-3 text-center text-sm text-slate-700\">\n      Banner Section 22 - Trusted by modern teams across operations and product.\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-banner-light-23",
+      "name": "BannerLightCorporate23",
+      "category": "banner",
+      "subcategory": "promo-strip",
+      "tags": {
+        "industry": [
+          "saas",
+          "ecommerce",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function BannerLightCorporate23() {\n  return (\n    <section className=\"border-y border-slate-200 bg-slate-50 px-6 py-3 text-center text-sm text-slate-700\">\n      Banner Section 23 - Trusted by modern teams across operations and product.\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-banner-light-24",
+      "name": "BannerLightCorporate24",
+      "category": "banner",
+      "subcategory": "status-bar",
+      "tags": {
+        "industry": [
+          "saas",
+          "ecommerce",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function BannerLightCorporate24() {\n  return (\n    <section className=\"border-y border-slate-200 bg-slate-50 px-6 py-3 text-center text-sm text-slate-700\">\n      Banner Section 24 - Trusted by modern teams across operations and product.\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-banner-light-25",
+      "name": "BannerLightCorporate25",
+      "category": "banner",
+      "subcategory": "announcement",
+      "tags": {
+        "industry": [
+          "saas",
+          "ecommerce",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function BannerLightCorporate25() {\n  return (\n    <section className=\"border-y border-slate-200 bg-slate-50 px-6 py-3 text-center text-sm text-slate-700\">\n      Banner Section 25 - Trusted by modern teams across operations and product.\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-banner-light-26",
+      "name": "BannerLightCorporate26",
+      "category": "banner",
+      "subcategory": "promo-strip",
+      "tags": {
+        "industry": [
+          "saas",
+          "ecommerce",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function BannerLightCorporate26() {\n  return (\n    <section className=\"border-y border-slate-200 bg-slate-50 px-6 py-3 text-center text-sm text-slate-700\">\n      Banner Section 26 - Trusted by modern teams across operations and product.\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-banner-light-27",
+      "name": "BannerLightCorporate27",
+      "category": "banner",
+      "subcategory": "status-bar",
+      "tags": {
+        "industry": [
+          "saas",
+          "ecommerce",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function BannerLightCorporate27() {\n  return (\n    <section className=\"border-y border-slate-200 bg-slate-50 px-6 py-3 text-center text-sm text-slate-700\">\n      Banner Section 27 - Trusted by modern teams across operations and product.\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-banner-light-28",
+      "name": "BannerLightCorporate28",
+      "category": "banner",
+      "subcategory": "announcement",
+      "tags": {
+        "industry": [
+          "saas",
+          "ecommerce",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function BannerLightCorporate28() {\n  return (\n    <section className=\"border-y border-slate-200 bg-slate-50 px-6 py-3 text-center text-sm text-slate-700\">\n      Banner Section 28 - Trusted by modern teams across operations and product.\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-banner-light-29",
+      "name": "BannerLightCorporate29",
+      "category": "banner",
+      "subcategory": "promo-strip",
+      "tags": {
+        "industry": [
+          "saas",
+          "ecommerce",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function BannerLightCorporate29() {\n  return (\n    <section className=\"border-y border-slate-200 bg-slate-50 px-6 py-3 text-center text-sm text-slate-700\">\n      Banner Section 29 - Trusted by modern teams across operations and product.\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-banner-light-30",
+      "name": "BannerLightCorporate30",
+      "category": "banner",
+      "subcategory": "status-bar",
+      "tags": {
+        "industry": [
+          "saas",
+          "ecommerce",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function BannerLightCorporate30() {\n  return (\n    <section className=\"border-y border-slate-200 bg-slate-50 px-6 py-3 text-center text-sm text-slate-700\">\n      Banner Section 30 - Trusted by modern teams across operations and product.\n    </section>\n  );\n}\n"
+      }
+    }
+  ]
+}

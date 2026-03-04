@@ -1,0 +1,27 @@
+[
+  {
+    "id": "kanban-board",
+    "projectId": "11111111-1111-4111-8111-111111111111",
+    "prompt": "Baue ein Trello-aehnliches Kanban-Board fuer Projektmanagement. Man soll Spalten hinzufuegen koennen. Karten per Drag-and-Drop zwischen Spalten verschieben. Prioritaets-Labels und Suchleiste in Echtzeit. Zustand in LocalStorage speichern."
+  },
+  {
+    "id": "pathfinding-visualizer",
+    "projectId": "22222222-2222-4222-8222-222222222222",
+    "prompt": "Erstelle einen interaktiven Pathfinding Visualizer fuer den Dijkstra-Algorithmus mit 20x20 Raster, Start/Ziel, Mauern und animierter Suche."
+  },
+  {
+    "id": "inventory-invoice",
+    "projectId": "33333333-3333-4333-8333-333333333333",
+    "prompt": "Baue ein Inventory and Invoice Management System mit Produkte-Tab, Rechnungserstellung, Bestandsreduktion, PDF-Vorschau und Low-Stock Toast-Warnung."
+  },
+  {
+    "id": "split-bill-calculator",
+    "projectId": "44444444-4444-4444-8444-444444444444",
+    "prompt": "Erstelle einen Split-Bill-Rechner mit Gesamtbetrag, Anzahl Personen, Trinkgeld-Slider und editierbaren Positionen wie Pizza 12 EUR und Cola 3 EUR."
+  },
+  {
+    "id": "crypto-portfolio-dashboard",
+    "projectId": "55555555-5555-4555-8555-555555555555",
+    "prompt": "Erstelle ein Krypto-Portfolio-Dashboard mit Sidebar, Preisverlauf fuer Bitcoin, sortierbarer Asset-Tabelle und globalem Dark-Mode-Switch."
+  }
+]

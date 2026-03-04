@@ -1,6 +1,6 @@
 # AI Builder - Vite v2 (Phase 2: Production Code Processing)
 
-Modern AI Code Generator with multi-LLM support (Groq + Gemini) and **production-ready code validation & bundling pipeline**.
+Modern AI Code Generator with multi-LLM support (Gemini + OpenAI) and **production-ready code validation & bundling pipeline**.
 
 ## 🏗️ Architecture (Updated Phase 2)
 
@@ -44,7 +44,7 @@ Modern AI Code Generator with multi-LLM support (Groq + Gemini) and **production
 │  └─────────────────────────────────────────────────────────┘   │
 │                                                                   │
 │  LLMManager (llm/manager.ts)                                    │
-│  ├─ Groq API (llama-3.3-70b-versatile)                         │
+│  ├─ OpenAI API (gpt-4o)                         │
 │  └─ Gemini API (gemini-2.0-flash)                              │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -74,7 +74,7 @@ Modern AI Code Generator with multi-LLM support (Groq + Gemini) and **production
 │   ├── api/
 │   │   ├── generate.ts            # POST /api/generate route (uses CodeProcessor)
 │   │   └── llm/
-│   │       └── manager.ts         # LLMManager (Groq + Gemini)
+│   │       └── manager.ts         # LLMManager (Gemini + OpenAI)
 │   └── utils/
 │       ├── code-processor.ts      # 🆕 Production code processing pipeline
 │       ├── config.ts
@@ -118,8 +118,10 @@ This installs:
 
 Create `.env` from `.env.example`:
 ```bash
-VITE_GROQ_API_KEY=sk-proj-xxx...
-VITE_GEMINI_API_KEY=AIzaSy...
+OPENAI_API_KEY=sk-proj-xxx...
+GEMINI_API_KEY=AIzaSy...
+# Optional (if Gemini is routed via OpenRouter)
+OPENROUTER_API_KEY=or-xxx...
 API_PORT=3001
 NODE_ENV=development
 ```
@@ -157,7 +159,7 @@ Generate and process code using LLM with validation pipeline.
 **Request:**
 ```json
 {
-  "provider": "groq" | "gemini",
+  "provider": "gemini" | "openai",
   "prompt": "Create a React counter component with Tailwind styling",
   "systemPrompt": "You are an expert React developer",
   "temperature": 0.7,
@@ -194,7 +196,7 @@ Generate and process code using LLM with validation pipeline.
   "components": ["Counter"],
   "errors": [],
   "warnings": [],
-  "provider": "groq",
+  "provider": "openai",
   "timestamp": "2024-02-15T10:30:00.000Z",
   "duration": 2500,
   "processingTime": 150
@@ -220,7 +222,7 @@ Health check endpoint.
 ## 🎯 Features (Phase 2 Enhanced)
 
 ### ✅ Multi-LLM Support
-- **Groq** (llama-3.3-70b-versatile) - Fast, responsive
+- **OpenAI** (gpt-4o) - High quality and reliable
 - **Google Gemini** (gemini-2.0-flash) - Advanced reasoning
 
 ### ✅ Production Code Processing Pipeline
@@ -254,7 +256,7 @@ Health check endpoint.
 ## 📊 Pipeline Processing Steps
 
 1. **Input Validation** ✅
-   - Check provider (groq/gemini)
+   - Check provider (gemini/openai)
    - Validate prompt exists
    - Check API keys configured
 
@@ -305,6 +307,11 @@ npm run build           # Build for production
 npm run preview         # Preview production build
 npm run type-check      # Check TypeScript types
 npm run test:processor  # Run CodeProcessor test suite
+npm run test:golden     # Golden regression (plan + composition + quality)
+npm run test:golden:update # Refresh golden baseline after intended changes
+npm run ci              # Required CI gates (typecheck + core tests + smoke build)
+npm run ci:core         # Core regression checks
+npm run ci:smoke        # Build smoke test
 npm test                # Run all tests
 ```
 
@@ -330,6 +337,7 @@ npm test                # Run all tests
 - **CORS:** Allowed from localhost:3000
 - **Body Parser:** 10MB limit JSON
 - **Logging:** All requests logged
+- **Release Control:** Canary + Kill-Switch (`/api/release/status`, `/api/release/control`)
 
 ---
 
@@ -356,7 +364,7 @@ Tests include:
 curl -X POST http://localhost:3001/api/generate \
   -H "Content-Type: application/json" \
   -d '{
-    "provider": "groq",
+    "provider": "openai",
     "prompt": "Create a Button component",
     "validate": true,
     "bundle": true
@@ -418,7 +426,7 @@ curl http://localhost:3001/api/health
   "components": ["Counter"],
   "errors": [],
   "warnings": [],
-  "provider": "groq",
+  "provider": "openai",
   "timestamp": "2024-02-15T10:30:00.000Z",
   "duration": 2456,
   "processingTime": 145
@@ -450,7 +458,7 @@ import { useLLM } from '@hooks/useLLM';
 export function GeneratorPage() {
   const [prompt, setPrompt] = useState('');
   const { generate, loading, error, response } = useLLM({
-    provider: 'groq',
+    provider: 'openai',
     temperature: 0.7
   });
 
@@ -539,7 +547,7 @@ Typical measurements on modern hardware:
 
 | Operation | Time |
 |-----------|------|
-| LLM Generation (Groq) | 800-1500ms |
+| LLM Generation (OpenAI) | 800-1500ms |
 | LLM Generation (Gemini) | 1500-3000ms |
 | TypeScript Validation | 50-150ms |
 | Code Bundling | 50-100ms |
@@ -585,6 +593,7 @@ Check `vite.config.ts` HMR settings and firewall
 - [CODE_PROCESSING_PIPELINE.md](./CODE_PROCESSING_PIPELINE.md) - Processing pipeline architecture
 - [BACKEND_IMPLEMENTATION.md](./BACKEND_IMPLEMENTATION.md) - Backend setup guide
 - [BACKEND_SETUP.md](./BACKEND_SETUP.md) - Backend configuration
+- [CI_GATES.md](./CI_GATES.md) - CI Go/No-Go criteria and pipeline gates
 
 ---
 
@@ -614,4 +623,6 @@ MIT
 Built with ❤️ using Vite + React + TypeScript + Express
 
 Last Updated: 2024
+
+
 

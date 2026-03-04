@@ -1,0 +1,893 @@
+{
+  "category": "stats",
+  "components": [
+    {
+      "id": "stats-ribbon-01",
+      "name": "Stats Ribbon Gold",
+      "category": "stats",
+      "subcategory": "ribbon",
+      "tags": {
+        "industry": [
+          "agency",
+          "studio",
+          "saas"
+        ],
+        "tone": [
+          "bold",
+          "premium"
+        ],
+        "theme": [
+          "dark"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STATS = [\n  { label: \"Projekte\", value: \"50+\" },\n  { label: \"Jahre Erfahrung\", value: \"8\" },\n  { label: \"Kundenzufriedenheit\", value: \"100%\" },\n  { label: \"Aktive Teams\", value: \"12\" },\n];\n\nexport default function StatsRibbon01() {\n  return (\n    <section className=\"px-6 py-16\">\n      <div className=\"mx-auto grid max-w-6xl gap-6 rounded-2xl border border-amber-300/20 bg-gradient-to-r from-amber-400/10 via-slate-900/80 to-slate-900 p-8 md:grid-cols-4\">\n        {STATS.map((entry) => (\n          <article key={entry.label} className=\"text-center\">\n            <p className=\"text-4xl font-black text-amber-300\">{entry.value}</p>\n            <p className=\"mt-2 text-sm text-slate-300\">{entry.label}</p>\n          </article>\n        ))}\n      </div>\n    </section>\n  );\n}"
+      }
+    },
+    {
+      "id": "stats-grid-light-01",
+      "name": "Stats Grid Light",
+      "category": "stats",
+      "subcategory": "grid",
+      "tags": {
+        "industry": [
+          "saas",
+          "startup",
+          "services"
+        ],
+        "tone": [
+          "clean",
+          "modern"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STATS = [\n  { label: \"Generierte Seiten\", value: \"2.4M+\", description: \"In allen Projekten weltweit.\" },\n  { label: \"Nutzer\", value: \"18,000+\", description: \"Aktive Teams und Freelancer.\" },\n  { label: \"Uptime\", value: \"99.97%\", description: \"Garantierte Verfügbarkeit.\" },\n  { label: \"Deployments/Tag\", value: \"3,200+\", description: \"Automatisierte Releases.\" },\n];\n\nexport default function StatsGridLight01() {\n  return (\n    <section id=\"stats\" className=\"bg-white px-6 py-20\">\n      <div className=\"mx-auto max-w-6xl\">\n        <p className=\"text-center text-xs font-semibold uppercase tracking-[0.2em] text-indigo-500\">In Zahlen</p>\n        <h2 className=\"mt-3 text-center text-3xl font-bold text-slate-900\">Vertrauen in Zahlen</h2>\n        <div className=\"mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4\">\n          {STATS.map((s) => (\n            <article key={s.label} className=\"rounded-2xl border border-slate-200 bg-slate-50 p-6 text-center\">\n              <p className=\"text-4xl font-black text-indigo-600\">{s.value}</p>\n              <p className=\"mt-2 font-semibold text-slate-800\">{s.label}</p>\n              <p className=\"mt-1 text-xs text-slate-500\">{s.description}</p>\n            </article>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}"
+      }
+    },
+    {
+      "id": "stats-animated-counter-01",
+      "name": "Stats Animated Counter Light",
+      "category": "stats",
+      "subcategory": "counter",
+      "tags": {
+        "industry": [
+          "saas",
+          "startup",
+          "services"
+        ],
+        "tone": [
+          "bold",
+          "conversion"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "import { useEffect, useRef, useState } from \"react\";\n\nfunction useCounter(target: number, duration = 1200) {\n  const [count, setCount] = useState(0);\n  const ref = useRef<HTMLDivElement>(null);\n  const started = useRef(false);\n\n  useEffect(() => {\n    const observer = new IntersectionObserver(\n      ([entry]) => {\n        if (entry.isIntersecting && !started.current) {\n          started.current = true;\n          const start = performance.now();\n          const animate = (now: number) => {\n            const progress = Math.min((now - start) / duration, 1);\n            const ease = 1 - Math.pow(1 - progress, 3);\n            setCount(Math.floor(ease * target));\n            if (progress < 1) requestAnimationFrame(animate);\n          };\n          requestAnimationFrame(animate);\n        }\n      },\n      { threshold: 0.5 }\n    );\n    if (ref.current) observer.observe(ref.current);\n    return () => observer.disconnect();\n  }, [target, duration]);\n\n  return { count, ref };\n}\n\nconst STATS = [\n  { value: 18000, suffix: \"+\", label: \"Aktive Teams\", prefix: \"\" },\n  { value: 99, suffix: \".97%\", label: \"Uptime SLA\", prefix: \"\" },\n  { value: 4, suffix: \"M+\", label: \"Generierte Seiten\", prefix: \"\" },\n  { value: 140, suffix: \"+\", label: \"Länder\", prefix: \"\" },\n];\n\nfunction StatItem({ value, suffix, label, prefix }: typeof STATS[0]) {\n  const { count, ref } = useCounter(value);\n  return (\n    <article ref={ref} className=\"text-center\">\n      <p className=\"text-4xl font-black text-violet-600 sm:text-5xl\">\n        {prefix}{count.toLocaleString(\"de-DE\")}{suffix}\n      </p>\n      <p className=\"mt-2 text-sm font-medium text-slate-500\">{label}</p>\n    </article>\n  );\n}\n\nexport default function StatsAnimatedCounter01() {\n  return (\n    <section className=\"bg-white px-6 py-24\">\n      <div className=\"mx-auto max-w-5xl\">\n        <div className=\"grid gap-10 sm:grid-cols-2 lg:grid-cols-4\">\n          {STATS.map((s) => <StatItem key={s.label} {...s} />)}\n        </div>\n      </div>\n    </section>\n  );\n}"
+      }
+    },
+    {
+      "id": "corp-stats-light-01",
+      "name": "StatsLightCorporate01",
+      "category": "stats",
+      "subcategory": "metric-cards",
+      "tags": {
+        "industry": [
+          "saas",
+          "analytics",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STATS = [\n  { label: 'Projects', value: '124' },\n  { label: 'SLA', value: '99.9%' },\n  { label: 'NPS', value: '68' }\n];\n\nexport default function StatsLightCorporate01() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {STATS.map((s) => (\n        <article key={s.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{s.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{s.value}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-stats-light-02",
+      "name": "StatsLightCorporate02",
+      "category": "stats",
+      "subcategory": "strip-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "analytics",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STATS = [\n  { label: 'Projects', value: '124' },\n  { label: 'SLA', value: '99.9%' },\n  { label: 'NPS', value: '68' }\n];\n\nexport default function StatsLightCorporate02() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {STATS.map((s) => (\n        <article key={s.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{s.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{s.value}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-stats-light-03",
+      "name": "StatsLightCorporate03",
+      "category": "stats",
+      "subcategory": "kpi-compact",
+      "tags": {
+        "industry": [
+          "saas",
+          "analytics",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STATS = [\n  { label: 'Projects', value: '124' },\n  { label: 'SLA', value: '99.9%' },\n  { label: 'NPS', value: '68' }\n];\n\nexport default function StatsLightCorporate03() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {STATS.map((s) => (\n        <article key={s.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{s.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{s.value}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-stats-light-04",
+      "name": "StatsLightCorporate04",
+      "category": "stats",
+      "subcategory": "metric-cards",
+      "tags": {
+        "industry": [
+          "saas",
+          "analytics",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STATS = [\n  { label: 'Projects', value: '124' },\n  { label: 'SLA', value: '99.9%' },\n  { label: 'NPS', value: '68' }\n];\n\nexport default function StatsLightCorporate04() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {STATS.map((s) => (\n        <article key={s.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{s.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{s.value}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-stats-light-05",
+      "name": "StatsLightCorporate05",
+      "category": "stats",
+      "subcategory": "strip-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "analytics",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STATS = [\n  { label: 'Projects', value: '124' },\n  { label: 'SLA', value: '99.9%' },\n  { label: 'NPS', value: '68' }\n];\n\nexport default function StatsLightCorporate05() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {STATS.map((s) => (\n        <article key={s.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{s.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{s.value}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-stats-light-06",
+      "name": "StatsLightCorporate06",
+      "category": "stats",
+      "subcategory": "kpi-compact",
+      "tags": {
+        "industry": [
+          "saas",
+          "analytics",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STATS = [\n  { label: 'Projects', value: '124' },\n  { label: 'SLA', value: '99.9%' },\n  { label: 'NPS', value: '68' }\n];\n\nexport default function StatsLightCorporate06() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {STATS.map((s) => (\n        <article key={s.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{s.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{s.value}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-stats-light-07",
+      "name": "StatsLightCorporate07",
+      "category": "stats",
+      "subcategory": "metric-cards",
+      "tags": {
+        "industry": [
+          "saas",
+          "analytics",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STATS = [\n  { label: 'Projects', value: '124' },\n  { label: 'SLA', value: '99.9%' },\n  { label: 'NPS', value: '68' }\n];\n\nexport default function StatsLightCorporate07() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {STATS.map((s) => (\n        <article key={s.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{s.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{s.value}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-stats-light-08",
+      "name": "StatsLightCorporate08",
+      "category": "stats",
+      "subcategory": "strip-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "analytics",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STATS = [\n  { label: 'Projects', value: '124' },\n  { label: 'SLA', value: '99.9%' },\n  { label: 'NPS', value: '68' }\n];\n\nexport default function StatsLightCorporate08() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {STATS.map((s) => (\n        <article key={s.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{s.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{s.value}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-stats-light-09",
+      "name": "StatsLightCorporate09",
+      "category": "stats",
+      "subcategory": "kpi-compact",
+      "tags": {
+        "industry": [
+          "saas",
+          "analytics",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STATS = [\n  { label: 'Projects', value: '124' },\n  { label: 'SLA', value: '99.9%' },\n  { label: 'NPS', value: '68' }\n];\n\nexport default function StatsLightCorporate09() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {STATS.map((s) => (\n        <article key={s.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{s.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{s.value}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-stats-light-10",
+      "name": "StatsLightCorporate10",
+      "category": "stats",
+      "subcategory": "metric-cards",
+      "tags": {
+        "industry": [
+          "saas",
+          "analytics",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STATS = [\n  { label: 'Projects', value: '124' },\n  { label: 'SLA', value: '99.9%' },\n  { label: 'NPS', value: '68' }\n];\n\nexport default function StatsLightCorporate10() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {STATS.map((s) => (\n        <article key={s.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{s.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{s.value}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-stats-light-11",
+      "name": "StatsLightCorporate11",
+      "category": "stats",
+      "subcategory": "strip-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "analytics",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STATS = [\n  { label: 'Projects', value: '124' },\n  { label: 'SLA', value: '99.9%' },\n  { label: 'NPS', value: '68' }\n];\n\nexport default function StatsLightCorporate11() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {STATS.map((s) => (\n        <article key={s.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{s.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{s.value}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-stats-light-12",
+      "name": "StatsLightCorporate12",
+      "category": "stats",
+      "subcategory": "kpi-compact",
+      "tags": {
+        "industry": [
+          "saas",
+          "analytics",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STATS = [\n  { label: 'Projects', value: '124' },\n  { label: 'SLA', value: '99.9%' },\n  { label: 'NPS', value: '68' }\n];\n\nexport default function StatsLightCorporate12() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {STATS.map((s) => (\n        <article key={s.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{s.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{s.value}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-stats-light-13",
+      "name": "StatsLightCorporate13",
+      "category": "stats",
+      "subcategory": "metric-cards",
+      "tags": {
+        "industry": [
+          "saas",
+          "analytics",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STATS = [\n  { label: 'Projects', value: '124' },\n  { label: 'SLA', value: '99.9%' },\n  { label: 'NPS', value: '68' }\n];\n\nexport default function StatsLightCorporate13() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {STATS.map((s) => (\n        <article key={s.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{s.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{s.value}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-stats-light-14",
+      "name": "StatsLightCorporate14",
+      "category": "stats",
+      "subcategory": "strip-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "analytics",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STATS = [\n  { label: 'Projects', value: '124' },\n  { label: 'SLA', value: '99.9%' },\n  { label: 'NPS', value: '68' }\n];\n\nexport default function StatsLightCorporate14() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {STATS.map((s) => (\n        <article key={s.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{s.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{s.value}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-stats-light-15",
+      "name": "StatsLightCorporate15",
+      "category": "stats",
+      "subcategory": "kpi-compact",
+      "tags": {
+        "industry": [
+          "saas",
+          "analytics",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STATS = [\n  { label: 'Projects', value: '124' },\n  { label: 'SLA', value: '99.9%' },\n  { label: 'NPS', value: '68' }\n];\n\nexport default function StatsLightCorporate15() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {STATS.map((s) => (\n        <article key={s.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{s.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{s.value}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-stats-light-16",
+      "name": "StatsLightCorporate16",
+      "category": "stats",
+      "subcategory": "metric-cards",
+      "tags": {
+        "industry": [
+          "saas",
+          "analytics",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STATS = [\n  { label: 'Projects', value: '124' },\n  { label: 'SLA', value: '99.9%' },\n  { label: 'NPS', value: '68' }\n];\n\nexport default function StatsLightCorporate16() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {STATS.map((s) => (\n        <article key={s.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{s.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{s.value}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-stats-light-17",
+      "name": "StatsLightCorporate17",
+      "category": "stats",
+      "subcategory": "strip-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "analytics",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STATS = [\n  { label: 'Projects', value: '124' },\n  { label: 'SLA', value: '99.9%' },\n  { label: 'NPS', value: '68' }\n];\n\nexport default function StatsLightCorporate17() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {STATS.map((s) => (\n        <article key={s.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{s.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{s.value}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-stats-light-18",
+      "name": "StatsLightCorporate18",
+      "category": "stats",
+      "subcategory": "kpi-compact",
+      "tags": {
+        "industry": [
+          "saas",
+          "analytics",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STATS = [\n  { label: 'Projects', value: '124' },\n  { label: 'SLA', value: '99.9%' },\n  { label: 'NPS', value: '68' }\n];\n\nexport default function StatsLightCorporate18() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {STATS.map((s) => (\n        <article key={s.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{s.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{s.value}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-stats-light-19",
+      "name": "StatsLightCorporate19",
+      "category": "stats",
+      "subcategory": "metric-cards",
+      "tags": {
+        "industry": [
+          "saas",
+          "analytics",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STATS = [\n  { label: 'Projects', value: '124' },\n  { label: 'SLA', value: '99.9%' },\n  { label: 'NPS', value: '68' }\n];\n\nexport default function StatsLightCorporate19() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {STATS.map((s) => (\n        <article key={s.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{s.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{s.value}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-stats-light-20",
+      "name": "StatsLightCorporate20",
+      "category": "stats",
+      "subcategory": "strip-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "analytics",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STATS = [\n  { label: 'Projects', value: '124' },\n  { label: 'SLA', value: '99.9%' },\n  { label: 'NPS', value: '68' }\n];\n\nexport default function StatsLightCorporate20() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {STATS.map((s) => (\n        <article key={s.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{s.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{s.value}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-stats-light-21",
+      "name": "StatsLightCorporate21",
+      "category": "stats",
+      "subcategory": "kpi-compact",
+      "tags": {
+        "industry": [
+          "saas",
+          "analytics",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STATS = [\n  { label: 'Projects', value: '124' },\n  { label: 'SLA', value: '99.9%' },\n  { label: 'NPS', value: '68' }\n];\n\nexport default function StatsLightCorporate21() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {STATS.map((s) => (\n        <article key={s.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{s.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{s.value}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-stats-light-22",
+      "name": "StatsLightCorporate22",
+      "category": "stats",
+      "subcategory": "metric-cards",
+      "tags": {
+        "industry": [
+          "saas",
+          "analytics",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STATS = [\n  { label: 'Projects', value: '124' },\n  { label: 'SLA', value: '99.9%' },\n  { label: 'NPS', value: '68' }\n];\n\nexport default function StatsLightCorporate22() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {STATS.map((s) => (\n        <article key={s.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{s.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{s.value}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-stats-light-23",
+      "name": "StatsLightCorporate23",
+      "category": "stats",
+      "subcategory": "strip-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "analytics",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STATS = [\n  { label: 'Projects', value: '124' },\n  { label: 'SLA', value: '99.9%' },\n  { label: 'NPS', value: '68' }\n];\n\nexport default function StatsLightCorporate23() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {STATS.map((s) => (\n        <article key={s.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{s.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{s.value}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-stats-light-24",
+      "name": "StatsLightCorporate24",
+      "category": "stats",
+      "subcategory": "kpi-compact",
+      "tags": {
+        "industry": [
+          "saas",
+          "analytics",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STATS = [\n  { label: 'Projects', value: '124' },\n  { label: 'SLA', value: '99.9%' },\n  { label: 'NPS', value: '68' }\n];\n\nexport default function StatsLightCorporate24() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {STATS.map((s) => (\n        <article key={s.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{s.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{s.value}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-stats-light-25",
+      "name": "StatsLightCorporate25",
+      "category": "stats",
+      "subcategory": "metric-cards",
+      "tags": {
+        "industry": [
+          "saas",
+          "analytics",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STATS = [\n  { label: 'Projects', value: '124' },\n  { label: 'SLA', value: '99.9%' },\n  { label: 'NPS', value: '68' }\n];\n\nexport default function StatsLightCorporate25() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {STATS.map((s) => (\n        <article key={s.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{s.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{s.value}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-stats-light-26",
+      "name": "StatsLightCorporate26",
+      "category": "stats",
+      "subcategory": "strip-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "analytics",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STATS = [\n  { label: 'Projects', value: '124' },\n  { label: 'SLA', value: '99.9%' },\n  { label: 'NPS', value: '68' }\n];\n\nexport default function StatsLightCorporate26() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {STATS.map((s) => (\n        <article key={s.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{s.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{s.value}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-stats-light-27",
+      "name": "StatsLightCorporate27",
+      "category": "stats",
+      "subcategory": "kpi-compact",
+      "tags": {
+        "industry": [
+          "saas",
+          "analytics",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STATS = [\n  { label: 'Projects', value: '124' },\n  { label: 'SLA', value: '99.9%' },\n  { label: 'NPS', value: '68' }\n];\n\nexport default function StatsLightCorporate27() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {STATS.map((s) => (\n        <article key={s.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{s.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{s.value}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-stats-light-28",
+      "name": "StatsLightCorporate28",
+      "category": "stats",
+      "subcategory": "metric-cards",
+      "tags": {
+        "industry": [
+          "saas",
+          "analytics",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STATS = [\n  { label: 'Projects', value: '124' },\n  { label: 'SLA', value: '99.9%' },\n  { label: 'NPS', value: '68' }\n];\n\nexport default function StatsLightCorporate28() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {STATS.map((s) => (\n        <article key={s.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{s.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{s.value}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-stats-light-29",
+      "name": "StatsLightCorporate29",
+      "category": "stats",
+      "subcategory": "strip-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "analytics",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STATS = [\n  { label: 'Projects', value: '124' },\n  { label: 'SLA', value: '99.9%' },\n  { label: 'NPS', value: '68' }\n];\n\nexport default function StatsLightCorporate29() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {STATS.map((s) => (\n        <article key={s.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{s.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{s.value}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-stats-light-30",
+      "name": "StatsLightCorporate30",
+      "category": "stats",
+      "subcategory": "kpi-compact",
+      "tags": {
+        "industry": [
+          "saas",
+          "analytics",
+          "enterprise"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "const STATS = [\n  { label: 'Projects', value: '124' },\n  { label: 'SLA', value: '99.9%' },\n  { label: 'NPS', value: '68' }\n];\n\nexport default function StatsLightCorporate30() {\n  return (\n    <section className=\"grid gap-4 md:grid-cols-3\">\n      {STATS.map((s) => (\n        <article key={s.label} className=\"rounded-xl border border-slate-200 bg-white p-5\">\n          <p className=\"text-xs uppercase tracking-wide text-slate-500\">{s.label}</p>\n          <p className=\"mt-2 text-2xl font-semibold text-slate-900\">{s.value}</p>\n        </article>\n      ))}\n    </section>\n  );\n}\n"
+      }
+    }
+  ]
+}

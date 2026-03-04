@@ -1,0 +1,948 @@
+{
+  "category": "navbar",
+  "components": [
+    {
+      "id": "nav-sticky-blur-01",
+      "name": "Navbar Sticky Blur",
+      "category": "navbar",
+      "subcategory": "sticky",
+      "tags": {
+        "industry": [
+          "saas",
+          "agency",
+          "ecommerce"
+        ],
+        "tone": [
+          "clean",
+          "modern"
+        ],
+        "theme": [
+          "light",
+          "dark"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function NavbarStickyBlur01() {\n  return (\n    <header className=\"sticky top-0 z-40 border-b border-slate-200/70 bg-white/80 backdrop-blur-xl dark:border-slate-800/80 dark:bg-slate-950/80\">\n      <div className=\"mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-6\">\n        <a href=\"/\" className=\"text-lg font-semibold text-slate-900 dark:text-white\">{{projectName}}</a>\n        <nav className=\"hidden items-center gap-7 text-sm font-medium text-slate-600 dark:text-slate-300 md:flex\">\n          <a href=\"#features\" className=\"transition hover:text-slate-900 dark:hover:text-white\">Features</a>\n          <a href=\"#pricing\" className=\"transition hover:text-slate-900 dark:hover:text-white\">Pricing</a>\n          <a href=\"#contact\" className=\"transition hover:text-slate-900 dark:hover:text-white\">Contact</a>\n        </nav>\n        <button className=\"rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100\">\n          Start free\n        </button>\n      </div>\n    </header>\n  );\n}"
+      }
+    },
+    {
+      "id": "nav-minimal-border-01",
+      "name": "Navbar Minimal Border",
+      "category": "navbar",
+      "subcategory": "minimal",
+      "tags": {
+        "industry": [
+          "portfolio",
+          "studio",
+          "brand"
+        ],
+        "tone": [
+          "minimal",
+          "elegant"
+        ],
+        "theme": [
+          "light",
+          "dark"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function NavbarMinimalBorder01() {\n  return (\n    <header className=\"border-b border-slate-200/70 bg-transparent dark:border-slate-800/70\">\n      <div className=\"mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-6\">\n        <a href=\"/\" className=\"text-xl font-bold tracking-tight text-slate-900 dark:text-white\">{{projectName}}</a>\n        <nav className=\"hidden items-center gap-6 text-sm text-slate-500 dark:text-slate-400 md:flex\">\n          <a href=\"#about\" className=\"transition hover:text-slate-900 dark:hover:text-white\">Uber uns</a>\n          <a href=\"#work\" className=\"transition hover:text-slate-900 dark:hover:text-white\">Portfolio</a>\n          <a href=\"#contact\" className=\"transition hover:text-slate-900 dark:hover:text-white\">Kontakt</a>\n        </nav>\n      </div>\n    </header>\n  );\n}"
+      }
+    },
+    {
+      "id": "nav-dark-cta-01",
+      "name": "Navbar Dark with CTA Badge",
+      "category": "navbar",
+      "subcategory": "cta",
+      "tags": {
+        "industry": [
+          "saas",
+          "startup",
+          "tech"
+        ],
+        "tone": [
+          "bold",
+          "premium"
+        ],
+        "theme": [
+          "dark"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function NavbarDarkCta01() {\n  return (\n    <header className=\"border-b border-white/10 bg-slate-950 px-6\">\n      <div className=\"mx-auto flex h-16 max-w-6xl items-center justify-between\">\n        <a href=\"/\" className=\"flex items-center gap-2\">\n          <span className=\"flex h-7 w-7 items-center justify-center rounded-lg bg-cyan-400 text-xs font-black text-slate-950\">A</span>\n          <span className=\"text-base font-bold text-white\">{{projectName}}</span>\n        </a>\n        <nav className=\"hidden gap-6 text-sm text-slate-400 md:flex\">\n          <a href=\"#features\" className=\"transition hover:text-white\">Features</a>\n          <a href=\"#pricing\" className=\"transition hover:text-white\">Preise</a>\n          <a href=\"#docs\" className=\"transition hover:text-white\">Docs</a>\n        </nav>\n        <div className=\"flex items-center gap-3\">\n          <span className=\"hidden rounded-full bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-300 ring-1 ring-inset ring-cyan-300/20 sm:inline-flex\">\n            Beta — kostenlos\n          </span>\n          <button className=\"rounded-xl bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300\">\n            Starten\n          </button>\n        </div>\n      </div>\n    </header>\n  );\n}"
+      }
+    },
+    {
+      "id": "nav-mega-menu-01",
+      "name": "Navbar with Dropdown Indicator",
+      "category": "navbar",
+      "subcategory": "dropdown",
+      "tags": {
+        "industry": [
+          "saas",
+          "ecommerce",
+          "services"
+        ],
+        "tone": [
+          "modern",
+          "clean"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "import { useState } from \"react\";\n\nconst NAV_LINKS = [\n  { label: \"Produkt\", sub: [\"Features\", \"Integrationen\", \"Roadmap\", \"Changelog\"] },\n  { label: \"Lösungen\", sub: [\"Für Teams\", \"Für Agenturen\", \"Enterprise\"] },\n  { label: \"Preise\", sub: [] },\n  { label: \"Docs\", sub: [] },\n];\n\nexport default function NavbarMegaMenu01() {\n  const [open, setOpen] = useState<string | null>(null);\n  return (\n    <header className=\"sticky top-0 z-50 border-b border-slate-100 bg-white/95 backdrop-blur\">\n      <div className=\"mx-auto flex h-16 max-w-7xl items-center justify-between px-6\">\n        <a href=\"/\" className=\"text-lg font-bold text-slate-900\">{{projectName}}</a>\n        <nav className=\"hidden items-center gap-1 md:flex\">\n          {NAV_LINKS.map((link) => (\n            <div key={link.label} className=\"relative\">\n              <button\n                className=\"flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900\"\n                onMouseEnter={() => link.sub.length ? setOpen(link.label) : setOpen(null)}\n                onMouseLeave={() => setOpen(null)}\n              >\n                {link.label}\n                {link.sub.length > 0 && <span className=\"text-[10px] text-slate-400\">▾</span>}\n              </button>\n              {open === link.label && link.sub.length > 0 && (\n                <div\n                  className=\"absolute top-full left-0 mt-1 w-44 rounded-xl border border-slate-200 bg-white p-2 shadow-xl\"\n                  onMouseEnter={() => setOpen(link.label)}\n                  onMouseLeave={() => setOpen(null)}\n                >\n                  {link.sub.map((s) => (\n                    <a key={s} href=\"#\" className=\"block rounded-lg px-3 py-2 text-sm text-slate-600 transition hover:bg-slate-50 hover:text-slate-900\">\n                      {s}\n                    </a>\n                  ))}\n                </div>\n              )}\n            </div>\n          ))}\n        </nav>\n        <div className=\"flex items-center gap-2\">\n          <button className=\"hidden rounded-lg px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 md:block\">\n            Anmelden\n          </button>\n          <button className=\"rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white transition hover:bg-slate-700\">\n            Gratis starten\n          </button>\n        </div>\n      </div>\n    </header>\n  );\n}"
+      }
+    },
+    {
+      "id": "nav-pill-floating-01",
+      "name": "Navbar Pill Floating Dark",
+      "category": "navbar",
+      "subcategory": "floating",
+      "tags": {
+        "industry": [
+          "portfolio",
+          "agency",
+          "startup"
+        ],
+        "tone": [
+          "premium",
+          "minimal",
+          "modern"
+        ],
+        "theme": [
+          "dark"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function NavbarPillFloating01() {\n  return (\n    <div className=\"fixed top-4 left-0 right-0 z-50 flex justify-center px-4\">\n      <header className=\"flex w-full max-w-2xl items-center justify-between rounded-2xl border border-white/10 bg-slate-900/80 px-5 py-2.5 shadow-xl backdrop-blur-xl\">\n        <a href=\"/\" className=\"text-sm font-bold text-white\">{{projectName}}</a>\n        <nav className=\"flex items-center gap-5 text-xs font-medium text-slate-400\">\n          <a href=\"#work\" className=\"transition hover:text-white\">Work</a>\n          <a href=\"#about\" className=\"transition hover:text-white\">About</a>\n          <a href=\"#contact\" className=\"transition hover:text-white\">Contact</a>\n        </nav>\n        <button className=\"rounded-xl bg-white px-4 py-1.5 text-xs font-bold text-slate-900 transition hover:bg-slate-200\">\n          Talk to us\n        </button>\n      </header>\n    </div>\n  );\n}"
+      }
+    },
+    {
+      "id": "corp-navbar-light-01",
+      "name": "NavbarLightCorporate01",
+      "category": "navbar",
+      "subcategory": "sticky-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function NavbarLightCorporate01() {\n  return (\n    <header className=\"sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur\">\n      <div className=\"mx-auto flex h-16 max-w-7xl items-center justify-between px-6\">\n        <div className=\"text-sm font-semibold tracking-wide text-slate-900\">{{projectName}}</div>\n        <nav className=\"hidden items-center gap-6 text-sm text-slate-600 md:flex\">\n          <a href=\"#overview\" className=\"hover:text-slate-900\">Overview</a>\n          <a href=\"#solutions\" className=\"hover:text-slate-900\">Solutions</a>\n          <a href=\"#contact\" className=\"hover:text-slate-900\">Contact</a>\n        </nav>\n        <button className=\"rounded-md bg-slate-600 px-3 py-2 text-xs font-semibold text-white\">Get Demo</button>\n      </div>\n    </header>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-navbar-light-02",
+      "name": "NavbarLightCorporate02",
+      "category": "navbar",
+      "subcategory": "corporate-simple",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function NavbarLightCorporate02() {\n  return (\n    <header className=\"sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur\">\n      <div className=\"mx-auto flex h-16 max-w-7xl items-center justify-between px-6\">\n        <div className=\"text-sm font-semibold tracking-wide text-slate-900\">{{projectName}}</div>\n        <nav className=\"hidden items-center gap-6 text-sm text-slate-600 md:flex\">\n          <a href=\"#overview\" className=\"hover:text-slate-900\">Overview</a>\n          <a href=\"#solutions\" className=\"hover:text-slate-900\">Solutions</a>\n          <a href=\"#contact\" className=\"hover:text-slate-900\">Contact</a>\n        </nav>\n        <button className=\"rounded-md bg-indigo-600 px-3 py-2 text-xs font-semibold text-white\">Get Demo</button>\n      </div>\n    </header>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-navbar-light-03",
+      "name": "NavbarLightCorporate03",
+      "category": "navbar",
+      "subcategory": "compact-links",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function NavbarLightCorporate03() {\n  return (\n    <header className=\"sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur\">\n      <div className=\"mx-auto flex h-16 max-w-7xl items-center justify-between px-6\">\n        <div className=\"text-sm font-semibold tracking-wide text-slate-900\">{{projectName}}</div>\n        <nav className=\"hidden items-center gap-6 text-sm text-slate-600 md:flex\">\n          <a href=\"#overview\" className=\"hover:text-slate-900\">Overview</a>\n          <a href=\"#solutions\" className=\"hover:text-slate-900\">Solutions</a>\n          <a href=\"#contact\" className=\"hover:text-slate-900\">Contact</a>\n        </nav>\n        <button className=\"rounded-md bg-slate-600 px-3 py-2 text-xs font-semibold text-white\">Get Demo</button>\n      </div>\n    </header>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-navbar-light-04",
+      "name": "NavbarLightCorporate04",
+      "category": "navbar",
+      "subcategory": "sticky-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function NavbarLightCorporate04() {\n  return (\n    <header className=\"sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur\">\n      <div className=\"mx-auto flex h-16 max-w-7xl items-center justify-between px-6\">\n        <div className=\"text-sm font-semibold tracking-wide text-slate-900\">{{projectName}}</div>\n        <nav className=\"hidden items-center gap-6 text-sm text-slate-600 md:flex\">\n          <a href=\"#overview\" className=\"hover:text-slate-900\">Overview</a>\n          <a href=\"#solutions\" className=\"hover:text-slate-900\">Solutions</a>\n          <a href=\"#contact\" className=\"hover:text-slate-900\">Contact</a>\n        </nav>\n        <button className=\"rounded-md bg-indigo-600 px-3 py-2 text-xs font-semibold text-white\">Get Demo</button>\n      </div>\n    </header>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-navbar-light-05",
+      "name": "NavbarLightCorporate05",
+      "category": "navbar",
+      "subcategory": "corporate-simple",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function NavbarLightCorporate05() {\n  return (\n    <header className=\"sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur\">\n      <div className=\"mx-auto flex h-16 max-w-7xl items-center justify-between px-6\">\n        <div className=\"text-sm font-semibold tracking-wide text-slate-900\">{{projectName}}</div>\n        <nav className=\"hidden items-center gap-6 text-sm text-slate-600 md:flex\">\n          <a href=\"#overview\" className=\"hover:text-slate-900\">Overview</a>\n          <a href=\"#solutions\" className=\"hover:text-slate-900\">Solutions</a>\n          <a href=\"#contact\" className=\"hover:text-slate-900\">Contact</a>\n        </nav>\n        <button className=\"rounded-md bg-slate-600 px-3 py-2 text-xs font-semibold text-white\">Get Demo</button>\n      </div>\n    </header>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-navbar-light-06",
+      "name": "NavbarLightCorporate06",
+      "category": "navbar",
+      "subcategory": "compact-links",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function NavbarLightCorporate06() {\n  return (\n    <header className=\"sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur\">\n      <div className=\"mx-auto flex h-16 max-w-7xl items-center justify-between px-6\">\n        <div className=\"text-sm font-semibold tracking-wide text-slate-900\">{{projectName}}</div>\n        <nav className=\"hidden items-center gap-6 text-sm text-slate-600 md:flex\">\n          <a href=\"#overview\" className=\"hover:text-slate-900\">Overview</a>\n          <a href=\"#solutions\" className=\"hover:text-slate-900\">Solutions</a>\n          <a href=\"#contact\" className=\"hover:text-slate-900\">Contact</a>\n        </nav>\n        <button className=\"rounded-md bg-indigo-600 px-3 py-2 text-xs font-semibold text-white\">Get Demo</button>\n      </div>\n    </header>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-navbar-light-07",
+      "name": "NavbarLightCorporate07",
+      "category": "navbar",
+      "subcategory": "sticky-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function NavbarLightCorporate07() {\n  return (\n    <header className=\"sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur\">\n      <div className=\"mx-auto flex h-16 max-w-7xl items-center justify-between px-6\">\n        <div className=\"text-sm font-semibold tracking-wide text-slate-900\">{{projectName}}</div>\n        <nav className=\"hidden items-center gap-6 text-sm text-slate-600 md:flex\">\n          <a href=\"#overview\" className=\"hover:text-slate-900\">Overview</a>\n          <a href=\"#solutions\" className=\"hover:text-slate-900\">Solutions</a>\n          <a href=\"#contact\" className=\"hover:text-slate-900\">Contact</a>\n        </nav>\n        <button className=\"rounded-md bg-slate-600 px-3 py-2 text-xs font-semibold text-white\">Get Demo</button>\n      </div>\n    </header>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-navbar-light-08",
+      "name": "NavbarLightCorporate08",
+      "category": "navbar",
+      "subcategory": "corporate-simple",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function NavbarLightCorporate08() {\n  return (\n    <header className=\"sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur\">\n      <div className=\"mx-auto flex h-16 max-w-7xl items-center justify-between px-6\">\n        <div className=\"text-sm font-semibold tracking-wide text-slate-900\">{{projectName}}</div>\n        <nav className=\"hidden items-center gap-6 text-sm text-slate-600 md:flex\">\n          <a href=\"#overview\" className=\"hover:text-slate-900\">Overview</a>\n          <a href=\"#solutions\" className=\"hover:text-slate-900\">Solutions</a>\n          <a href=\"#contact\" className=\"hover:text-slate-900\">Contact</a>\n        </nav>\n        <button className=\"rounded-md bg-indigo-600 px-3 py-2 text-xs font-semibold text-white\">Get Demo</button>\n      </div>\n    </header>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-navbar-light-09",
+      "name": "NavbarLightCorporate09",
+      "category": "navbar",
+      "subcategory": "compact-links",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function NavbarLightCorporate09() {\n  return (\n    <header className=\"sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur\">\n      <div className=\"mx-auto flex h-16 max-w-7xl items-center justify-between px-6\">\n        <div className=\"text-sm font-semibold tracking-wide text-slate-900\">{{projectName}}</div>\n        <nav className=\"hidden items-center gap-6 text-sm text-slate-600 md:flex\">\n          <a href=\"#overview\" className=\"hover:text-slate-900\">Overview</a>\n          <a href=\"#solutions\" className=\"hover:text-slate-900\">Solutions</a>\n          <a href=\"#contact\" className=\"hover:text-slate-900\">Contact</a>\n        </nav>\n        <button className=\"rounded-md bg-slate-600 px-3 py-2 text-xs font-semibold text-white\">Get Demo</button>\n      </div>\n    </header>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-navbar-light-10",
+      "name": "NavbarLightCorporate10",
+      "category": "navbar",
+      "subcategory": "sticky-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function NavbarLightCorporate10() {\n  return (\n    <header className=\"sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur\">\n      <div className=\"mx-auto flex h-16 max-w-7xl items-center justify-between px-6\">\n        <div className=\"text-sm font-semibold tracking-wide text-slate-900\">{{projectName}}</div>\n        <nav className=\"hidden items-center gap-6 text-sm text-slate-600 md:flex\">\n          <a href=\"#overview\" className=\"hover:text-slate-900\">Overview</a>\n          <a href=\"#solutions\" className=\"hover:text-slate-900\">Solutions</a>\n          <a href=\"#contact\" className=\"hover:text-slate-900\">Contact</a>\n        </nav>\n        <button className=\"rounded-md bg-indigo-600 px-3 py-2 text-xs font-semibold text-white\">Get Demo</button>\n      </div>\n    </header>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-navbar-light-11",
+      "name": "NavbarLightCorporate11",
+      "category": "navbar",
+      "subcategory": "corporate-simple",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function NavbarLightCorporate11() {\n  return (\n    <header className=\"sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur\">\n      <div className=\"mx-auto flex h-16 max-w-7xl items-center justify-between px-6\">\n        <div className=\"text-sm font-semibold tracking-wide text-slate-900\">{{projectName}}</div>\n        <nav className=\"hidden items-center gap-6 text-sm text-slate-600 md:flex\">\n          <a href=\"#overview\" className=\"hover:text-slate-900\">Overview</a>\n          <a href=\"#solutions\" className=\"hover:text-slate-900\">Solutions</a>\n          <a href=\"#contact\" className=\"hover:text-slate-900\">Contact</a>\n        </nav>\n        <button className=\"rounded-md bg-slate-600 px-3 py-2 text-xs font-semibold text-white\">Get Demo</button>\n      </div>\n    </header>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-navbar-light-12",
+      "name": "NavbarLightCorporate12",
+      "category": "navbar",
+      "subcategory": "compact-links",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function NavbarLightCorporate12() {\n  return (\n    <header className=\"sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur\">\n      <div className=\"mx-auto flex h-16 max-w-7xl items-center justify-between px-6\">\n        <div className=\"text-sm font-semibold tracking-wide text-slate-900\">{{projectName}}</div>\n        <nav className=\"hidden items-center gap-6 text-sm text-slate-600 md:flex\">\n          <a href=\"#overview\" className=\"hover:text-slate-900\">Overview</a>\n          <a href=\"#solutions\" className=\"hover:text-slate-900\">Solutions</a>\n          <a href=\"#contact\" className=\"hover:text-slate-900\">Contact</a>\n        </nav>\n        <button className=\"rounded-md bg-indigo-600 px-3 py-2 text-xs font-semibold text-white\">Get Demo</button>\n      </div>\n    </header>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-navbar-light-13",
+      "name": "NavbarLightCorporate13",
+      "category": "navbar",
+      "subcategory": "sticky-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function NavbarLightCorporate13() {\n  return (\n    <header className=\"sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur\">\n      <div className=\"mx-auto flex h-16 max-w-7xl items-center justify-between px-6\">\n        <div className=\"text-sm font-semibold tracking-wide text-slate-900\">{{projectName}}</div>\n        <nav className=\"hidden items-center gap-6 text-sm text-slate-600 md:flex\">\n          <a href=\"#overview\" className=\"hover:text-slate-900\">Overview</a>\n          <a href=\"#solutions\" className=\"hover:text-slate-900\">Solutions</a>\n          <a href=\"#contact\" className=\"hover:text-slate-900\">Contact</a>\n        </nav>\n        <button className=\"rounded-md bg-slate-600 px-3 py-2 text-xs font-semibold text-white\">Get Demo</button>\n      </div>\n    </header>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-navbar-light-14",
+      "name": "NavbarLightCorporate14",
+      "category": "navbar",
+      "subcategory": "corporate-simple",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function NavbarLightCorporate14() {\n  return (\n    <header className=\"sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur\">\n      <div className=\"mx-auto flex h-16 max-w-7xl items-center justify-between px-6\">\n        <div className=\"text-sm font-semibold tracking-wide text-slate-900\">{{projectName}}</div>\n        <nav className=\"hidden items-center gap-6 text-sm text-slate-600 md:flex\">\n          <a href=\"#overview\" className=\"hover:text-slate-900\">Overview</a>\n          <a href=\"#solutions\" className=\"hover:text-slate-900\">Solutions</a>\n          <a href=\"#contact\" className=\"hover:text-slate-900\">Contact</a>\n        </nav>\n        <button className=\"rounded-md bg-indigo-600 px-3 py-2 text-xs font-semibold text-white\">Get Demo</button>\n      </div>\n    </header>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-navbar-light-15",
+      "name": "NavbarLightCorporate15",
+      "category": "navbar",
+      "subcategory": "compact-links",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function NavbarLightCorporate15() {\n  return (\n    <header className=\"sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur\">\n      <div className=\"mx-auto flex h-16 max-w-7xl items-center justify-between px-6\">\n        <div className=\"text-sm font-semibold tracking-wide text-slate-900\">{{projectName}}</div>\n        <nav className=\"hidden items-center gap-6 text-sm text-slate-600 md:flex\">\n          <a href=\"#overview\" className=\"hover:text-slate-900\">Overview</a>\n          <a href=\"#solutions\" className=\"hover:text-slate-900\">Solutions</a>\n          <a href=\"#contact\" className=\"hover:text-slate-900\">Contact</a>\n        </nav>\n        <button className=\"rounded-md bg-slate-600 px-3 py-2 text-xs font-semibold text-white\">Get Demo</button>\n      </div>\n    </header>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-navbar-light-16",
+      "name": "NavbarLightCorporate16",
+      "category": "navbar",
+      "subcategory": "sticky-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function NavbarLightCorporate16() {\n  return (\n    <header className=\"sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur\">\n      <div className=\"mx-auto flex h-16 max-w-7xl items-center justify-between px-6\">\n        <div className=\"text-sm font-semibold tracking-wide text-slate-900\">{{projectName}}</div>\n        <nav className=\"hidden items-center gap-6 text-sm text-slate-600 md:flex\">\n          <a href=\"#overview\" className=\"hover:text-slate-900\">Overview</a>\n          <a href=\"#solutions\" className=\"hover:text-slate-900\">Solutions</a>\n          <a href=\"#contact\" className=\"hover:text-slate-900\">Contact</a>\n        </nav>\n        <button className=\"rounded-md bg-indigo-600 px-3 py-2 text-xs font-semibold text-white\">Get Demo</button>\n      </div>\n    </header>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-navbar-light-17",
+      "name": "NavbarLightCorporate17",
+      "category": "navbar",
+      "subcategory": "corporate-simple",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function NavbarLightCorporate17() {\n  return (\n    <header className=\"sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur\">\n      <div className=\"mx-auto flex h-16 max-w-7xl items-center justify-between px-6\">\n        <div className=\"text-sm font-semibold tracking-wide text-slate-900\">{{projectName}}</div>\n        <nav className=\"hidden items-center gap-6 text-sm text-slate-600 md:flex\">\n          <a href=\"#overview\" className=\"hover:text-slate-900\">Overview</a>\n          <a href=\"#solutions\" className=\"hover:text-slate-900\">Solutions</a>\n          <a href=\"#contact\" className=\"hover:text-slate-900\">Contact</a>\n        </nav>\n        <button className=\"rounded-md bg-slate-600 px-3 py-2 text-xs font-semibold text-white\">Get Demo</button>\n      </div>\n    </header>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-navbar-light-18",
+      "name": "NavbarLightCorporate18",
+      "category": "navbar",
+      "subcategory": "compact-links",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function NavbarLightCorporate18() {\n  return (\n    <header className=\"sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur\">\n      <div className=\"mx-auto flex h-16 max-w-7xl items-center justify-between px-6\">\n        <div className=\"text-sm font-semibold tracking-wide text-slate-900\">{{projectName}}</div>\n        <nav className=\"hidden items-center gap-6 text-sm text-slate-600 md:flex\">\n          <a href=\"#overview\" className=\"hover:text-slate-900\">Overview</a>\n          <a href=\"#solutions\" className=\"hover:text-slate-900\">Solutions</a>\n          <a href=\"#contact\" className=\"hover:text-slate-900\">Contact</a>\n        </nav>\n        <button className=\"rounded-md bg-indigo-600 px-3 py-2 text-xs font-semibold text-white\">Get Demo</button>\n      </div>\n    </header>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-navbar-light-19",
+      "name": "NavbarLightCorporate19",
+      "category": "navbar",
+      "subcategory": "sticky-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function NavbarLightCorporate19() {\n  return (\n    <header className=\"sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur\">\n      <div className=\"mx-auto flex h-16 max-w-7xl items-center justify-between px-6\">\n        <div className=\"text-sm font-semibold tracking-wide text-slate-900\">{{projectName}}</div>\n        <nav className=\"hidden items-center gap-6 text-sm text-slate-600 md:flex\">\n          <a href=\"#overview\" className=\"hover:text-slate-900\">Overview</a>\n          <a href=\"#solutions\" className=\"hover:text-slate-900\">Solutions</a>\n          <a href=\"#contact\" className=\"hover:text-slate-900\">Contact</a>\n        </nav>\n        <button className=\"rounded-md bg-slate-600 px-3 py-2 text-xs font-semibold text-white\">Get Demo</button>\n      </div>\n    </header>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-navbar-light-20",
+      "name": "NavbarLightCorporate20",
+      "category": "navbar",
+      "subcategory": "corporate-simple",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function NavbarLightCorporate20() {\n  return (\n    <header className=\"sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur\">\n      <div className=\"mx-auto flex h-16 max-w-7xl items-center justify-between px-6\">\n        <div className=\"text-sm font-semibold tracking-wide text-slate-900\">{{projectName}}</div>\n        <nav className=\"hidden items-center gap-6 text-sm text-slate-600 md:flex\">\n          <a href=\"#overview\" className=\"hover:text-slate-900\">Overview</a>\n          <a href=\"#solutions\" className=\"hover:text-slate-900\">Solutions</a>\n          <a href=\"#contact\" className=\"hover:text-slate-900\">Contact</a>\n        </nav>\n        <button className=\"rounded-md bg-indigo-600 px-3 py-2 text-xs font-semibold text-white\">Get Demo</button>\n      </div>\n    </header>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-navbar-light-21",
+      "name": "NavbarLightCorporate21",
+      "category": "navbar",
+      "subcategory": "compact-links",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function NavbarLightCorporate21() {\n  return (\n    <header className=\"sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur\">\n      <div className=\"mx-auto flex h-16 max-w-7xl items-center justify-between px-6\">\n        <div className=\"text-sm font-semibold tracking-wide text-slate-900\">{{projectName}}</div>\n        <nav className=\"hidden items-center gap-6 text-sm text-slate-600 md:flex\">\n          <a href=\"#overview\" className=\"hover:text-slate-900\">Overview</a>\n          <a href=\"#solutions\" className=\"hover:text-slate-900\">Solutions</a>\n          <a href=\"#contact\" className=\"hover:text-slate-900\">Contact</a>\n        </nav>\n        <button className=\"rounded-md bg-slate-600 px-3 py-2 text-xs font-semibold text-white\">Get Demo</button>\n      </div>\n    </header>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-navbar-light-22",
+      "name": "NavbarLightCorporate22",
+      "category": "navbar",
+      "subcategory": "sticky-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function NavbarLightCorporate22() {\n  return (\n    <header className=\"sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur\">\n      <div className=\"mx-auto flex h-16 max-w-7xl items-center justify-between px-6\">\n        <div className=\"text-sm font-semibold tracking-wide text-slate-900\">{{projectName}}</div>\n        <nav className=\"hidden items-center gap-6 text-sm text-slate-600 md:flex\">\n          <a href=\"#overview\" className=\"hover:text-slate-900\">Overview</a>\n          <a href=\"#solutions\" className=\"hover:text-slate-900\">Solutions</a>\n          <a href=\"#contact\" className=\"hover:text-slate-900\">Contact</a>\n        </nav>\n        <button className=\"rounded-md bg-indigo-600 px-3 py-2 text-xs font-semibold text-white\">Get Demo</button>\n      </div>\n    </header>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-navbar-light-23",
+      "name": "NavbarLightCorporate23",
+      "category": "navbar",
+      "subcategory": "corporate-simple",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function NavbarLightCorporate23() {\n  return (\n    <header className=\"sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur\">\n      <div className=\"mx-auto flex h-16 max-w-7xl items-center justify-between px-6\">\n        <div className=\"text-sm font-semibold tracking-wide text-slate-900\">{{projectName}}</div>\n        <nav className=\"hidden items-center gap-6 text-sm text-slate-600 md:flex\">\n          <a href=\"#overview\" className=\"hover:text-slate-900\">Overview</a>\n          <a href=\"#solutions\" className=\"hover:text-slate-900\">Solutions</a>\n          <a href=\"#contact\" className=\"hover:text-slate-900\">Contact</a>\n        </nav>\n        <button className=\"rounded-md bg-slate-600 px-3 py-2 text-xs font-semibold text-white\">Get Demo</button>\n      </div>\n    </header>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-navbar-light-24",
+      "name": "NavbarLightCorporate24",
+      "category": "navbar",
+      "subcategory": "compact-links",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function NavbarLightCorporate24() {\n  return (\n    <header className=\"sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur\">\n      <div className=\"mx-auto flex h-16 max-w-7xl items-center justify-between px-6\">\n        <div className=\"text-sm font-semibold tracking-wide text-slate-900\">{{projectName}}</div>\n        <nav className=\"hidden items-center gap-6 text-sm text-slate-600 md:flex\">\n          <a href=\"#overview\" className=\"hover:text-slate-900\">Overview</a>\n          <a href=\"#solutions\" className=\"hover:text-slate-900\">Solutions</a>\n          <a href=\"#contact\" className=\"hover:text-slate-900\">Contact</a>\n        </nav>\n        <button className=\"rounded-md bg-indigo-600 px-3 py-2 text-xs font-semibold text-white\">Get Demo</button>\n      </div>\n    </header>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-navbar-light-25",
+      "name": "NavbarLightCorporate25",
+      "category": "navbar",
+      "subcategory": "sticky-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function NavbarLightCorporate25() {\n  return (\n    <header className=\"sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur\">\n      <div className=\"mx-auto flex h-16 max-w-7xl items-center justify-between px-6\">\n        <div className=\"text-sm font-semibold tracking-wide text-slate-900\">{{projectName}}</div>\n        <nav className=\"hidden items-center gap-6 text-sm text-slate-600 md:flex\">\n          <a href=\"#overview\" className=\"hover:text-slate-900\">Overview</a>\n          <a href=\"#solutions\" className=\"hover:text-slate-900\">Solutions</a>\n          <a href=\"#contact\" className=\"hover:text-slate-900\">Contact</a>\n        </nav>\n        <button className=\"rounded-md bg-slate-600 px-3 py-2 text-xs font-semibold text-white\">Get Demo</button>\n      </div>\n    </header>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-navbar-light-26",
+      "name": "NavbarLightCorporate26",
+      "category": "navbar",
+      "subcategory": "corporate-simple",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function NavbarLightCorporate26() {\n  return (\n    <header className=\"sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur\">\n      <div className=\"mx-auto flex h-16 max-w-7xl items-center justify-between px-6\">\n        <div className=\"text-sm font-semibold tracking-wide text-slate-900\">{{projectName}}</div>\n        <nav className=\"hidden items-center gap-6 text-sm text-slate-600 md:flex\">\n          <a href=\"#overview\" className=\"hover:text-slate-900\">Overview</a>\n          <a href=\"#solutions\" className=\"hover:text-slate-900\">Solutions</a>\n          <a href=\"#contact\" className=\"hover:text-slate-900\">Contact</a>\n        </nav>\n        <button className=\"rounded-md bg-indigo-600 px-3 py-2 text-xs font-semibold text-white\">Get Demo</button>\n      </div>\n    </header>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-navbar-light-27",
+      "name": "NavbarLightCorporate27",
+      "category": "navbar",
+      "subcategory": "compact-links",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function NavbarLightCorporate27() {\n  return (\n    <header className=\"sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur\">\n      <div className=\"mx-auto flex h-16 max-w-7xl items-center justify-between px-6\">\n        <div className=\"text-sm font-semibold tracking-wide text-slate-900\">{{projectName}}</div>\n        <nav className=\"hidden items-center gap-6 text-sm text-slate-600 md:flex\">\n          <a href=\"#overview\" className=\"hover:text-slate-900\">Overview</a>\n          <a href=\"#solutions\" className=\"hover:text-slate-900\">Solutions</a>\n          <a href=\"#contact\" className=\"hover:text-slate-900\">Contact</a>\n        </nav>\n        <button className=\"rounded-md bg-slate-600 px-3 py-2 text-xs font-semibold text-white\">Get Demo</button>\n      </div>\n    </header>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-navbar-light-28",
+      "name": "NavbarLightCorporate28",
+      "category": "navbar",
+      "subcategory": "sticky-clean",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function NavbarLightCorporate28() {\n  return (\n    <header className=\"sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur\">\n      <div className=\"mx-auto flex h-16 max-w-7xl items-center justify-between px-6\">\n        <div className=\"text-sm font-semibold tracking-wide text-slate-900\">{{projectName}}</div>\n        <nav className=\"hidden items-center gap-6 text-sm text-slate-600 md:flex\">\n          <a href=\"#overview\" className=\"hover:text-slate-900\">Overview</a>\n          <a href=\"#solutions\" className=\"hover:text-slate-900\">Solutions</a>\n          <a href=\"#contact\" className=\"hover:text-slate-900\">Contact</a>\n        </nav>\n        <button className=\"rounded-md bg-indigo-600 px-3 py-2 text-xs font-semibold text-white\">Get Demo</button>\n      </div>\n    </header>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-navbar-light-29",
+      "name": "NavbarLightCorporate29",
+      "category": "navbar",
+      "subcategory": "corporate-simple",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": false
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function NavbarLightCorporate29() {\n  return (\n    <header className=\"sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur\">\n      <div className=\"mx-auto flex h-16 max-w-7xl items-center justify-between px-6\">\n        <div className=\"text-sm font-semibold tracking-wide text-slate-900\">{{projectName}}</div>\n        <nav className=\"hidden items-center gap-6 text-sm text-slate-600 md:flex\">\n          <a href=\"#overview\" className=\"hover:text-slate-900\">Overview</a>\n          <a href=\"#solutions\" className=\"hover:text-slate-900\">Solutions</a>\n          <a href=\"#contact\" className=\"hover:text-slate-900\">Contact</a>\n        </nav>\n        <button className=\"rounded-md bg-slate-600 px-3 py-2 text-xs font-semibold text-white\">Get Demo</button>\n      </div>\n    </header>\n  );\n}\n"
+      }
+    },
+    {
+      "id": "corp-navbar-light-30",
+      "name": "NavbarLightCorporate30",
+      "category": "navbar",
+      "subcategory": "compact-links",
+      "tags": {
+        "industry": [
+          "saas",
+          "enterprise",
+          "agency"
+        ],
+        "tone": [
+          "clean",
+          "modern",
+          "corporate"
+        ],
+        "theme": [
+          "light"
+        ],
+        "premium": true
+      },
+      "code": {
+        "framework": "react",
+        "styling": "tailwind",
+        "snippet": "export default function NavbarLightCorporate30() {\n  return (\n    <header className=\"sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur\">\n      <div className=\"mx-auto flex h-16 max-w-7xl items-center justify-between px-6\">\n        <div className=\"text-sm font-semibold tracking-wide text-slate-900\">{{projectName}}</div>\n        <nav className=\"hidden items-center gap-6 text-sm text-slate-600 md:flex\">\n          <a href=\"#overview\" className=\"hover:text-slate-900\">Overview</a>\n          <a href=\"#solutions\" className=\"hover:text-slate-900\">Solutions</a>\n          <a href=\"#contact\" className=\"hover:text-slate-900\">Contact</a>\n        </nav>\n        <button className=\"rounded-md bg-indigo-600 px-3 py-2 text-xs font-semibold text-white\">Get Demo</button>\n      </div>\n    </header>\n  );\n}\n"
+      }
+    }
+  ]
+}

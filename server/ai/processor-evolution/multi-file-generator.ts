@@ -45,14 +45,20 @@ export class MultiFileGenerator {
    */
   async generate(code: string, mainFileName: string = 'App.tsx'): Promise<MultiFileResult> {
     try {
-      const sourceFile = this.project.createSourceFile(mainFileName, code, { overwrite: true });
+      const normalizedMainFile = this.normalizeMainFile(mainFileName);
+      const sourceFile = this.project.createSourceFile(normalizedMainFile, code, { overwrite: true });
       const files: FileDefinition[] = [];
+      const sourceRoot = normalizedMainFile.startsWith('src/') ? 'src' : '';
+      const withRoot = (relativePath: string): string => {
+        const clean = relativePath.replace(/^\.?\//, '');
+        return sourceRoot ? `${sourceRoot}/${clean}` : clean;
+      };
 
       // 1. Extract components
       const components = this.extractComponents(sourceFile);
       components.forEach(comp => {
         files.push({
-          path: `components/${comp.name}.tsx`,
+          path: withRoot(`components/${comp.name}.tsx`),
           type: 'component',
           content: comp.content,
           purpose: comp.purpose,
@@ -64,7 +70,7 @@ export class MultiFileGenerator {
       const hooks = this.extractHooks(sourceFile);
       hooks.forEach(hook => {
         files.push({
-          path: `hooks/${hook.name}.ts`,
+          path: withRoot(`hooks/${hook.name}.ts`),
           type: 'hook',
           content: hook.content,
           purpose: hook.purpose,
@@ -76,7 +82,7 @@ export class MultiFileGenerator {
       const utils = this.extractUtils(sourceFile);
       utils.forEach(util => {
         files.push({
-          path: `utils/${util.name}.ts`,
+          path: withRoot(`utils/${util.name}.ts`),
           type: 'util',
           content: util.content,
           purpose: util.purpose,
@@ -88,7 +94,7 @@ export class MultiFileGenerator {
       const types = this.extractTypes(sourceFile);
       types.forEach(type => {
         files.push({
-          path: `types/${type.name}.ts`,
+          path: withRoot(`types/${type.name}.ts`),
           type: 'type',
           content: type.content,
           purpose: type.purpose,
@@ -99,7 +105,7 @@ export class MultiFileGenerator {
       // 5. Create main App.tsx with imports
       const mainContent = this.createMainFile(sourceFile, components, hooks, utils, types);
       files.unshift({
-        path: 'App.tsx',
+        path: normalizedMainFile,
         type: 'component',
         content: mainContent,
         purpose: 'Root application component',
@@ -121,7 +127,7 @@ export class MultiFileGenerator {
       return {
         files,
         structure: {
-          root: 'App.tsx',
+          root: normalizedMainFile,
           components: components.map(c => c.name),
           hooks: hooks.map(h => h.name),
           utils: utils.map(u => u.name),
@@ -133,14 +139,14 @@ export class MultiFileGenerator {
       // Fallback: Return single file
       return {
         files: [{
-          path: mainFileName,
+          path: this.normalizeMainFile(mainFileName),
           type: 'component',
           content: code,
           purpose: 'Main application file',
           dependencies: [],
         }],
         structure: {
-          root: mainFileName,
+          root: this.normalizeMainFile(mainFileName),
           components: [],
           hooks: [],
           utils: [],
@@ -148,6 +154,15 @@ export class MultiFileGenerator {
         },
       };
     }
+  }
+
+  private normalizeMainFile(path: string): string {
+    const normalized = String(path || 'src/App.tsx').replace(/\\/g, '/').replace(/^\.?\//, '');
+    if (/^src\/.+\.(tsx|jsx|ts|js)$/i.test(normalized)) return normalized;
+    if (/^[A-Za-z0-9/_-]+\.(tsx|jsx|ts|js)$/i.test(normalized)) {
+      return normalized.startsWith('src/') ? normalized : `src/${normalized}`;
+    }
+    return 'src/App.tsx';
   }
 
   /**

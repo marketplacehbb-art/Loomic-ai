@@ -7,6 +7,10 @@ import { ThinkingProcess } from '../components/ThinkingProcess';
 import {
   api,
   Project,
+  type CloudOverviewResponse,
+  type CloudState,
+  type ProjectPublication,
+  type PublishAccess,
   type SupabaseIntegrationEnvironment,
   type SupabaseIntegrationEnvStatus,
   type VisualPatchApplyResponse,
@@ -19,7 +23,19 @@ import { useOperationHistory } from '../hooks/useOperationHistory';
 import { useVisualWorkflow, type VisualPatchDiagnostics } from '../hooks/useVisualWorkflow';
 import VisualEditPanel, { type VisualEditIntent } from '../components/VisualEditPanel';
 import SupabaseConnectModal from '../components/SupabaseConnectModal';
+import CloudWorkspace from '../components/CloudWorkspace';
+import PublishModal from '../components/PublishModal';
+import GenerationTimeline, {
+  TIMELINE_BUNDLING_INDEX,
+  TIMELINE_READY_INDEX,
+  createInitialTimelineState,
+  type TimelineStepState,
+} from '../components/GenerationTimeline';
 import { supabase } from '../lib/supabase';
+import {
+  normalizeRuntimeIssuePayload,
+  type PreviewRuntimeIssuePayload,
+} from './generator-runtime-utils';
 
 import { useUsage } from '../contexts/UsageContext';
 
@@ -32,15 +48,82 @@ const LUCIDE_ALIAS_CANONICAL: Record<string, string> = {
 };
 
 const MODEL_OPTIONS: Array<{
-  id: 'gemini' | 'deepseek' | 'openai';
+  id: 'gemini' | 'groq' | 'openai' | 'nvidia';
   name: string;
   icon: string;
   tone: string;
 }> = [
     { id: 'gemini', name: 'Gemini 2.0 Flash', icon: 'psychology', tone: 'text-blue-400' },
+    { id: 'groq', name: 'Llama 4 Maverick (Groq)', icon: 'bolt', tone: 'text-orange-400' },
     { id: 'openai', name: 'ChatGPT 4o', icon: 'auto_awesome', tone: 'text-green-400' },
-    { id: 'deepseek', name: 'DeepSeek Coder', icon: 'code', tone: 'text-violet-400' },
+    { id: 'nvidia', name: 'Qwen 3.5 397B (NVIDIA)', icon: 'memory', tone: 'text-emerald-300' },
   ];
+
+type ProviderId = 'gemini' | 'groq' | 'openai' | 'nvidia';
+type ProviderErrorCategory = 'rate_limit' | 'provider_down' | 'auth_error';
+
+interface ProviderRecoveryHint {
+  category: ProviderErrorCategory;
+  switchTo: ProviderId;
+}
+
+type SurfaceMode = 'preview' | 'analytics' | 'code' | 'cloud' | 'design' | 'security' | 'speed';
+
+const SURFACE_MODE_META: Record<SurfaceMode, { label: string; icon: string }> = {
+  preview: { label: 'Preview', icon: 'language' },
+  analytics: { label: 'Analytics', icon: 'query_stats' },
+  code: { label: 'Code', icon: 'code' },
+  cloud: { label: 'Cloud', icon: 'cloud' },
+  design: { label: 'Design', icon: 'palette' },
+  security: { label: 'Security', icon: 'shield' },
+  speed: { label: 'Speed', icon: 'speed' },
+};
+
+const SURFACE_MENU_MODES: SurfaceMode[] = ['analytics', 'cloud', 'code', 'design', 'security', 'speed'];
+const DEFAULT_PINNED_SURFACE_MODES: SurfaceMode[] = ['analytics', 'code', 'cloud'];
+
+interface RuntimeQualitySummary {
+  score: number;
+  grade: 'A' | 'B' | 'C' | 'D' | 'E';
+  status: 'excellent' | 'good' | 'needs_improvement' | 'critical';
+  pass: boolean;
+  criticalCount: number;
+  warningCount: number;
+  topIssues: string[];
+  recommendedAction?: string;
+  repair: {
+    attempted: boolean;
+    applied: boolean;
+    initialErrorCount: number;
+    finalErrorCount: number;
+    attemptsExecuted: number;
+    abortedReason?: string;
+  };
+}
+
+const isProviderId = (value: unknown): value is ProviderId =>
+  value === 'gemini' || value === 'groq' || value === 'openai' || value === 'nvidia';
+
+const getAlternateProvider = (provider: ProviderId): ProviderId => {
+  if (provider === 'gemini') return 'groq';
+  if (provider === 'groq') return 'openai';
+  if (provider === 'openai') return 'nvidia';
+  return 'groq';
+};
+
+const getProviderLabel = (provider: ProviderId): string => {
+  if (provider === 'openai') return 'OpenAI';
+  if (provider === 'groq') return 'Groq';
+  if (provider === 'nvidia') return 'NVIDIA';
+  return 'Gemini';
+};
+
+const normalizeProviderErrorCategory = (value: unknown): ProviderErrorCategory | null => {
+  if (value === 'rate_limit' || value === 'provider_down' || value === 'auth_error') {
+    return value;
+  }
+  return null;
+};
 
 interface VisualEditAnchorPayload {
   nodeId?: string;
@@ -66,6 +149,8 @@ interface PendingInlineDraft {
   anchor: VisualEditAnchorPayload;
   text: string;
 }
+
+type FixStatus = 'idle' | 'auto_fixed' | 'needs_fix';
 
 const escapeRegExp = (input: string): string =>
   input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -248,6 +333,40 @@ const detectBackendIntent = (prompt: string): boolean => {
   return BACKEND_INTENT_KEYWORDS.some((keyword) => normalized.includes(keyword));
 };
 
+type PlannerIntentTag = 'cloud' | 'security' | 'seo';
+
+const CLOUD_INTENT_KEYWORDS = ['supabase', 'database', 'auth', 'storage', 'edge function', 'sql', 'api'];
+const SECURITY_INTENT_KEYWORDS = ['security', 'secure', 'rls', 'policy', 'vulnerability', 'scan', 'owasp', 'secret'];
+const SEO_INTENT_KEYWORDS = ['seo', 'robots.txt', 'sitemap', 'meta tag', 'open graph', 'twitter card'];
+
+const detectPlannerIntentTags = (prompt: string): PlannerIntentTag[] => {
+  const normalized = prompt.toLowerCase();
+  const tags: PlannerIntentTag[] = [];
+  if (CLOUD_INTENT_KEYWORDS.some((keyword) => normalized.includes(keyword))) tags.push('cloud');
+  if (SECURITY_INTENT_KEYWORDS.some((keyword) => normalized.includes(keyword))) tags.push('security');
+  if (SEO_INTENT_KEYWORDS.some((keyword) => normalized.includes(keyword))) tags.push('seo');
+  return tags;
+};
+
+const toPlannerPromptFingerprint = (prompt: string): string =>
+  prompt
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+
+const isCloudEnableCommand = (prompt: string): boolean => {
+  const normalized = prompt.trim().toLowerCase();
+  if (!normalized) return false;
+  return [
+    'enable cloud',
+    'enable the cloud',
+    'activate cloud',
+    'cloud aktivieren',
+    'aktiviere cloud',
+    'cloud einschalten',
+  ].some((phrase) => normalized === phrase || normalized.includes(phrase));
+};
+
 const buildSupabaseGenerateContext = (
   status: Record<SupabaseIntegrationEnvironment, SupabaseIntegrationEnvStatus>
 ) => {
@@ -292,6 +411,61 @@ const extractDependenciesFromFiles = (inputFiles: Record<string, string>): Recor
   }
 };
 
+const DEFAULT_GENERATE_REQUEST_TIMEOUT_MS = 240_000;
+const configuredGenerateTimeoutMs = Number(import.meta.env.VITE_GENERATE_TIMEOUT_MS);
+const GENERATE_REQUEST_TIMEOUT_MS =
+  Number.isFinite(configuredGenerateTimeoutMs) && configuredGenerateTimeoutMs >= 90_000
+    ? Math.min(600_000, Math.round(configuredGenerateTimeoutMs))
+    : DEFAULT_GENERATE_REQUEST_TIMEOUT_MS;
+const GENERATE_TIMEOUT_MESSAGE = `Generation timed out after ${Math.round(GENERATE_REQUEST_TIMEOUT_MS / 1000)} seconds. Please try again.`;
+const TIMELINE_DEFAULT_TOTAL_MS = 22_000;
+const TIMELINE_AUTO_CLOSE_MS = 3_000;
+type TimelinePipelinePath = 'fast' | 'deep';
+
+const normalizeTimelinePipelinePath = (value: unknown): TimelinePipelinePath | null => {
+  if (value === 'fast' || value === 'deep') return value;
+  return null;
+};
+
+const toNumericLatency = (value: unknown): number | null => {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return null;
+  if (value <= 0) return null;
+  return Math.min(90_000, Math.max(2_000, Math.round(value)));
+};
+
+const buildTimelineTransitionThresholds = (pipeline: TimelinePipelinePath, totalMs: number): number[] => {
+  const safeTotal = Math.min(90_000, Math.max(2_000, Math.round(totalMs)));
+  if (pipeline === 'fast') {
+    const firstWindow = safeTotal * 0.2;
+    const remaining = safeTotal - firstWindow;
+    return [
+      firstWindow * 0.5,
+      firstWindow,
+      firstWindow + remaining * 0.45,
+      firstWindow + remaining * 0.82,
+    ];
+  }
+  const segment = safeTotal / 5;
+  return [segment, segment * 2, segment * 3, segment * 4];
+};
+
+const extractTimelineTiming = (payload: any): { pipeline: TimelinePipelinePath; latencyMs: number } | null => {
+  const pipeline =
+    normalizeTimelinePipelinePath(payload?.pipelinePath) ||
+    normalizeTimelinePipelinePath(payload?.routing?.pipeline) ||
+    normalizeTimelinePipelinePath(payload?.pipeline?.path) ||
+    normalizeTimelinePipelinePath(payload?.pipeline?.pipelinePath);
+
+  const latencyMs =
+    toNumericLatency(payload?.latencyMs) ||
+    toNumericLatency(payload?.routing?.latencyMs) ||
+    toNumericLatency(payload?.pipeline?.latencyMs) ||
+    toNumericLatency(payload?.duration);
+
+  if (!pipeline || !latencyMs) return null;
+  return { pipeline, latencyMs };
+};
+
 const parseJsonPayload = (raw: string, errorPrefix: string): any => {
   if (typeof raw !== 'string' || raw.trim().length === 0) {
     throw new Error(`${errorPrefix}: leere Antwort`);
@@ -301,6 +475,114 @@ const parseJsonPayload = (raw: string, errorPrefix: string): any => {
   } catch {
     throw new Error(`${errorPrefix}: ungueltiges JSON`);
   }
+};
+
+const fetchGenerateWithTimeout = async (accessToken: string, payload: Record<string, unknown>) => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), GENERATE_REQUEST_TIMEOUT_MS);
+  try {
+    return await fetch('/api/generate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+  } catch (error: any) {
+    if (error?.name === 'AbortError') {
+      throw new Error(GENERATE_TIMEOUT_MESSAGE);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+};
+
+const toRuntimeQualitySummary = (payload: any): RuntimeQualitySummary | null => {
+  const summary = payload?.pipeline?.qualitySummary;
+  if (summary && typeof summary === 'object' && typeof summary.score === 'number') {
+    return {
+      score: Math.max(0, Math.min(100, Math.round(summary.score))),
+      grade: ['A', 'B', 'C', 'D', 'E'].includes(summary.grade) ? summary.grade : 'C',
+      status: ['excellent', 'good', 'needs_improvement', 'critical'].includes(summary.status)
+        ? summary.status
+        : 'needs_improvement',
+      pass: Boolean(summary.pass),
+      criticalCount: Number(summary.criticalCount) || 0,
+      warningCount: Number(summary.warningCount) || 0,
+      topIssues: Array.isArray(summary.topIssues)
+        ? summary.topIssues.filter((item: unknown): item is string => typeof item === 'string').slice(0, 3)
+        : [],
+      recommendedAction: typeof summary.recommendedAction === 'string' ? summary.recommendedAction : undefined,
+      repair: {
+        attempted: Boolean(summary?.repair?.attempted),
+        applied: Boolean(summary?.repair?.applied),
+        initialErrorCount: Number(summary?.repair?.initialErrorCount) || 0,
+        finalErrorCount: Number(summary?.repair?.finalErrorCount) || 0,
+        attemptsExecuted: Number(summary?.repair?.attemptsExecuted) || 0,
+        abortedReason: typeof summary?.repair?.abortedReason === 'string' ? summary.repair.abortedReason : undefined,
+      },
+    };
+  }
+
+  const qualityGate = payload?.pipeline?.qualityGate;
+  if (!qualityGate || typeof qualityGate.overall !== 'number') return null;
+
+  const score = Math.max(0, Math.min(100, Math.round(qualityGate.overall)));
+  const grade: RuntimeQualitySummary['grade'] = score >= 90 ? 'A' : score >= 80 ? 'B' : score >= 70 ? 'C' : score >= 60 ? 'D' : 'E';
+  const criticalCount = Number(qualityGate.criticalCount) || 0;
+  const warningCount = Number(qualityGate.warningCount) || 0;
+  const status: RuntimeQualitySummary['status'] =
+    criticalCount > 0 || score < 50
+      ? 'critical'
+      : (!qualityGate.pass || warningCount >= 3 || score < 70)
+        ? 'needs_improvement'
+        : (score >= 85 && warningCount === 0)
+          ? 'excellent'
+          : 'good';
+  const findings = Array.isArray(qualityGate.findings) ? qualityGate.findings : [];
+  const topIssues = findings
+    .filter((item: any) => item?.severity === 'critical' || item?.severity === 'warning')
+    .slice(0, 3)
+    .map((item: any) => String(item?.message || '').trim())
+    .filter(Boolean);
+  const autoRepair = payload?.pipeline?.autoRepair;
+
+  return {
+    score,
+    grade,
+    status,
+    pass: Boolean(qualityGate.pass),
+    criticalCount,
+    warningCount,
+    topIssues,
+    recommendedAction: undefined,
+    repair: {
+      attempted: Boolean(autoRepair?.attempted),
+      applied: Boolean(autoRepair?.applied),
+      initialErrorCount: Number(autoRepair?.initialErrorCount) || 0,
+      finalErrorCount: Number(autoRepair?.finalErrorCount) || 0,
+      attemptsExecuted: Number(autoRepair?.attemptsExecuted) || 0,
+      abortedReason: typeof autoRepair?.abortedReason === 'string' ? autoRepair.abortedReason : undefined,
+    },
+  };
+};
+
+const mergeDependencyMaps = (
+  ...sources: Array<Record<string, string> | null | undefined>
+): Record<string, string> => {
+  const merged: Record<string, string> = {};
+  sources.forEach((source) => {
+    if (!source || typeof source !== 'object') return;
+    Object.entries(source).forEach(([name, version]) => {
+      if (typeof name !== 'string' || !name.trim()) return;
+      if (typeof version !== 'string' || !version.trim()) return;
+      merged[name] = version;
+    });
+  });
+  return merged;
 };
 
 const buildVisualPatchErrorMessage = (response: VisualPatchApplyResponse, fallback: string): string => {
@@ -343,11 +625,31 @@ export default function Generator() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const knowledgeInputRef = useRef<HTMLInputElement>(null);
 
-  const [view, setView] = useState<'preview' | 'code'>('preview');
+  const [, setView] = useState<'preview' | 'code'>('preview');
+  const [activeSurfaceMode, setActiveSurfaceMode] = useState<SurfaceMode>('preview');
+  const [showSurfaceMenu, setShowSurfaceMenu] = useState(false);
+  const [pinnedSurfaceModes, setPinnedSurfaceModes] = useState<SurfaceMode[]>(DEFAULT_PINNED_SURFACE_MODES);
   const [workspaceMode, setWorkspaceMode] = useState<'chat' | 'visual'>('chat');
   const [loading, setLoading] = useState(false);
+  const [isGeneratingLocked, setIsGeneratingLocked] = useState(false);
+  const [isAutoRepairing, setIsAutoRepairing] = useState(false);
+  const [timelineOpen, setTimelineOpen] = useState(false);
+  const [timelineSteps, setTimelineSteps] = useState<TimelineStepState[]>(() => createInitialTimelineState());
+  const [timelineCurrentStep, setTimelineCurrentStep] = useState(0);
+  const [timelineStartedAt, setTimelineStartedAt] = useState<number | null>(null);
+  const [timelineActiveStepStartedAt, setTimelineActiveStepStartedAt] = useState<number | null>(null);
+  const [timelineRunning, setTimelineRunning] = useState(false);
+  const [fixStatus, setFixStatus] = useState<FixStatus>('idle');
+  const [fixErrorContext, setFixErrorContext] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isRateLimited, setIsRateLimited] = useState(false);
+  const [, setIsRateLimited] = useState(false);
+  const [providerRecoveryHint, setProviderRecoveryHint] = useState<ProviderRecoveryHint | null>(null);
+  const [lastQualitySummary, setLastQualitySummary] = useState<RuntimeQualitySummary | null>(null);
+  const [pendingIntentPlan, setPendingIntentPlan] = useState<{
+    prompt: string;
+    intents: PlannerIntentTag[];
+  } | null>(null);
+  const [ignoredPlannerPromptFingerprint, setIgnoredPlannerPromptFingerprint] = useState<string | null>(null);
   const [lastVisualDiagnostics, setLastVisualDiagnostics] = useState<VisualPatchDiagnostics | null>(null);
 
   // Enterprise Feature 5: Pending Patch for Review
@@ -360,6 +662,7 @@ export default function Generator() {
 
   // Enterprise Feature 6: Operation-Level History
   const operationHistory = useOperationHistory(50);
+  const pushOperationHistory = operationHistory.push;
 
   // Use History Hook for Files
   const {
@@ -369,7 +672,7 @@ export default function Generator() {
   } = useHistory<Record<string, string>>({});
 
   const [dependencies, setDependencies] = useState<Record<string, string>>({});
-  const [provider, setProvider] = useState<'gemini' | 'deepseek' | 'openai'>('gemini');
+  const [provider, setProvider] = useState<ProviderId>('gemini');
   const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant', content: string }>>([]);
   const [lastContextCount, setLastContextCount] = useState<number | null>(null);
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
@@ -379,18 +682,43 @@ export default function Generator() {
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const [showModelSwitcher, setShowModelSwitcher] = useState(false);
   const [showSupabaseModal, setShowSupabaseModal] = useState(false);
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  const [publication, setPublication] = useState<ProjectPublication | null>(null);
+  const [publishLoading, setPublishLoading] = useState(false);
+  const [publishSubmitting, setPublishSubmitting] = useState(false);
   const [supabaseStatus, setSupabaseStatus] = useState<Record<SupabaseIntegrationEnvironment, SupabaseIntegrationEnvStatus>>(defaultSupabaseIntegrationStatus);
   const [supabaseStatusLoading, setSupabaseStatusLoading] = useState(false);
-  const [projectList, setProjectList] = useState<Project[]>([]);
+  const [cloudState, setCloudState] = useState<CloudState | null>(null);
+  const [cloudStateLoading, setCloudStateLoading] = useState(false);
+  const [cloudOverview, setCloudOverview] = useState<CloudOverviewResponse | null>(null);
+  const [cloudOverviewLoading, setCloudOverviewLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const modelSwitcherRef = useRef<HTMLDivElement>(null);
+  const surfaceMenuRef = useRef<HTMLDivElement>(null);
   const previewBlobUrlRef = useRef<string | null>(null);
+  const isGenerating = useRef(false);
+  const timelineStepsRef = useRef<TimelineStepState[]>(createInitialTimelineState());
+  const timelineActiveStepIndexRef = useRef(0);
+  const timelineActiveStepStartedAtRef = useRef<number | null>(null);
+  const timelineStartedAtRef = useRef<number | null>(null);
+  const timelineTerminalStateRef = useRef<'idle' | 'running' | 'failed' | 'success'>('idle');
+  const timelineRunIdRef = useRef(0);
+  const timelineTransitionTimersRef = useRef<number[]>([]);
+  const timelineAutoCloseTimerRef = useRef<number | null>(null);
+  const timelineDismissedRef = useRef(false);
   const lastLocalProjectWriteAtRef = useRef(0);
   const lastAppliedFileMapRef = useRef('{}');
   const liveChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const liveClientIdRef = useRef<string>(`client-${Math.random().toString(36).slice(2, 10)}`);
+  const lastSecurityWarningRef = useRef<string>('');
   const [liveEnabled] = useState(true);
   const [, setLivePeerCount] = useState(1);
+
+  useEffect(() => {
+    if (currentProject?.id) {
+      localStorage.setItem('active_project_id', currentProject.id);
+    }
+  }, [currentProject?.id]);
 
   const commitPreviewPath = useCallback((nextPath: string) => {
     const normalized = normalizePreviewPath(nextPath);
@@ -401,6 +729,228 @@ export default function Generator() {
   const refreshPreview = useCallback(() => {
     setPreviewRefreshToken((value) => value + 1);
   }, []);
+
+  const syncTimelineSteps = useCallback((nextSteps: TimelineStepState[]) => {
+    timelineStepsRef.current = nextSteps;
+    setTimelineSteps(nextSteps);
+  }, []);
+
+  const clearTimelineTransitionTimers = useCallback(() => {
+    timelineTransitionTimersRef.current.forEach((timer) => window.clearTimeout(timer));
+    timelineTransitionTimersRef.current = [];
+  }, []);
+
+  const clearTimelineAutoCloseTimer = useCallback(() => {
+    if (timelineAutoCloseTimerRef.current !== null) {
+      window.clearTimeout(timelineAutoCloseTimerRef.current);
+      timelineAutoCloseTimerRef.current = null;
+    }
+  }, []);
+
+  const advanceTimelineStep = useCallback((transitionAt = Date.now()) => {
+    if (timelineTerminalStateRef.current !== 'running') return;
+    const currentIndex = timelineActiveStepIndexRef.current;
+    if (currentIndex >= TIMELINE_BUNDLING_INDEX) return;
+
+    const stepStartedAt = timelineActiveStepStartedAtRef.current ?? transitionAt;
+    const nextIndex = currentIndex + 1;
+    const nextSteps = timelineStepsRef.current.map((step, index) => {
+      if (index < currentIndex) {
+        return step.status === 'done' ? step : { ...step, status: 'done' as const };
+      }
+      if (index === currentIndex) {
+        return {
+          ...step,
+          status: 'done' as const,
+          durationMs: step.durationMs ?? Math.max(0, transitionAt - stepStartedAt),
+        };
+      }
+      if (index === nextIndex) {
+        return { ...step, status: 'active' as const };
+      }
+      if (step.status === 'failed') {
+        return { ...step, status: 'pending' as const, durationMs: null };
+      }
+      return step;
+    });
+
+    timelineActiveStepIndexRef.current = nextIndex;
+    timelineActiveStepStartedAtRef.current = transitionAt;
+    setTimelineCurrentStep(nextIndex);
+    setTimelineActiveStepStartedAt(transitionAt);
+    syncTimelineSteps(nextSteps);
+  }, [syncTimelineSteps]);
+
+  const scheduleTimelineProgress = useCallback((pipeline: TimelinePipelinePath, totalMs: number) => {
+    if (timelineDismissedRef.current) return;
+    if (timelineTerminalStateRef.current !== 'running') return;
+    const startedAt = timelineStartedAtRef.current;
+    if (!startedAt) return;
+
+    clearTimelineTransitionTimers();
+    const thresholds = buildTimelineTransitionThresholds(pipeline, totalMs);
+    const runId = timelineRunIdRef.current;
+
+    while (timelineActiveStepIndexRef.current < TIMELINE_BUNDLING_INDEX) {
+      const index = timelineActiveStepIndexRef.current;
+      const dueAt = startedAt + thresholds[index];
+      if (Date.now() < dueAt) break;
+      advanceTimelineStep(dueAt);
+    }
+
+    for (let index = timelineActiveStepIndexRef.current; index < TIMELINE_BUNDLING_INDEX; index += 1) {
+      const dueAt = startedAt + thresholds[index];
+      const delay = Math.max(0, dueAt - Date.now());
+      const timer = window.setTimeout(() => {
+        if (timelineRunIdRef.current !== runId) return;
+        if (timelineTerminalStateRef.current !== 'running') return;
+        advanceTimelineStep(Math.max(dueAt, Date.now()));
+      }, delay);
+      timelineTransitionTimersRef.current.push(timer);
+    }
+  }, [advanceTimelineStep, clearTimelineTransitionTimers]);
+
+  const startTimeline = useCallback(() => {
+    if (timelineDismissedRef.current) return;
+    const startedAt = Date.now();
+    timelineRunIdRef.current += 1;
+    clearTimelineTransitionTimers();
+    clearTimelineAutoCloseTimer();
+
+    timelineTerminalStateRef.current = 'running';
+    timelineActiveStepIndexRef.current = 0;
+    timelineActiveStepStartedAtRef.current = startedAt;
+    timelineStartedAtRef.current = startedAt;
+
+    const initialState = createInitialTimelineState();
+    syncTimelineSteps(initialState);
+    setTimelineCurrentStep(0);
+    setTimelineStartedAt(startedAt);
+    setTimelineActiveStepStartedAt(startedAt);
+    setTimelineRunning(true);
+    setTimelineOpen(true);
+
+    scheduleTimelineProgress('deep', TIMELINE_DEFAULT_TOTAL_MS);
+  }, [
+    clearTimelineAutoCloseTimer,
+    clearTimelineTransitionTimers,
+    scheduleTimelineProgress,
+    syncTimelineSteps,
+  ]);
+
+  const applyTimelineTiming = useCallback((payload: any) => {
+    if (timelineDismissedRef.current) return;
+    if (timelineTerminalStateRef.current !== 'running') return;
+    const timing = extractTimelineTiming(payload);
+    if (!timing) return;
+    scheduleTimelineProgress(timing.pipeline, timing.latencyMs);
+  }, [scheduleTimelineProgress]);
+
+  const markTimelineFailed = useCallback(() => {
+    if (timelineDismissedRef.current) return;
+    if (timelineTerminalStateRef.current !== 'running') return;
+
+    clearTimelineTransitionTimers();
+    clearTimelineAutoCloseTimer();
+
+    const failedAt = Date.now();
+    const activeIndex = Math.min(timelineActiveStepIndexRef.current, TIMELINE_BUNDLING_INDEX);
+    const stepStartedAt = timelineActiveStepStartedAtRef.current ?? failedAt;
+
+    const nextSteps = timelineStepsRef.current.map((step, index) => {
+      if (index < activeIndex) {
+        return step.status === 'done'
+          ? step
+          : { ...step, status: 'done' as const, durationMs: step.durationMs ?? 0 };
+      }
+      if (index === activeIndex) {
+        return {
+          ...step,
+          status: 'failed' as const,
+          durationMs: step.durationMs ?? Math.max(0, failedAt - stepStartedAt),
+        };
+      }
+      return { ...step, status: 'pending' as const, durationMs: null };
+    });
+
+    timelineTerminalStateRef.current = 'failed';
+    timelineActiveStepStartedAtRef.current = null;
+    setTimelineActiveStepStartedAt(null);
+    setTimelineCurrentStep(activeIndex);
+    setTimelineRunning(false);
+    setTimelineOpen(true);
+    syncTimelineSteps(nextSteps);
+  }, [
+    clearTimelineAutoCloseTimer,
+    clearTimelineTransitionTimers,
+    syncTimelineSteps,
+  ]);
+
+  const markTimelineReady = useCallback(() => {
+    if (timelineDismissedRef.current) return;
+    if (timelineTerminalStateRef.current !== 'running') return;
+
+    clearTimelineTransitionTimers();
+    clearTimelineAutoCloseTimer();
+
+    const readyAt = Date.now();
+    const activeIndex = Math.min(timelineActiveStepIndexRef.current, TIMELINE_BUNDLING_INDEX);
+    const stepStartedAt = timelineActiveStepStartedAtRef.current ?? readyAt;
+
+    const nextSteps = timelineStepsRef.current.map((step, index) => {
+      if (index < activeIndex) {
+        return { ...step, status: 'done' as const, durationMs: step.durationMs ?? 0 };
+      }
+      if (index === activeIndex) {
+        return {
+          ...step,
+          status: 'done' as const,
+          durationMs: step.durationMs ?? Math.max(0, readyAt - stepStartedAt),
+        };
+      }
+      if (index <= TIMELINE_BUNDLING_INDEX) {
+        return { ...step, status: 'done' as const, durationMs: step.durationMs ?? 0 };
+      }
+      if (index === TIMELINE_READY_INDEX) {
+        return { ...step, status: 'done' as const, durationMs: 0 };
+      }
+      return step;
+    });
+
+    timelineTerminalStateRef.current = 'success';
+    timelineActiveStepIndexRef.current = TIMELINE_READY_INDEX;
+    timelineActiveStepStartedAtRef.current = null;
+    setTimelineActiveStepStartedAt(null);
+    setTimelineCurrentStep(TIMELINE_READY_INDEX);
+    setTimelineRunning(false);
+    setTimelineOpen(true);
+    syncTimelineSteps(nextSteps);
+
+    timelineAutoCloseTimerRef.current = window.setTimeout(() => {
+      if (timelineDismissedRef.current) return;
+      setTimelineOpen(false);
+    }, TIMELINE_AUTO_CLOSE_MS);
+  }, [
+    clearTimelineAutoCloseTimer,
+    clearTimelineTransitionTimers,
+    syncTimelineSteps,
+  ]);
+
+  const handleTimelineClose = useCallback(() => {
+    timelineDismissedRef.current = true;
+    timelineTerminalStateRef.current = 'idle';
+    clearTimelineTransitionTimers();
+    clearTimelineAutoCloseTimer();
+    setTimelineRunning(false);
+    setTimelineOpen(false);
+  }, [clearTimelineAutoCloseTimer, clearTimelineTransitionTimers]);
+
+  useEffect(() => {
+    return () => {
+      clearTimelineTransitionTimers();
+      clearTimelineAutoCloseTimer();
+    };
+  }, [clearTimelineAutoCloseTimer, clearTimelineTransitionTimers]);
 
   const openPreviewInNewTab = useCallback(() => {
     if (!latestPreviewHtml) return;
@@ -441,6 +991,164 @@ export default function Generator() {
       setSupabaseStatusLoading(false);
     }
   }, []);
+
+  const loadCloudState = useCallback(async (projectId?: string) => {
+    if (!projectId) {
+      setCloudState(null);
+      return;
+    }
+    try {
+      setCloudStateLoading(true);
+      const response = await api.getCloudState(projectId);
+      if (response.success && response.state) {
+        setCloudState(response.state);
+      } else {
+        setCloudState(null);
+      }
+    } catch (stateError) {
+      console.error('Failed to load cloud state:', stateError);
+      setCloudState(null);
+    } finally {
+      setCloudStateLoading(false);
+    }
+  }, []);
+
+  const loadCloudOverview = useCallback(async (projectId?: string, environment?: SupabaseIntegrationEnvironment) => {
+    if (!projectId) {
+      setCloudOverview(null);
+      return;
+    }
+
+    try {
+      setCloudOverviewLoading(true);
+      const response = await api.getCloudOverview(projectId, environment);
+      if (response.success) {
+        setCloudOverview(response);
+      } else {
+        setCloudOverview(null);
+      }
+    } catch (overviewError) {
+      console.error('Failed to load cloud overview:', overviewError);
+      setCloudOverview(null);
+    } finally {
+      setCloudOverviewLoading(false);
+    }
+  }, []);
+
+  const loadPublishStatus = useCallback(async (projectId?: string) => {
+    if (!projectId) {
+      setPublication(null);
+      return;
+    }
+
+    try {
+      setPublishLoading(true);
+      const response = await api.getPublishStatus(projectId);
+      if (response.success && response.publication) {
+        setPublication(response.publication);
+      } else {
+        setPublication(null);
+      }
+    } catch (publishError) {
+      console.error('Failed to load publish status:', publishError);
+      setPublication(null);
+    } finally {
+      setPublishLoading(false);
+    }
+  }, []);
+
+  const publishProject = useCallback(async (input: {
+    slug: string;
+    access: PublishAccess;
+    siteTitle?: string;
+    siteDescription?: string;
+  }) => {
+    if (!currentProject?.id) {
+      setError('Bitte zuerst ein Projekt laden oder erstellen.');
+      return;
+    }
+    try {
+      setPublishSubmitting(true);
+      setError(null);
+      const response = await api.publishProject({
+        projectId: currentProject.id,
+        slug: input.slug,
+        access: input.access,
+        siteTitle: input.siteTitle,
+        siteDescription: input.siteDescription,
+      });
+      if (!response.success || !response.publication) {
+        throw new Error(response.error || 'Projekt konnte nicht veroeffentlicht werden.');
+      }
+      const published = response.publication;
+      setPublication(published);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: `Publish live: ${published.publishedUrl || `https://${published.slug}.loomic.app`}`,
+        },
+      ]);
+    } catch (publishError: any) {
+      console.error('Failed to publish project:', publishError);
+      setError(publishError?.message || 'Projekt konnte nicht veroeffentlicht werden.');
+    } finally {
+      setPublishSubmitting(false);
+    }
+  }, [currentProject?.id]);
+
+  const unpublishProject = useCallback(async () => {
+    if (!currentProject?.id) {
+      setError('Bitte zuerst ein Projekt laden oder erstellen.');
+      return;
+    }
+    try {
+      setPublishSubmitting(true);
+      setError(null);
+      const response = await api.unpublishProject({ projectId: currentProject.id });
+      if (!response.success || !response.publication) {
+        throw new Error(response.error || 'Projekt konnte nicht zurueckgezogen werden.');
+      }
+      setPublication(response.publication);
+      setMessages((prev) => [
+        ...prev,
+        { role: 'assistant', content: 'Publish deaktiviert. Projekt ist wieder im Draft-Status.' },
+      ]);
+    } catch (unpublishError: any) {
+      console.error('Failed to unpublish project:', unpublishError);
+      setError(unpublishError?.message || 'Unpublish fehlgeschlagen.');
+    } finally {
+      setPublishSubmitting(false);
+    }
+  }, [currentProject?.id]);
+
+  const enableCloud = useCallback(async (source: string = 'manual') => {
+    if (!currentProject?.id) {
+      setError('Bitte zuerst ein Projekt laden oder erstellen.');
+      return false;
+    }
+
+    try {
+      setError(null);
+      const response = await api.enableCloud({
+        projectId: currentProject.id,
+        source,
+      });
+      if (!response.success || !response.state) {
+        throw new Error(response.error || 'Cloud konnte nicht aktiviert werden.');
+      }
+      setCloudState(response.state);
+      await Promise.all([
+        loadCloudOverview(currentProject.id),
+        loadSupabaseIntegrationStatus(currentProject.id),
+      ]);
+      return true;
+    } catch (cloudError: any) {
+      console.error('Failed to enable cloud:', cloudError);
+      setError(cloudError?.message || 'Cloud konnte nicht aktiviert werden.');
+      return false;
+    }
+  }, [currentProject?.id, loadCloudOverview, loadSupabaseIntegrationStatus]);
 
   const startSupabaseConnect = useCallback(async (input: { environment: SupabaseIntegrationEnvironment; projectRef?: string }) => {
     if (!currentProject?.id) {
@@ -484,6 +1192,7 @@ export default function Generator() {
       }
 
       await loadSupabaseIntegrationStatus(currentProject.id);
+      await loadCloudOverview(currentProject.id);
       setMessages((prev) => [
         ...prev,
         {
@@ -495,7 +1204,7 @@ export default function Generator() {
       console.error('Failed to disconnect Supabase:', disconnectError);
       setError(disconnectError?.message || 'Supabase konnte nicht getrennt werden.');
     }
-  }, [currentProject?.id, loadSupabaseIntegrationStatus]);
+  }, [currentProject?.id, loadCloudOverview, loadSupabaseIntegrationStatus]);
 
   const normalizeAnchor = useCallback((anchor: VisualEditAnchorPayload): VisualEditAnchorPayload => ({
     nodeId: (anchor.nodeId || '').trim(),
@@ -557,6 +1266,172 @@ export default function Generator() {
     setMessages((prev) => [...prev, { role: 'assistant', content: entry.message }]);
     broadcastLiveSnapshot(entry.files, entry.dependencies);
   }, [broadcastLiveSnapshot, setFiles]);
+
+  const markNeedsFix = useCallback((message: string) => {
+    const normalized = String(message || '').trim();
+    if (!normalized) return;
+    setFixStatus('needs_fix');
+    setFixErrorContext(normalized);
+  }, []);
+
+  const handleFixIssue = useCallback(async () => {
+    if (loading || isApplyingVisualPatch || isAutoRepairing || isGenerating.current) return;
+    if (!session?.access_token) {
+      setError('Session abgelaufen. Bitte erneut einloggen.');
+      return;
+    }
+    if (Object.keys(files).length === 0) {
+      setError('Keine Projektdateien vorhanden, die repariert werden koennen.');
+      return;
+    }
+
+    const errorContext = (fixErrorContext || (typeof error === 'string' ? error : '') || 'Unknown runtime/build error').trim();
+    if (!errorContext) {
+      setError('Kein Fehlerkontext verfuegbar.');
+      return;
+    }
+
+    isGenerating.current = true;
+    setIsGeneratingLocked(true);
+    setIsAutoRepairing(true);
+    setFixStatus('needs_fix');
+
+    try {
+      const response = await fetchGenerateWithTimeout(
+        session.access_token,
+        {
+          provider,
+          mode: 'repair',
+          generationMode: 'edit',
+          prompt: 'Fix the current project runtime/build issue with minimal code changes.',
+          errorContext,
+          files,
+          validate: true,
+          bundle: true,
+          maxTokens: 1200,
+          projectId: currentProject?.id,
+          userId: user?.id,
+          featureFlags: {
+            enterprise: defaultEnterpriseFlags,
+          },
+        }
+      );
+
+      const text = await response.text();
+      const data = parseJsonPayload(text, `Manual Fix (${response.status})`);
+      if (data?.rateLimit) {
+        updateRateLimit(data.rateLimit);
+      }
+
+      const filesObj = (Array.isArray(data?.files) ? data.files : []).reduce((acc: Record<string, string>, file: any) => {
+        if (file && typeof file.path === 'string' && typeof file.content === 'string') {
+          acc[file.path] = file.content;
+        }
+        return acc;
+      }, {});
+
+      if (Object.keys(filesObj).length === 0) {
+        const message = data?.repairError || data?.error || data?.errors?.join('\n') || 'Fix request returned no files.';
+        setFixStatus('needs_fix');
+        setFixErrorContext(message);
+        setError(message);
+        setMessages((prev) => [...prev, { role: 'assistant', content: `Fix fehlgeschlagen: ${message}` }]);
+        return;
+      }
+
+      const nextDependencies = mergeDependencyMaps(
+        dependencies,
+        extractDependenciesFromFiles(filesObj),
+        data?.dependencies
+      );
+      const changedPaths = Array.from(new Set([
+        ...Object.keys(files),
+        ...Object.keys(filesObj),
+      ])).filter((path) => files[path] !== filesObj[path]);
+
+      const beforeFiles = { ...files };
+      const beforeDependencies = { ...dependencies };
+      applyOperationEntry({
+        files: filesObj,
+        dependencies: nextDependencies,
+        message: 'Manual fix applied.',
+      });
+      pushOperationHistory({
+        label: 'Manual fix',
+        beforeFiles,
+        afterFiles: filesObj,
+        changedPaths,
+        beforeDependencies,
+        afterDependencies: nextDependencies,
+        metadata: {
+          prompt: `manual-fix: ${errorContext.slice(0, 240)}`,
+          outcome: data?.repairStatus === 'failed' ? 'failed' : 'applied',
+          generationMode: 'edit',
+        },
+      });
+
+      if (currentProject?.id) {
+        try {
+          await api.updateProject(currentProject.id, {
+            code: JSON.stringify(filesObj),
+            prompt: `Manual fix: ${errorContext.slice(0, 240)}`,
+            updated_at: new Date().toISOString(),
+          });
+        } catch (persistError) {
+          console.error('Failed to persist manual fix result:', persistError);
+        }
+      }
+
+      if (!response.ok || data?.repairStatus === 'failed' || data?.success === false) {
+        const failedMessage = data?.repairError || data?.error || data?.errors?.join('\n') || 'Repair failed.';
+        setFixStatus('needs_fix');
+        setFixErrorContext(failedMessage);
+        setError(failedMessage);
+        setMessages((prev) => [...prev, { role: 'assistant', content: `Fix fehlgeschlagen: ${failedMessage}` }]);
+      } else {
+        setFixStatus('auto_fixed');
+        setFixErrorContext(null);
+        setError(null);
+        setMessages((prev) => [...prev, { role: 'assistant', content: 'Issue fixed successfully.' }]);
+      }
+
+      refreshPreview();
+    } catch (fixError: any) {
+      const message = fixError?.message || 'Fix request failed.';
+      setFixStatus('needs_fix');
+      setFixErrorContext(message);
+      setError(message);
+      setMessages((prev) => [...prev, { role: 'assistant', content: `Fix Fehler: ${message}` }]);
+    } finally {
+      isGenerating.current = false;
+      setIsGeneratingLocked(false);
+      setIsAutoRepairing(false);
+    }
+  }, [
+    applyOperationEntry,
+    currentProject?.id,
+    dependencies,
+    error,
+    files,
+    fixErrorContext,
+    isApplyingVisualPatch,
+    isAutoRepairing,
+    loading,
+    provider,
+    pushOperationHistory,
+    refreshPreview,
+    session?.access_token,
+    updateRateLimit,
+    user?.id,
+  ]);
+
+  const handlePreviewIssue = useCallback((issue: PreviewRuntimeIssuePayload) => {
+    const normalized = normalizeRuntimeIssuePayload(issue);
+    if (!normalized) return;
+    const message = `Preview runtime error: ${normalized.message}`;
+    setError(message);
+    markNeedsFix(normalized.message);
+  }, [markNeedsFix]);
 
   const clearVisualSelection = useCallback(() => {
     setSelectedEditAnchor(null);
@@ -673,7 +1548,7 @@ export default function Generator() {
 
       const beforeFiles = { ...files };
       const beforeDependencies = { ...dependencies };
-      const nextDependencies = extractDependenciesFromFiles(nextFiles) || dependencies;
+      const nextDependencies = mergeDependencyMaps(dependencies, extractDependenciesFromFiles(nextFiles));
       const changedPaths = Array.from(new Set([...Object.keys(files), ...Object.keys(nextFiles)]))
         .filter((path) => files[path] !== nextFiles[path]);
 
@@ -733,7 +1608,10 @@ export default function Generator() {
   const handleUndoOperation = useCallback(() => {
     const op = operationHistory.undo();
     if (!op) return;
-    const beforeDependencies = op.beforeDependencies || extractDependenciesFromFiles(op.beforeFiles);
+    const beforeDependencies = mergeDependencyMaps(
+      extractDependenciesFromFiles(op.beforeFiles),
+      op.beforeDependencies
+    );
     applyOperationEntry({
       files: op.beforeFiles,
       dependencies: beforeDependencies,
@@ -744,7 +1622,10 @@ export default function Generator() {
   const handleRedoOperation = useCallback(() => {
     const op = operationHistory.redo();
     if (!op) return;
-    const afterDependencies = op.afterDependencies || extractDependenciesFromFiles(op.afterFiles);
+    const afterDependencies = mergeDependencyMaps(
+      extractDependenciesFromFiles(op.afterFiles),
+      op.afterDependencies
+    );
     applyOperationEntry({
       files: op.afterFiles,
       dependencies: afterDependencies,
@@ -799,7 +1680,7 @@ export default function Generator() {
         if (parsedFiles && typeof parsedFiles === 'object' && !Array.isArray(parsedFiles)) {
           const sanitizedLoaded = sanitizeLoadedFiles(parsedFiles);
           resetFiles(sanitizedLoaded);
-          setDependencies(extractDependenciesFromFiles(sanitizedLoaded));
+          setDependencies(mergeDependencyMaps(extractDependenciesFromFiles(sanitizedLoaded)));
           try {
             lastAppliedFileMapRef.current = JSON.stringify(sanitizedLoaded);
           } catch {
@@ -859,7 +1740,10 @@ export default function Generator() {
 
   useEffect(() => {
     void loadSupabaseIntegrationStatus(currentProject?.id);
-  }, [currentProject?.id, loadSupabaseIntegrationStatus]);
+    void loadCloudState(currentProject?.id);
+    void loadCloudOverview(currentProject?.id);
+    void loadPublishStatus(currentProject?.id);
+  }, [currentProject?.id, loadCloudOverview, loadCloudState, loadPublishStatus, loadSupabaseIntegrationStatus]);
 
   useEffect(() => {
     const oauthStatus = searchParams.get('supabase_oauth');
@@ -879,6 +1763,8 @@ export default function Generator() {
       ]);
       if (projectId) {
         void loadSupabaseIntegrationStatus(projectId);
+        void loadCloudState(projectId);
+        void loadCloudOverview(projectId);
       }
     } else {
       setError(oauthMessage || 'Supabase OAuth fehlgeschlagen.');
@@ -889,7 +1775,7 @@ export default function Generator() {
     nextParams.delete('supabase_env');
     nextParams.delete('supabase_message');
     setSearchParams(nextParams);
-  }, [loadSupabaseIntegrationStatus, searchParams, setSearchParams]);
+  }, [loadCloudOverview, loadCloudState, loadSupabaseIntegrationStatus, searchParams, setSearchParams]);
 
   // Click outside listener for dropdown
   useEffect(() => {
@@ -899,6 +1785,9 @@ export default function Generator() {
       }
       if (modelSwitcherRef.current && !modelSwitcherRef.current.contains(event.target as Node)) {
         setShowModelSwitcher(false);
+      }
+      if (surfaceMenuRef.current && !surfaceMenuRef.current.contains(event.target as Node)) {
+        setShowSurfaceMenu(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -953,7 +1842,10 @@ export default function Generator() {
       if (!incoming.files || typeof incoming.files !== 'object') return;
 
       const sanitized = sanitizeLoadedFiles(incoming.files);
-      const nextDependencies = incoming.dependencies || extractDependenciesFromFiles(sanitized);
+      const nextDependencies = mergeDependencyMaps(
+        extractDependenciesFromFiles(sanitized),
+        incoming.dependencies
+      );
 
       lastLocalProjectWriteAtRef.current = incoming.updatedAt;
       try {
@@ -1077,6 +1969,27 @@ export default function Generator() {
         if (typeof nextPath === 'string' && nextPath.trim().length > 0) {
           commitPreviewPath(nextPath);
         }
+        return;
+      }
+
+      if (event.data.type === 'PREVIEW_RUNTIME_ERROR') {
+        const payload = event.data?.payload as PreviewRuntimeIssuePayload | undefined;
+        const normalized = normalizeRuntimeIssuePayload(payload);
+        if (!normalized) return;
+
+        setError(`Preview runtime error: ${normalized.message}`);
+        markNeedsFix(normalized.message);
+        return;
+      }
+
+      if (event.data.type === 'PREVIEW_RUNTIME_OK') {
+        setError((prev) => {
+          if (typeof prev === 'string' && prev.toLowerCase().startsWith('preview runtime error:')) {
+            return null;
+          }
+          return prev;
+        });
+        markTimelineReady();
       }
     };
 
@@ -1085,7 +1998,7 @@ export default function Generator() {
     return () => {
       window.removeEventListener('message', handleMessage);
     };
-  }, [commitPreviewPath, isReliableVisualAnchor, normalizeAnchor, selectorForAnchor, workspaceMode]);
+  }, [commitPreviewPath, isReliableVisualAnchor, markNeedsFix, markTimelineReady, normalizeAnchor, selectorForAnchor, workspaceMode]);
 
   // Inspector: Toggle mode in iframe
   useEffect(() => {
@@ -1115,9 +2028,11 @@ export default function Generator() {
   useEffect(() => {
     if (workspaceMode === 'visual') {
       setView('preview');
+      setActiveSurfaceMode((prev) => (prev === 'cloud' ? prev : 'design'));
       setIsInspectMode(true);
       return;
     }
+    setActiveSurfaceMode((prev) => (prev === 'design' ? 'preview' : prev));
     setIsInspectMode(false);
     setPendingInlineEdits([]);
     setVisualSaveNotice(null);
@@ -1129,26 +2044,12 @@ export default function Generator() {
     return () => window.clearTimeout(timer);
   }, [visualSaveNotice]);
 
-
-  const handleToggleProjects = async () => {
-    const newState = !showProjectDropdown;
-    setShowProjectDropdown(newState);
-    if (newState) {
-      try {
-        const { data: projects } = await api.getProjects(1, 100);
-        setProjectList(projects);
-      } catch (error) {
-        console.error('Failed to load projects list', error);
-      }
-    }
-  };
-
   // Image Upload Handlers
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        alert('File size too large. Please upload an image smaller than 5MB.');
+        setError('File size too large. Please upload an image smaller than 5MB.');
         return;
       }
       const reader = new FileReader();
@@ -1177,7 +2078,7 @@ export default function Generator() {
       const file = files[i];
       // Basic text file check (can be improved)
       if (file.size > 1024 * 1024) { // 1MB limit per file
-        alert(`File ${file.name} is too large (max 1MB).`);
+        setError(`File ${file.name} is too large (max 1MB).`);
         continue;
       }
 
@@ -1226,7 +2127,7 @@ export default function Generator() {
       // Ctrl+Enter or Cmd+Enter: Generate
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         e.preventDefault();
-        if (!loading && promptInput.trim()) {
+        if (!loading && !isGeneratingLocked && promptInput.trim()) {
           handleGenerate();
         }
       }
@@ -1254,6 +2155,12 @@ export default function Generator() {
         if (showModelSwitcher) {
           setShowModelSwitcher(false);
         }
+        if (showSurfaceMenu) {
+          setShowSurfaceMenu(false);
+        }
+        if (showPublishModal) {
+          setShowPublishModal(false);
+        }
         if (isInspectMode) {
           setIsInspectMode(false);
         }
@@ -1265,7 +2172,7 @@ export default function Generator() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [loading, promptInput, showProjectDropdown, showModelSwitcher, isInspectMode, handleUndoOperation, handleRedoOperation, selectedEditAnchors.length, clearVisualSelection]);
+  }, [loading, isGeneratingLocked, promptInput, showProjectDropdown, showModelSwitcher, showSurfaceMenu, showPublishModal, isInspectMode, handleUndoOperation, handleRedoOperation, selectedEditAnchors.length, clearVisualSelection]);
 
   // Disable browser/page zoom inside generator view.
   useEffect(() => {
@@ -1393,7 +2300,7 @@ export default function Generator() {
             after: nextFiles[path] || '',
           }));
 
-      const nextDependencies = extractDependenciesFromFiles(nextFiles) || dependencies;
+      const nextDependencies = mergeDependencyMaps(dependencies, extractDependenciesFromFiles(nextFiles));
       const beforeFiles = { ...files };
       const beforeDependencies = { ...dependencies };
       applyOperationEntry({
@@ -1460,8 +2367,9 @@ export default function Generator() {
     applyOperationEntry,
   ]);
 
-  const handleGenerate = async () => {
-    if (!promptInput.trim() || loading) return; // Guard against race conditions
+  const handleGenerate = async (forcePlanApply = false, promptOverride?: string) => {
+    const candidatePrompt = (promptOverride ?? promptInput).trim();
+    if (!candidatePrompt || loading || isAutoRepairing || isGenerating.current) return; // Guard against race conditions
     const accessToken = session?.access_token || null;
     if (!accessToken) {
       setError('Session abgelaufen. Bitte erneut einloggen.');
@@ -1485,7 +2393,62 @@ export default function Generator() {
       }
     }
 
-    const userMessage = promptInput;
+    const userMessage = candidatePrompt;
+    if (!userMessage) return;
+    if (isCloudEnableCommand(userMessage)) {
+      setMessages((prev) => [...prev, { role: 'user', content: userMessage }]);
+      setPromptInput('');
+      setLoading(true);
+      setError(null);
+      try {
+        if (!currentProject?.id) {
+          throw new Error('Bitte zuerst ein Projekt laden oder erstellen.');
+        }
+
+        const enabled = await enableCloud('chat_command');
+        if (!enabled) {
+          setPromptInput(userMessage);
+          return;
+        }
+
+        setActiveSurfaceMode('cloud');
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: 'assistant',
+            content:
+              'Cloud ist jetzt aktiviert.\n\n- Datenbank & Storage integriert\n- Benutzer-Authentifizierung vorbereitet\n- Edge Functions und Secrets verfuegbar\n\nNutze den Cloud-Workspace fuer Overview, Module und Supabase-Links.',
+          },
+        ]);
+      } catch (enableError: any) {
+        setError(enableError?.message || 'Cloud konnte nicht aktiviert werden.');
+        setPromptInput(userMessage);
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+    const plannerPromptFingerprint = toPlannerPromptFingerprint(userMessage);
+    const plannerIntents = detectPlannerIntentTags(userMessage);
+    const plannerIgnoredOnce = ignoredPlannerPromptFingerprint === plannerPromptFingerprint;
+    if (!forcePlanApply && plannerIntents.length > 0 && !plannerIgnoredOnce) {
+      setPendingIntentPlan({
+        prompt: userMessage,
+        intents: plannerIntents,
+      });
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: `Plan erkannt (${plannerIntents.join(', ')}). Ich mache nichts automatisch. Bitte "Apply Plan" oder "Ignore" wählen.`,
+        },
+      ]);
+      return;
+    }
+    if (plannerIgnoredOnce) {
+      setIgnoredPlannerPromptFingerprint(null);
+    }
+    setPendingIntentPlan(null);
     const strictVisualAnchors = selectedEditAnchors.filter(isReliableVisualAnchor);
     const visualSelectionPromptAddon = strictVisualAnchors.length > 1
       ? `\n\nVISUAL_SELECTIONS:\n${strictVisualAnchors
@@ -1507,6 +2470,31 @@ export default function Generator() {
     const supabaseGenerateContext = buildSupabaseGenerateContext(supabaseStatus);
     const backendIntentDetected = detectBackendIntent(requestPrompt);
 
+    if (generationProjectId && Object.keys(files).length > 0) {
+      void api.runSecurityScan({
+        projectId: generationProjectId,
+        environment: 'test',
+        files,
+      }).then((scan) => {
+        if (!scan.success || !scan.summary) return;
+        const critical = scan.summary.critical || 0;
+        const high = scan.summary.high || 0;
+        if (critical === 0 && high === 0) return;
+        const fingerprint = `${generationProjectId}:${critical}:${high}`;
+        if (lastSecurityWarningRef.current === fingerprint) return;
+        lastSecurityWarningRef.current = fingerprint;
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: 'assistant',
+            content: `Security precheck: ${critical} critical / ${high} high Findings erkannt. Empfehlung: zuerst /security pruefen.`,
+          },
+        ]);
+      }).catch(() => {
+        // non-blocking precheck: ignore network/scan failures
+      });
+    }
+
     if (backendIntentDetected && !supabaseGenerateContext.connected) {
       setMessages(prev => [
         ...prev,
@@ -1518,25 +2506,30 @@ export default function Generator() {
       setShowSupabaseModal(true);
     }
 
+    if (isGenerating.current) return;
+    isGenerating.current = true;
+    setIsGeneratingLocked(true);
+    startTimeline();
+
     // 1. Optimistic Update
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setPromptInput('');
     setLoading(true);
     setError(null);
     setIsRateLimited(false);
+    setProviderRecoveryHint(null);
+    setLastQualitySummary(null);
+    setFixStatus('idle');
+    setFixErrorContext(null);
     if (workspaceMode === 'visual') {
       setPendingPatch(null);
       setLastVisualDiagnostics(null);
     }
 
     try {
-      const response = await fetch('/api/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
+      const response = await fetchGenerateWithTimeout(
+        accessToken,
+        {
           provider,
           generationMode: autoGenerationMode,
           prompt: requestPrompt,
@@ -1555,11 +2548,14 @@ export default function Generator() {
           integrations: {
             supabase: supabaseGenerateContext,
           },
-        }),
-      });
+        }
+      );
 
       const text = await response.text();
       const data = parseJsonPayload(text, `Generate-Response (${response.status})`);
+      applyTimelineTiming(data);
+      const repairStatusFromResponse = data?.repairStatus;
+      const repairErrorFromResponse = typeof data?.repairError === 'string' ? data.repairError.trim() : '';
 
       // Update Rate Limit Info
       if (data.rateLimit) {
@@ -1567,29 +2563,79 @@ export default function Generator() {
       }
 
       if (!response.ok || !data.success) {
-        // Special Handling for Rate Limits (Gemini 429) & Quotas
-        if (response.status === 429 || (data.code && (
-          data.code === 'RATE_LIMIT_EXCEEDED' ||
+        if (repairStatusFromResponse === 'failed') {
+          const repairMessage =
+            repairErrorFromResponse ||
+            (Array.isArray(data?.errors) ? data.errors.join('\n') : '') ||
+            (typeof data?.error === 'string' ? data.error : '') ||
+            'Validation repair failed.';
+          markNeedsFix(repairMessage);
+        }
+        const normalizedCategory =
+          normalizeProviderErrorCategory(data?.errorCategory) ||
+          ((response.status === 429 || data?.code === 'RATE_LIMIT_EXCEEDED') ? 'rate_limit' : null);
+        const suggestedProvider = isProviderId(data?.suggestedProvider)
+          ? data.suggestedProvider
+          : getAlternateProvider(provider);
+
+        setProviderRecoveryHint(null);
+
+        if (
+          normalizedCategory === 'rate_limit' ||
           data.code === 'DAILY_REQUEST_LIMIT_EXCEEDED' ||
-          data.code === 'DAILY_TOKEN_LIMIT_EXCEEDED'
-        ))) {
+          data.code === 'DAILY_TOKEN_LIMIT_EXCEEDED' ||
+          data.code === 'PROJECT_DAILY_REQUEST_LIMIT_EXCEEDED' ||
+          data.code === 'PROJECT_DAILY_TOKEN_LIMIT_EXCEEDED'
+        ) {
+          const isDailyQuotaLimit =
+            data.code === 'DAILY_REQUEST_LIMIT_EXCEEDED' ||
+            data.code === 'DAILY_TOKEN_LIMIT_EXCEEDED';
+          const isProjectQuotaLimit =
+            data.code === 'PROJECT_DAILY_REQUEST_LIMIT_EXCEEDED' ||
+            data.code === 'PROJECT_DAILY_TOKEN_LIMIT_EXCEEDED';
+          const isGlobalServerRateLimit =
+            typeof data.error === 'string' && data.error.includes('Generation rate limit exceeded');
+
           setIsRateLimited(true);
 
           if (data.code === 'DAILY_REQUEST_LIMIT_EXCEEDED') {
             setError(`Daily Request Limit Reached (${data.limit} requests/day). Upgrade plan for more.`);
           } else if (data.code === 'DAILY_TOKEN_LIMIT_EXCEEDED') {
-            setError(`Daily Token Limit Reached. Please try again tomorrow or upgrade.`);
-          } else if (typeof data.error === 'string' && data.error.includes('Generation rate limit exceeded')) {
+            setError('Daily Token Limit Reached. Please try again tomorrow or upgrade.');
+          } else if (data.code === 'PROJECT_DAILY_REQUEST_LIMIT_EXCEEDED') {
+            setError(`Project Daily Request Limit Reached (${data.limit} requests/day for this project).`);
+          } else if (data.code === 'PROJECT_DAILY_TOKEN_LIMIT_EXCEEDED') {
+            setError('Project Daily Token Limit Reached. Switch project or try again tomorrow.');
+          } else if (isGlobalServerRateLimit) {
             setError('Server-Limit erreicht (max. 10 Generierungen pro Minute). Warte kurz und versuche es erneut.');
           } else if (typeof data.error === 'string' && data.error.includes('OpenRouter API error: 429')) {
             setError('Gemini/OpenRouter Rate Limit erreicht. Bitte kurz warten oder Modell wechseln.');
           } else if (typeof data.error === 'string' && data.error.includes('OpenAI API error: 429')) {
             setError('OpenAI Rate Limit erreicht. Bitte kurz warten oder Modell wechseln.');
-          } else if (provider === 'gemini') {
-            setError("Gemini is currently overloaded (Free Tier Limit Reached).");
           } else {
-            setError(`${provider === 'openai' ? 'OpenAI' : provider === 'deepseek' ? 'DeepSeek' : 'Gemini'} Rate Limit Reached. Please switch models.`);
+            setError(`${getProviderLabel(provider)} ist aktuell limitiert. Bitte auf ${getProviderLabel(suggestedProvider)} wechseln.`);
           }
+
+          if (!isDailyQuotaLimit && !isProjectQuotaLimit && !isGlobalServerRateLimit) {
+            setProviderRecoveryHint({
+              category: 'rate_limit',
+              switchTo: suggestedProvider,
+            });
+          }
+        } else if (normalizedCategory === 'provider_down') {
+          setIsRateLimited(false);
+          setError(`${getProviderLabel(provider)} ist aktuell nicht verfuegbar. Bitte auf ${getProviderLabel(suggestedProvider)} wechseln.`);
+          setProviderRecoveryHint({
+            category: 'provider_down',
+            switchTo: suggestedProvider,
+          });
+        } else if (normalizedCategory === 'auth_error') {
+          setIsRateLimited(false);
+          setError(`${getProviderLabel(provider)} kann aktuell nicht authentifiziert werden. Bitte auf ${getProviderLabel(suggestedProvider)} wechseln.`);
+          setProviderRecoveryHint({
+            category: 'auth_error',
+            switchTo: suggestedProvider,
+          });
         } else if (data.code === 'MALFORMED_STRUCTURED_OUTPUT') {
           setError('Das KI-Ausgabeformat war ungueltig (JSON kaputt). Bitte Prompt erneut senden; die Pipeline hat bereits automatische Retries versucht.');
         } else {
@@ -1607,6 +2653,7 @@ export default function Generator() {
         setPromptInput(userMessage);
         // Remove the 'optimistic' user message since it failed
         setMessages(prev => prev.slice(0, -1));
+        markTimelineFailed();
         return;
       }
 
@@ -1619,6 +2666,17 @@ export default function Generator() {
         : 'auto-inferred';
       if (typeof data?.pipeline?.llmContextFiles === 'number') {
         setLastContextCount(data.pipeline.llmContextFiles);
+      }
+      setLastQualitySummary(toRuntimeQualitySummary(data));
+      if (repairStatusFromResponse === 'failed') {
+        const repairMessage =
+          repairErrorFromResponse ||
+          (Array.isArray(data?.errors) ? data.errors.join('\n') : '') ||
+          'Validation repair failed.';
+        markNeedsFix(repairMessage);
+      } else if (repairStatusFromResponse === 'succeeded') {
+        setFixStatus('auto_fixed');
+        setFixErrorContext(null);
       }
       const rollbackApplied = Boolean(data?.pipeline?.rollback?.applied);
       const editOutcomeStatus = typeof data?.pipeline?.editOutcome?.status === 'string'
@@ -1656,7 +2714,11 @@ export default function Generator() {
       const applyChanges = () => {
         const beforeFiles = { ...files };
         const beforeDependencies = { ...dependencies };
-        const nextDependencies = data.dependencies || extractDependenciesFromFiles(filesObj) || {};
+        const nextDependencies = mergeDependencyMaps(
+          dependencies,
+          extractDependenciesFromFiles(filesObj),
+          data.dependencies
+        );
         const changedPathsForOperation = Array.from(new Set([
           ...Object.keys(beforeFiles),
           ...Object.keys(filesObj),
@@ -1842,7 +2904,36 @@ export default function Generator() {
 
     } catch (err: any) {
       const errorMessage = err.message || 'An error occurred';
-      setError(errorMessage);
+      if (errorMessage === GENERATE_TIMEOUT_MESSAGE) {
+        setIsRateLimited(false);
+        setError(GENERATE_TIMEOUT_MESSAGE);
+        setProviderRecoveryHint(null);
+        if (workspaceMode === 'visual') {
+          setLastVisualDiagnostics({
+            phase: 'chat-edit',
+            code: 'CHAT_EDIT_TIMEOUT',
+            message: GENERATE_TIMEOUT_MESSAGE,
+          });
+        }
+        setPromptInput(userMessage);
+        setMessages(prev => prev.slice(0, -1));
+        markTimelineFailed();
+        return;
+      }
+      const normalized = String(errorMessage).toLowerCase();
+      const networkOrTimeoutError = /failed to fetch|network|timeout|timed out|aborted|econnreset|enotfound/.test(normalized);
+      if (networkOrTimeoutError) {
+        setIsRateLimited(false);
+        const suggestedProvider = getAlternateProvider(provider);
+        setError(`${getProviderLabel(provider)} ist aktuell nicht erreichbar. Bitte auf ${getProviderLabel(suggestedProvider)} wechseln.`);
+        setProviderRecoveryHint({
+          category: 'provider_down',
+          switchTo: suggestedProvider,
+        });
+      } else {
+        setError(errorMessage);
+        setProviderRecoveryHint(null);
+      }
       if (workspaceMode === 'visual') {
         setLastVisualDiagnostics({
           phase: 'chat-edit',
@@ -1853,7 +2944,10 @@ export default function Generator() {
       // Restore user input on network error too
       setPromptInput(userMessage);
       setMessages(prev => prev.slice(0, -1));
+      markTimelineFailed();
     } finally {
+      isGenerating.current = false;
+      setIsGeneratingLocked(false);
       setLoading(false);
       setAttachedImage(null); // Clear image after generation
       if (!keepSelectionAfterRun) {
@@ -1869,6 +2963,24 @@ export default function Generator() {
   const sidebarModeLabel = workspaceMode === 'visual'
     ? 'VISUAL EDIT MODE'
     : (isEditMode ? 'EDIT MODE' : 'NEW PROJECT');
+  const qualityStatusLabel = lastQualitySummary
+    ? (lastQualitySummary.status === 'excellent'
+      ? 'Excellent'
+      : lastQualitySummary.status === 'good'
+        ? 'Good'
+        : lastQualitySummary.status === 'critical'
+          ? 'Critical'
+          : 'Needs Work')
+    : null;
+  const qualityToneClass = lastQualitySummary
+    ? (lastQualitySummary.status === 'excellent'
+      ? 'border-emerald-400/40 bg-emerald-500/10 text-emerald-200'
+      : lastQualitySummary.status === 'good'
+        ? 'border-blue-400/40 bg-blue-500/10 text-blue-200'
+        : lastQualitySummary.status === 'critical'
+          ? 'border-red-400/40 bg-red-500/10 text-red-200'
+          : 'border-amber-400/40 bg-amber-500/10 text-amber-200')
+    : 'border-slate-600/40 bg-slate-700/20 text-slate-200';
   const isVisualMode = workspaceMode === 'visual';
   const supabaseConnectedCount = Number(Boolean(supabaseStatus.test?.connected)) + Number(Boolean(supabaseStatus.live?.connected));
   const supabaseConnectionLabel =
@@ -1877,6 +2989,11 @@ export default function Generator() {
       : supabaseConnectedCount === 1
         ? (supabaseStatus.live?.connected ? 'Supabase: Live' : 'Supabase: Test')
         : 'Supabase: Disconnected';
+  const isPublished = publication?.status === 'published';
+  const publishButtonLabel = isPublished ? 'Published' : 'Publish';
+  const publishButtonTone = isPublished
+    ? 'bg-blue-600 hover:bg-blue-500'
+    : 'bg-[#2f5ce9] hover:bg-[#416bf1]';
   const reliableVisualSelectionCount = selectedEditAnchors.filter(isReliableVisualAnchor).length;
   const primaryVisualFile = selectedEditAnchor ? resolveAnchorProjectFile(selectedEditAnchor) : null;
   const primaryVisualAnchorIsValid = Boolean(selectedEditAnchor && isReliableVisualAnchor(selectedEditAnchor));
@@ -1903,13 +3020,99 @@ export default function Generator() {
     });
   };
 
+  const activeSurfaceMeta = SURFACE_MODE_META[activeSurfaceMode];
+  const headerSurfaceModes: SurfaceMode[] = ['preview', ...pinnedSurfaceModes.filter((mode, index, arr) => mode !== 'preview' && arr.indexOf(mode) === index)];
+  const showPreviewToolbar = activeSurfaceMode === 'preview' || activeSurfaceMode === 'design';
+  const showPreviewFrame = activeSurfaceMode === 'preview' || activeSurfaceMode === 'design';
+  const hasFiles = Object.keys(files).length > 0;
+
+  const handleToggleSurfacePin = (mode: SurfaceMode) => {
+    setPinnedSurfaceModes((prev) => {
+      if (prev.includes(mode)) {
+        const next = prev.filter((item) => item !== mode);
+        return next.length > 0 ? next : DEFAULT_PINNED_SURFACE_MODES;
+      }
+      return [...prev, mode];
+    });
+  };
+
+  const handleSelectSurfaceMode = (mode: SurfaceMode) => {
+    setActiveSurfaceMode(mode);
+    setShowSurfaceMenu(false);
+
+    if (mode === 'cloud') {
+      if (currentProject?.id) {
+        void loadCloudState(currentProject.id);
+        void loadCloudOverview(currentProject.id);
+      }
+    }
+
+    if (mode === 'code') {
+      setView('code');
+      if (workspaceMode === 'visual') {
+        setWorkspaceMode('chat');
+      }
+      return;
+    }
+
+    setView('preview');
+    if (mode === 'design') {
+      if (workspaceMode !== 'visual') {
+        setWorkspaceMode('visual');
+      }
+      return;
+    }
+    if (workspaceMode === 'visual') {
+      setWorkspaceMode('chat');
+    }
+  };
+
+  const handleOpenPublishModal = () => {
+    if (!currentProject?.id) {
+      setError('Bitte zuerst ein Projekt erstellen, bevor du publishen kannst.');
+      return;
+    }
+    setShowPublishModal(true);
+    void loadPublishStatus(currentProject.id);
+  };
+
+  const handleShareProject = async () => {
+    if (!currentProject?.id) {
+      setError('Bitte zuerst ein Projekt laden oder erstellen.');
+      return;
+    }
+
+    const shareUrl = `${window.location.origin}/generator?project_id=${currentProject.id}`;
+    const shareTitle = currentProject.name || 'Loomic Project';
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: shareTitle,
+          text: 'Check this Loomic project',
+          url: shareUrl,
+        });
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        setMessages((prev) => [
+          ...prev,
+          { role: 'assistant', content: 'Projekt-Link kopiert und bereit zum Teilen.' },
+        ]);
+      }
+    } catch (shareError: any) {
+      if (shareError?.name !== 'AbortError') {
+        setError('Projekt-Link konnte nicht geteilt werden.');
+      }
+    }
+  };
+
   return (
-    <div className="font-display bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 h-screen overflow-hidden flex transition-colors duration-300">
+    <div className="font-display h-screen overflow-hidden bg-[#0b0c10] text-slate-100 flex">
       <style>{`
         .glass-effect {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(18, 21, 28, 0.82);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(148, 163, 184, 0.16);
         }
         .glow-button {
             box-shadow: 0 0 20px rgba(124, 58, 237, 0.3);
@@ -1934,7 +3137,7 @@ export default function Generator() {
       <div className="flex-1 flex h-full overflow-hidden">
 
         {/* Chat Sidebar - Lovable exact-style */}
-        <aside className="w-96 h-full flex flex-col border-r border-slate-800 bg-[#0b0c10] text-slate-100 z-20 shrink-0 flex-1 max-w-sm transition-colors duration-300">
+        <aside className="h-full w-[440px] min-w-[320px] max-w-[40vw] flex flex-col border-r border-[#242935] bg-[#0b0c10] text-slate-100 z-20 shrink-0">
           <header className="flex items-center justify-between px-4 py-3 border-b border-slate-800/90">
             <div className="min-w-0">
               <h2 className="truncate text-sm font-semibold tracking-[0.08em] text-white">{sidebarTitle}</h2>
@@ -1960,6 +3163,8 @@ export default function Generator() {
                         key={model.id}
                         onClick={() => {
                           setProvider(model.id);
+                          setProviderRecoveryHint(null);
+                          setIsRateLimited(false);
                           setShowModelSwitcher(false);
                         }}
                         className={`w-full flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors ${provider === model.id ? 'bg-primary/15 border border-primary/30' : 'border border-transparent hover:bg-white/5'}`}
@@ -1982,6 +3187,36 @@ export default function Generator() {
                   <span className="material-icons-round text-[16px] text-primary">folder</span>
                   <span className="text-xs text-slate-400">Context: <span className="font-semibold text-slate-200">{sidebarContextCount} files selected</span></span>
                 </div>
+              </div>
+            )}
+
+            {lastQualitySummary && (
+              <div className="mb-4 rounded-xl border border-slate-700 bg-[#171922] p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-300">Quality</p>
+                  <span className={`rounded-md border px-2 py-1 text-[10px] font-semibold ${qualityToneClass}`}>
+                    {qualityStatusLabel}
+                  </span>
+                </div>
+                <div className="mt-2 flex items-end gap-2">
+                  <p className="text-lg font-semibold text-white">{lastQualitySummary.score}</p>
+                  <p className="pb-0.5 text-xs text-slate-400">/100 ({lastQualitySummary.grade})</p>
+                </div>
+                <p className="mt-1 text-[11px] text-slate-400">
+                  Critical: <span className="font-semibold text-slate-200">{lastQualitySummary.criticalCount}</span>
+                  {' '}| Warnings: <span className="font-semibold text-slate-200">{lastQualitySummary.warningCount}</span>
+                </p>
+                {lastQualitySummary.repair.attempted && (
+                  <p className="mt-1 text-[11px] text-slate-400">
+                    Repair: {lastQualitySummary.repair.initialErrorCount} -&gt; {lastQualitySummary.repair.finalErrorCount}
+                    {' '}errors ({lastQualitySummary.repair.attemptsExecuted} attempts)
+                  </p>
+                )}
+                {lastQualitySummary.recommendedAction && (
+                  <p className="mt-2 rounded-md border border-slate-700 bg-[#0f1118] p-2 text-[10px] text-slate-300">
+                    {lastQualitySummary.recommendedAction}
+                  </p>
+                )}
               </div>
             )}
 
@@ -2197,7 +3432,7 @@ export default function Generator() {
                     onKeyDown={(event) => {
                       if (event.key === 'Enter' && !event.shiftKey) {
                         event.preventDefault();
-                        if (!loading && promptInput.trim()) {
+                        if (!loading && !isGeneratingLocked && promptInput.trim()) {
                           handleGenerate();
                         }
                       }
@@ -2205,9 +3440,9 @@ export default function Generator() {
                     rows={2}
                   />
                   <button
-                    onClick={handleGenerate}
-                    disabled={loading || reliableVisualSelectionCount === 0 || pendingInlineEdits.length > 0}
-                    className={`absolute bottom-1.5 right-1.5 flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-white shadow-lg shadow-primary/25 transition-colors hover:bg-primary/90 ${(loading || reliableVisualSelectionCount === 0 || pendingInlineEdits.length > 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    onClick={() => void handleGenerate()}
+                    disabled={loading || isGeneratingLocked || isAutoRepairing || reliableVisualSelectionCount === 0 || pendingInlineEdits.length > 0}
+                    className={`absolute bottom-1.5 right-1.5 flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-white shadow-lg shadow-primary/25 transition-colors hover:bg-primary/90 ${(loading || isGeneratingLocked || isAutoRepairing || reliableVisualSelectionCount === 0 || pendingInlineEdits.length > 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
                     title="Apply visual AI edit"
                   >
                     <span className="material-icons-round text-[20px]">arrow_upward</span>
@@ -2243,49 +3478,86 @@ export default function Generator() {
             )}
 
             {!isVisualMode && (
-              <div className="flex items-end gap-3">
-              <button
-                onClick={() => knowledgeInputRef.current?.click()}
-                className="mb-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-white/5 hover:text-white"
-                title="Add context"
-              >
-                <span className="material-icons-round text-[28px]">add_circle</span>
-              </button>
-              <div className="relative flex-1 rounded-xl border border-slate-700 bg-[#171922] focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/25 transition-all">
+              <div className="rounded-[28px] border border-slate-700 bg-[#1a1d24] px-4 pt-3 pb-2 shadow-[0_8px_24px_rgba(0,0,0,0.28)]">
                 <textarea
-                  className="w-full resize-none border-none bg-transparent p-3 pr-12 text-[15px] text-slate-100 placeholder:text-slate-500 outline-none"
-                  placeholder="Describe your changes..."
+                  className="w-full resize-none border-none bg-transparent px-1 py-1 text-[15px] leading-6 text-slate-100 placeholder:text-slate-500 outline-none"
+                  placeholder="Ask Loomic..."
                   value={promptInput}
                   onChange={(e) => setPromptInput(e.target.value)}
                   onKeyDown={(event) => {
                     if (event.key === 'Enter' && !event.shiftKey) {
                       event.preventDefault();
-                      if (!loading && promptInput.trim()) {
+                      if (!loading && !isGeneratingLocked && promptInput.trim()) {
                         handleGenerate();
                       }
                     }
                   }}
                   rows={1}
                 />
-                {provider === 'gemini' && (
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={loading || !!attachedImage}
-                    className={`absolute bottom-2.5 right-10 text-slate-500 transition-colors hover:text-primary ${loading || attachedImage ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    title="Attach screenshot"
-                  >
-                    <span className="material-icons-round text-[18px]">attach_file</span>
-                  </button>
-                )}
-                <button
-                  onClick={handleGenerate}
-                  disabled={loading}
-                  className={`absolute bottom-1.5 right-1.5 flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-white shadow-lg shadow-primary/25 transition-colors hover:bg-primary/90 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  title="Send"
-                >
-                  <span className="material-icons-round text-[20px]">arrow_upward</span>
-                </button>
-              </div>
+
+                <div className="mt-2 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => knowledgeInputRef.current?.click()}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-600 text-slate-300 transition-colors hover:border-slate-500 hover:bg-white/5 hover:text-white"
+                      title="Add context"
+                    >
+                      <span className="material-icons-round text-[19px]">add</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setWorkspaceMode('visual');
+                        setActiveSurfaceMode('design');
+                      }}
+                      className="inline-flex h-8 items-center gap-1.5 rounded-full border border-slate-600 px-3 text-sm font-semibold text-slate-200 transition-colors hover:border-slate-500 hover:bg-white/5 hover:text-white"
+                      title="Visual edits"
+                    >
+                      <span className="material-icons-round text-[17px]">gesture</span>
+                      Visual edits
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {(fixStatus === 'needs_fix' || Boolean(fixErrorContext)) && (
+                      <button
+                        onClick={() => void handleFixIssue()}
+                        disabled={loading || isGeneratingLocked || isAutoRepairing || Object.keys(files).length === 0}
+                        className={`inline-flex h-8 items-center rounded-full border border-amber-400/70 bg-amber-500/15 px-3 text-sm font-semibold text-amber-200 transition-colors hover:bg-amber-500/25 ${(loading || isGeneratingLocked || isAutoRepairing || Object.keys(files).length === 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        title="Run manual repair"
+                      >
+                        ✦ Fix Issue
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() => {
+                        setPromptInput((prev) => (prev.trim() ? `Plan: ${prev}` : 'Plan: '));
+                      }}
+                      className="inline-flex h-8 items-center rounded-full border border-slate-600 px-3 text-sm font-semibold text-slate-200 transition-colors hover:border-slate-500 hover:bg-white/5 hover:text-white"
+                      title="Plan mode prompt"
+                    >
+                      Plan
+                    </button>
+
+                    <button
+                      disabled
+                      className="inline-flex h-8 w-8 cursor-not-allowed items-center justify-center rounded-full border border-slate-600 text-slate-500"
+                      title="Voice coming soon"
+                    >
+                      <span className="material-icons-round text-[17px]">mic</span>
+                    </button>
+
+                    <button
+                      onClick={() => void handleGenerate()}
+                      disabled={loading || isGeneratingLocked || isAutoRepairing}
+                      className={`inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary text-white transition-colors hover:bg-primary/90 ${(loading || isGeneratingLocked || isAutoRepairing) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      title="Send"
+                    >
+                      <span className="material-icons-round text-[18px]">arrow_upward</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -2305,14 +3577,66 @@ export default function Generator() {
               className="hidden"
             />
 
+            {pendingIntentPlan && (
+              <div className="mt-3 rounded-xl border border-amber-400/30 bg-amber-500/10 p-3 text-xs text-amber-200">
+                <p className="font-semibold text-amber-100">
+                  Plan suggestion detected: {pendingIntentPlan.intents.join(', ')}
+                </p>
+                <p className="mt-1 text-amber-200/90">
+                  Keine automatische Ausfuehrung. Entscheide selbst.
+                </p>
+                <div className="mt-2 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void handleGenerate(true, pendingIntentPlan.prompt)}
+                    className="rounded-lg bg-amber-500 px-3 py-1.5 text-[11px] font-semibold text-slate-900 transition hover:bg-amber-400"
+                  >
+                    Apply Plan
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const promptToIgnore = pendingIntentPlan.prompt;
+                      setPendingIntentPlan(null);
+                      setIgnoredPlannerPromptFingerprint(toPlannerPromptFingerprint(promptToIgnore));
+                      setMessages((prev) => [
+                        ...prev,
+                        {
+                          role: 'assistant',
+                          content: 'Plan ignoriert. Beim naechsten Senden wird der Prompt normal ausgefuehrt.',
+                        },
+                      ]);
+                    }}
+                    className="rounded-lg border border-amber-300/40 px-3 py-1.5 text-[11px] font-semibold text-amber-100 transition hover:bg-amber-500/15"
+                  >
+                    Ignore
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="mt-2 flex items-center justify-between px-1">
               <p className="text-[10px] text-slate-600">
                 {isVisualMode ? 'Visual mode active' : 'Press Enter to send'}
               </p>
               <div className="flex items-center gap-1">
+                {fixStatus === 'auto_fixed' && (
+                  <span className="rounded border border-emerald-500/40 bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-300">
+                    Auto-fixed
+                  </span>
+                )}
+                {fixStatus === 'needs_fix' && (
+                  <span className="rounded border border-amber-500/40 bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-amber-300">
+                    Needs fix
+                  </span>
+                )}
                 <span className="h-2 w-2 rounded-full bg-green-500" />
                 <span className="text-[10px] text-slate-500">
-                  {isVisualMode ? `${reliableVisualSelectionCount}/${selectedEditAnchors.length} valid selected` : 'Model ready'}
+                  {isAutoRepairing
+                    ? 'Fix running'
+                    : (isVisualMode
+                      ? `${reliableVisualSelectionCount}/${selectedEditAnchors.length} valid selected`
+                      : 'Model ready')}
                 </span>
               </div>
             </div>
@@ -2323,13 +3647,35 @@ export default function Generator() {
                   <span className="material-icons-round text-sm mt-0.5">error_outline</span>
                   <span className="whitespace-pre-wrap">{typeof error === 'string' ? error : JSON.stringify(error)}</span>
                 </div>
-                {isRateLimited && (
+                {providerRecoveryHint && (
                   <button
-                    onClick={() => setProvider('openai')}
+                    onClick={() => {
+                      const switchTo = providerRecoveryHint.switchTo;
+                      setProvider(switchTo);
+                      setProviderRecoveryHint(null);
+                      setIsRateLimited(false);
+                      setError(null);
+                      setMessages((prev) => [
+                        ...prev,
+                        {
+                          role: 'assistant',
+                          content: `Modell gewechselt auf ${getProviderLabel(switchTo)}. Bitte Anfrage erneut senden.`,
+                        },
+                      ]);
+                    }}
                     className="mt-2 ml-6 inline-flex items-center gap-1 rounded-lg bg-red-900/30 px-3 py-1.5 text-red-200 transition-colors hover:bg-red-900/50"
                   >
                     <span className="material-icons-round text-xs">sync_alt</span>
-                    Try with OpenAI
+                    Wechsel zu {getProviderLabel(providerRecoveryHint.switchTo)}
+                  </button>
+                )}
+                {(fixStatus === 'needs_fix' || Boolean(fixErrorContext)) && (
+                  <button
+                    onClick={() => void handleFixIssue()}
+                    disabled={loading || isGeneratingLocked || isAutoRepairing || Object.keys(files).length === 0}
+                    className={`mt-2 ml-6 inline-flex items-center gap-1 rounded-lg bg-amber-900/30 px-3 py-1.5 text-amber-200 transition-colors hover:bg-amber-900/50 ${(loading || isGeneratingLocked || isAutoRepairing || Object.keys(files).length === 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    ✦ Fix Issue
                   </button>
                 )}
               </div>
@@ -2338,44 +3684,90 @@ export default function Generator() {
         </aside>
 
         {/* Main Content (Preview/Code) */}
-        <main className="flex-1 flex flex-col relative bg-slate-50 dark:bg-background-dark overflow-hidden min-w-0 transition-colors duration-300">
-          <header className="h-[68px] flex items-center justify-between px-4 z-20 shrink-0 border-b border-slate-200/60 dark:border-white/10 bg-white/70 dark:bg-[#0a0a0f]/70 backdrop-blur-xl sticky top-0 shadow-[0_8px_30px_rgba(15,23,42,0.06)]">
-            <div className="flex items-center gap-2.5">
-              {/* View Controls Group */}
-              <div className="flex bg-slate-100/80 dark:bg-white/[0.04] p-1 rounded-xl border border-slate-200/60 dark:border-white/10">
-                <button
-                  onClick={() => setView('preview')}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${view === 'preview'
-                    ? 'bg-slate-900 text-white shadow-sm dark:bg-slate-700 dark:text-white'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-white/10'
+        <main className="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-[#111318]">
+          <header className="sticky top-0 z-20 flex h-[68px] min-w-0 shrink-0 items-center gap-2.5 border-b border-[#242935] bg-[#111318]/95 px-4 backdrop-blur">
+            <div className="flex min-w-0 flex-1 items-center gap-2.5">
+              <div className="flex items-center rounded-xl border border-[#2f3542] bg-[#151923] p-1">
+                {headerSurfaceModes.map((mode) => {
+                  const meta = SURFACE_MODE_META[mode];
+                  const isActive = activeSurfaceMode === mode;
+                  return (
+                    <button
+                      key={mode}
+                      onClick={() => handleSelectSurfaceMode(mode)}
+                      className={`inline-flex h-9 items-center rounded-lg text-xs font-semibold transition-all duration-200 ${
+                        isActive
+                          ? 'min-w-[108px] justify-start gap-1.5 border border-blue-400/50 bg-blue-500/15 px-3.5 text-blue-200'
+                          : 'w-9 justify-center border border-transparent px-0 text-slate-300 hover:border-[#3a4254] hover:bg-[#1c2230] hover:text-white'
+                      }`}
+                      title={meta.label}
+                      aria-label={meta.label}
+                    >
+                      <span className="material-icons-round text-[17px]">{meta.icon}</span>
+                      {isActive && <span className="truncate">{meta.label}</span>}
+                    </button>
+                  );
+                })}
+                <div ref={surfaceMenuRef} className="relative">
+                  <button
+                    onClick={() => setShowSurfaceMenu((prev) => !prev)}
+                    className={`ml-1 flex h-8 w-8 items-center justify-center rounded-lg border text-slate-300 transition-colors ${
+                      showSurfaceMenu
+                        ? 'border-[#3b4458] bg-[#1c2230]'
+                        : 'border-transparent hover:border-[#3b4458] hover:bg-[#1c2230]'
                     }`}
-                >
-                  <span className="material-icons-round text-sm">visibility</span>
-                  Preview
-                </button>
-                <button
-                  onClick={() => setView('code')}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${view === 'code'
-                    ? 'bg-slate-900 text-white shadow-sm dark:bg-slate-700 dark:text-white'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-white/10'
-                    }`}
-                >
-                  <span className="material-icons-round text-sm">code</span>
-                  Code
-                </button>
+                    title="Workspace modes"
+                  >
+                    <span className="material-icons-round text-[18px]">more_horiz</span>
+                  </button>
+                  {showSurfaceMenu && (
+                    <div className="absolute left-0 top-10 z-50 w-60 rounded-xl border border-[#2d3444] bg-[#12161f] p-2 shadow-2xl">
+                      {SURFACE_MENU_MODES.map((mode) => {
+                        const meta = SURFACE_MODE_META[mode];
+                        const pinned = pinnedSurfaceModes.includes(mode);
+                        const isActive = activeSurfaceMode === mode;
+                        return (
+                          <div key={mode} className="mb-1 last:mb-0">
+                            <button
+                              onClick={() => handleSelectSurfaceMode(mode)}
+                              className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition ${
+                                isActive
+                                  ? 'bg-blue-500/15 text-blue-200'
+                                  : 'text-slate-200 hover:bg-white/10'
+                              }`}
+                            >
+                              <span className="material-icons-round text-[18px]">{meta.icon}</span>
+                              <span className="flex-1">{meta.label}</span>
+                              <span
+                                role="button"
+                                tabIndex={0}
+                                onClick={(event) => {
+                                  event.preventDefault();
+                                  event.stopPropagation();
+                                  handleToggleSurfacePin(mode);
+                                }}
+                                onKeyDown={(event) => {
+                                  if (event.key === 'Enter' || event.key === ' ') {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                    handleToggleSurfacePin(mode);
+                                  }
+                                }}
+                                className={`material-icons-round cursor-pointer text-[16px] ${
+                                  pinned ? 'text-blue-400' : 'text-slate-500'
+                                }`}
+                                title={pinned ? 'Unpin mode' : 'Pin mode'}
+                              >
+                                keep
+                              </span>
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
-
-              <button
-                onClick={() => setWorkspaceMode((prev) => (prev === 'visual' ? 'chat' : 'visual'))}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
-                  isVisualMode
-                    ? 'bg-primary/15 border-primary/40 text-primary'
-                    : 'bg-slate-100/80 dark:bg-white/[0.04] border-slate-200/60 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
-                }`}
-              >
-                <span className="material-icons-round text-sm">gesture</span>
-                {isVisualMode ? 'Design' : 'Visual edits'}
-              </button>
 
               {isVisualMode && visualStatus && (
                 <div className={`flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-semibold ${visualStatus.tone}`}>
@@ -2387,36 +3779,36 @@ export default function Generator() {
                 </div>
               )}
 
-              {view === 'preview' && (
+              {showPreviewToolbar && (
                 <>
-                  <div className="h-6 w-px bg-slate-200 dark:bg-white/10 mx-1"></div>
-                  <div className="flex items-center gap-2 h-10 px-2.5 rounded-2xl border border-slate-200/70 dark:border-white/10 bg-white/80 dark:bg-slate-900/70 backdrop-blur-xl shadow-[0_6px_20px_rgba(15,23,42,0.08)]">
-                    <div className="flex items-center bg-slate-100/90 dark:bg-black/30 p-1 rounded-xl border border-slate-200/70 dark:border-white/10">
+                  <div className="mx-1 h-6 w-px bg-white/10"></div>
+                  <div className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-2xl border border-[#303749] bg-[#151923] px-2.5 backdrop-blur">
+                    <div className="flex items-center rounded-xl border border-[#303749] bg-[#0f131b] p-1">
                       <button
                         onClick={() => setPreviewMode('desktop')}
                         title="Desktop"
-                        className={`p-1.5 rounded-lg transition-all ${previewMode === 'desktop' ? 'bg-white dark:bg-white/15 text-primary shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/70 dark:hover:bg-white/10'}`}
+                        className={`rounded-lg p-1.5 transition-all ${previewMode === 'desktop' ? 'bg-white/10 text-blue-200' : 'text-slate-400 hover:bg-white/10 hover:text-white'}`}
                       >
                         <span className="material-icons-round text-[15px]">desktop_windows</span>
                       </button>
                       <button
                         onClick={() => setPreviewMode('tablet')}
                         title="Tablet"
-                        className={`p-1.5 rounded-lg transition-all ${previewMode === 'tablet' ? 'bg-white dark:bg-white/15 text-primary shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/70 dark:hover:bg-white/10'}`}
+                        className={`rounded-lg p-1.5 transition-all ${previewMode === 'tablet' ? 'bg-white/10 text-blue-200' : 'text-slate-400 hover:bg-white/10 hover:text-white'}`}
                       >
                         <span className="material-icons-round text-[15px]">tablet_mac</span>
                       </button>
                       <button
                         onClick={() => setPreviewMode('mobile')}
                         title="Mobile"
-                        className={`p-1.5 rounded-lg transition-all ${previewMode === 'mobile' ? 'bg-white dark:bg-white/15 text-primary shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/70 dark:hover:bg-white/10'}`}
+                        className={`rounded-lg p-1.5 transition-all ${previewMode === 'mobile' ? 'bg-white/10 text-blue-200' : 'text-slate-400 hover:bg-white/10 hover:text-white'}`}
                       >
                         <span className="material-icons-round text-[15px]">smartphone</span>
                       </button>
                     </div>
 
-                    <div className="flex items-center h-8 min-w-[220px] w-[260px] px-2.5 rounded-xl border border-slate-200/70 dark:border-white/10 bg-slate-50/90 dark:bg-black/30">
-                      <span className="material-icons-round text-[15px] text-slate-500 dark:text-slate-400 mr-1.5">language</span>
+                    <div className="flex h-8 min-w-[120px] w-[clamp(140px,20vw,240px)] flex-1 items-center rounded-xl border border-[#303749] bg-[#0f131b] px-2.5">
+                      <span className="material-icons-round mr-1.5 text-[15px] text-slate-400">language</span>
                       <input
                         value={previewPathInput}
                         onChange={(event) => setPreviewPathInput(event.target.value)}
@@ -2428,23 +3820,23 @@ export default function Generator() {
                           }
                         }}
                         placeholder="/"
-                        className="w-full bg-transparent text-xs text-slate-700 dark:text-slate-200 outline-none placeholder:text-slate-400"
+                        className="w-full bg-transparent text-xs text-slate-200 outline-none placeholder:text-slate-500"
                       />
                     </div>
 
-                    <div className="flex items-center bg-slate-100/90 dark:bg-black/30 p-1 rounded-xl border border-slate-200/70 dark:border-white/10">
+                    <div className="flex items-center rounded-xl border border-[#303749] bg-[#0f131b] p-1">
                       <button
                         onClick={openPreviewInNewTab}
                         disabled={!latestPreviewHtml}
                         title="Open in new tab"
-                        className="p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/70 dark:hover:bg-white/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         <span className="material-icons-round text-[15px]">open_in_new</span>
                       </button>
                       <button
                         onClick={refreshPreview}
                         title="Refresh preview"
-                        className="p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/70 dark:hover:bg-white/10 transition-colors"
+                        className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
                       >
                         <span className="material-icons-round text-[15px]">refresh</span>
                       </button>
@@ -2457,7 +3849,7 @@ export default function Generator() {
                         className={`h-8 rounded-xl px-2.5 text-xs font-semibold transition-colors ${
                           isInspectMode
                             ? 'bg-primary/20 text-primary border border-primary/35'
-                            : 'border border-slate-200/70 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10'
+                            : 'border border-[#303749] text-slate-300 hover:bg-white/10'
                         }`}
                       >
                         Select
@@ -2468,138 +3860,180 @@ export default function Generator() {
               )}
             </div>
 
-            <div className="flex items-center gap-2.5">
-              <button
-                onClick={() => setShowSupabaseModal(true)}
-                className={`flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-all ${
-                  supabaseConnectedCount > 0
-                    ? 'border-emerald-400/35 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/15'
-                    : 'border-slate-200/70 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:bg-slate-100/80 dark:hover:bg-white/8'
-                }`}
-                title="Connect Supabase"
-              >
-                <span className="material-icons-round text-sm">database</span>
-                {supabaseConnectionLabel}
-              </button>
-
-              {/* Navigation Links */}
-              <div className="flex items-center pr-3 border-r border-slate-200/70 dark:border-white/10 mr-1 gap-1.5">
+            <div className="ml-2 flex shrink-0 items-center gap-2 border-l border-white/10 pl-2">
+              <div className="flex items-center gap-1 rounded-2xl border border-[#303749] bg-[#151923] p-1">
+                <button
+                  onClick={() => setShowSupabaseModal(true)}
+                  className={`relative inline-flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${
+                    supabaseConnectedCount > 0
+                      ? 'border-emerald-400/30 bg-emerald-500/[0.10] text-emerald-200 hover:bg-emerald-500/[0.16]'
+                      : 'border-[#364056] bg-[#121722] text-slate-300 hover:bg-[#192033]'
+                  }`}
+                  title={supabaseConnectionLabel}
+                  aria-label="Supabase"
+                >
+                  <span className="material-icons-round text-[18px]">hub</span>
+                  {supabaseConnectedCount > 0 && (
+                    <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-emerald-300" />
+                  )}
+                </button>
                 <Link
                   to="/dashboard"
-                  className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors rounded-xl hover:bg-slate-100/80 dark:hover:bg-white/8"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
                   title="Go to Dashboard"
                 >
-                  <span className="material-icons-round text-xl">dashboard</span>
+                  <span className="material-icons-round text-[18px]">dashboard</span>
                 </Link>
-
-                {/* Model Selector removed from here */}
-
-
-                {/* Project Dropdown */}
-                <div className="relative" ref={dropdownRef}>
-                  <button
-                    onClick={handleToggleProjects}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${showProjectDropdown
-                      ? 'bg-primary/12 text-primary border border-primary/20'
-                      : 'text-slate-600 dark:text-slate-400 border border-transparent hover:border-slate-200/70 dark:hover:border-white/10 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-white/8'}`}
-                  >
-                    <span className="material-icons-round text-base">folder</span>
-                    Projects
-                    <span className={`material-icons-round text-sm transition-transform ${showProjectDropdown ? 'rotate-180' : ''}`}>expand_more</span>
-                  </button>
-
-                  {/* Dropdown Content */}
-                  {showProjectDropdown && (
-                    <div className="absolute right-0 top-full mt-2 w-72 bg-white dark:bg-[#1e1e2e] rounded-xl shadow-2xl border border-slate-200 dark:border-white/10 overflow-hidden z-50 flex flex-col max-h-[400px] animate-in fade-in zoom-in-95 duration-200">
-                      <div className="p-3 border-b border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-white/5 flex items-center justify-between">
-                        <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Your Projects</h3>
-                        <Link to="/dashboard" className="text-[10px] text-primary hover:underline">View All</Link>
-                      </div>
-                      <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
-                        {projectList.length === 0 ? (
-                          <p className="text-center text-slate-500 py-6 text-sm">No recent projects.</p>
-                        ) : (
-                          projectList.map(p => (
-                            <button
-                              key={p.id}
-                              onClick={() => loadProject(p.id)}
-                              className={`w-full text-left p-2.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 transition-colors group flex items-start gap-3 ${currentProject?.id === p.id ? 'bg-primary/5 dark:bg-primary/20' : ''}`}
-                            >
-                              <div className={`mt-0.5 w-7 h-7 rounded-md flex items-center justify-center shrink-0 ${currentProject?.id === p.id ? 'bg-primary text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>
-                                <span className="material-icons-round text-sm">terminal</span>
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <h4 className={`text-xs font-medium truncate ${currentProject?.id === p.id ? 'text-primary' : 'text-slate-900 dark:text-white group-hover:text-primary'} transition-colors`}>
-                                  {p.name || 'Untitled'}
-                                </h4>
-                                <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
-                                  {new Date(p.updated_at).toLocaleDateString()}
-                                </p>
-                              </div>
-                            </button>
-                          ))
-                        )}
-                      </div>
-                      <div className="p-2 border-t border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-white/5">
-                        <button
-                          onClick={() => {
-                            setCurrentProject(null);
-                            resetFiles({});
-                            setDependencies({});
-                            setSelectedEditAnchor(null);
-                            setSelectedEditAnchors([]);
-                            setPromptInput('');
-                            setMessages([]);
-                            setPreviewPath('/');
-                            setPreviewPathInput('/');
-                            setSearchParams({});
-                            setShowProjectDropdown(false);
-                          }}
-                          className="w-full flex items-center justify-center gap-2 p-2 rounded-lg text-xs font-bold text-primary hover:bg-primary/10 transition-colors"
-                        >
-                          <span className="material-icons-round text-sm">add</span>
-                          New Project
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <button
+                  onClick={() => void handleShareProject()}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
+                  title="Share project"
+                >
+                  <span className="material-icons-round text-[18px]">share</span>
+                </button>
               </div>
 
+              <Link
+                to="/billing"
+                className="inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-lg bg-[#5e43dd] px-3 text-sm font-semibold text-white transition-colors hover:bg-[#6a4af6]"
+                title="Upgrade plan"
+              >
+                <span className="material-icons-round text-[17px]">flash_on</span>
+                Upgrade
+              </Link>
+              <button
+                onClick={handleOpenPublishModal}
+                disabled={!currentProject?.id}
+                className={`inline-flex h-9 items-center whitespace-nowrap rounded-lg px-4 text-sm font-semibold text-white transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${publishButtonTone}`}
+                title={currentProject?.id ? 'Publish project' : 'Create project first'}
+              >
+                {publishButtonLabel}
+              </button>
             </div>
           </header>
 
 
           <div className="flex-1 p-8 pt-0 overflow-hidden flex flex-col items-center">
-            <div className={`w-full h-full glass-effect rounded-2xl shadow-2xl relative overflow-hidden flex flex-col bg-white dark:bg-editor-bg border border-slate-200 dark:border-white/10 transition-all duration-300 ${previewMode === 'mobile'
+            <div className={`relative flex h-full w-full flex-col overflow-hidden rounded-2xl border border-[#2b3242] bg-[#131823] shadow-2xl transition-all duration-300 ${(showPreviewFrame && previewMode === 'mobile')
               ? 'max-w-[390px] max-h-[844px] my-auto !h-auto aspect-[390/844] border-8 border-slate-800 rounded-[3rem] shadow-xl'
-              : previewMode === 'tablet'
+              : (showPreviewFrame && previewMode === 'tablet')
                 ? 'max-w-[834px] max-h-[1112px] my-auto !h-auto aspect-[834/1112] border-[10px] border-slate-800 rounded-[2.2rem] shadow-xl'
                 : ''
               }`}>
-              {Object.keys(files).length > 0 ? (
-                view === 'code' ? (
+              {activeSurfaceMode === 'analytics' ? (
+                <div className="flex h-full flex-col items-center justify-center px-6 text-center">
+                  <span className="material-icons-round mb-4 text-5xl text-slate-400">query_stats</span>
+                  <h3 className="text-4xl font-semibold text-white">Analytics</h3>
+                  <p className="mt-4 max-w-xl text-lg text-slate-400">
+                    To view analytics, you first need to publish your project.
+                  </p>
+                  <button
+                    onClick={() => handleSelectSurfaceMode('preview')}
+                    className="mt-8 rounded-xl border border-white/20 px-5 py-2 text-sm font-semibold text-slate-200 transition hover:bg-white/10"
+                  >
+                    Back to Preview
+                  </button>
+                </div>
+              ) : activeSurfaceMode === 'security' ? (
+                <div className="flex h-full flex-col p-5 sm:p-8">
+                  <div className="mb-6 flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4">
+                    <div className="flex items-center gap-3">
+                      <h3 className="text-3xl font-semibold text-white">Security scan</h3>
+                      <span className="rounded-lg bg-blue-500/15 px-2.5 py-1 text-sm font-semibold text-blue-400">Up-to-date</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button className="rounded-lg border border-white/20 px-3 py-1.5 text-sm text-slate-200">Add context</button>
+                      <button className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white">Update (Free)</button>
+                    </div>
+                  </div>
+                  <h4 className="mb-3 text-2xl font-semibold text-white">Detected issues</h4>
+                  <div className="mb-4 inline-flex w-fit rounded-xl border border-white/10 bg-white/[0.04] px-3 py-1.5 text-sm font-semibold text-slate-200">
+                    All
+                  </div>
+                  <div className="flex flex-1 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] text-center">
+                    <div className="max-w-md px-6">
+                      <span className="material-icons-round text-4xl text-slate-400">shield</span>
+                      <p className="mt-3 text-2xl font-semibold text-white">All clear</p>
+                      <p className="mt-2 text-slate-400">
+                        No issues spotted. Keep in mind our scan can&apos;t catch every possible risk.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-5 flex items-center justify-end gap-3">
+                    <p className="text-sm text-slate-400">Requires a current scan - update scan first</p>
+                    <button
+                      disabled
+                      className="cursor-not-allowed rounded-lg bg-white/20 px-4 py-2 text-sm font-semibold text-slate-300 opacity-70"
+                    >
+                      Try to fix all (Free)
+                    </button>
+                  </div>
+                </div>
+              ) : activeSurfaceMode === 'speed' ? (
+                <div className="flex h-full flex-col items-center justify-center px-6 text-center">
+                  <span className="material-icons-round mb-4 text-5xl text-slate-400">speed</span>
+                  <h3 className="text-4xl font-semibold text-white">Page Speed Analysis</h3>
+                  <p className="mt-4 max-w-2xl text-lg text-slate-400">
+                    To view page speed analysis, you first need to publish your project.
+                  </p>
+                  <button
+                    onClick={() => handleSelectSurfaceMode('preview')}
+                    className="mt-8 rounded-xl border border-white/20 px-5 py-2 text-sm font-semibold text-slate-200 transition hover:bg-white/10"
+                  >
+                    Back to Preview
+                  </button>
+                </div>
+              ) : activeSurfaceMode === 'cloud' ? (
+                <CloudWorkspace
+                  projectId={currentProject?.id}
+                  projectName={currentProject?.name}
+                  cloudState={cloudState}
+                  cloudStateLoading={cloudStateLoading}
+                  cloudOverview={cloudOverview}
+                  cloudOverviewLoading={cloudOverviewLoading}
+                  onEnableCloud={async (source?: string) => {
+                    await enableCloud(source || 'cloud_workspace');
+                  }}
+                  onConnectExisting={() => {
+                    setShowSupabaseModal(true);
+                  }}
+                  onRefresh={() => {
+                    if (!currentProject?.id) return;
+                    void Promise.all([
+                      loadCloudState(currentProject.id),
+                      loadCloudOverview(currentProject.id),
+                      loadSupabaseIntegrationStatus(currentProject.id),
+                    ]);
+                  }}
+                />
+              ) : activeSurfaceMode === 'code' ? (
+                hasFiles ? (
                   <MonacoEditor files={files} />
                 ) : (
-                  <CodePreview
-                    files={files}
-                    dependencies={dependencies}
-                    previewPath={previewPath}
-                    refreshToken={previewRefreshToken}
-                    onPreviewDocument={setLatestPreviewHtml}
-                  />
+                  <div className="flex-1 flex flex-col items-center justify-center text-slate-400 space-y-4">
+                    <span className="material-icons-round text-6xl opacity-20 animate-pulse">code_off</span>
+                    <p className="text-xl font-medium text-slate-300">Kein Code vorhanden</p>
+                    <p className="text-sm max-w-md text-center text-slate-500">Beschreibe links eine Idee, um Code zu generieren.</p>
+                  </div>
                 )
+              ) : hasFiles ? (
+                <CodePreview
+                  files={files}
+                  dependencies={dependencies}
+                  previewPath={previewPath}
+                  refreshToken={previewRefreshToken}
+                  onPreviewDocument={setLatestPreviewHtml}
+                  onPreviewIssue={handlePreviewIssue}
+                />
               ) : (
                 <div className="flex-1 flex flex-col items-center justify-center text-slate-400 space-y-4">
-                  <span className="material-icons-round text-6xl opacity-20 animate-pulse">
-                    {view === 'code' ? 'code_off' : 'browser_updated'}
-                  </span>
-                  <p className="text-xl font-medium text-slate-600 dark:text-slate-400">{view === 'code' ? 'Kein Code vorhanden' : 'Preview Mode'}</p>
-                  <p className="text-sm max-w-md text-center text-slate-500 dark:text-slate-500">Beschreibe links eine Idee, um den leistungsstarken Builder zu starten.</p>
+                  <span className="material-icons-round text-6xl opacity-20 animate-pulse">browser_updated</span>
+                  <p className="text-xl font-medium text-slate-300">{activeSurfaceMeta.label}</p>
+                  <p className="text-sm max-w-md text-center text-slate-500">Beschreibe links eine Idee, um den Builder zu starten.</p>
                 </div>
               )}
 
-              {view === 'preview' && isVisualMode && pendingInlineEdits.length > 0 && (
+              {showPreviewFrame && isVisualMode && pendingInlineEdits.length > 0 && (
                 <div className="pointer-events-none absolute left-1/2 top-4 z-30 -translate-x-1/2">
                   <div className="pointer-events-auto flex items-center gap-3 rounded-2xl border border-emerald-400/35 bg-[#10131d]/95 px-3 py-2 shadow-[0_8px_30px_rgba(16,185,129,0.22)] backdrop-blur">
                     <div className="min-w-0">
@@ -2626,25 +4060,38 @@ export default function Generator() {
                 </div>
               )}
 
-              {/* Status Bar - Hide in mobile mode or clean up */}
-              <div className={`h-8 border-t border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-black/20 px-4 flex items-center justify-between text-[10px] text-slate-500 font-mono shrink-0 ${previewMode === 'mobile' ? 'hidden' : ''}`}>
-                <div className="flex items-center gap-4">
-                  <span className="flex items-center gap-1">
-                    <span className={`material-icons-round text-[12px] ${Object.keys(files).length > 0 ? 'text-green-500' : 'text-slate-500'}`}>
-                      {Object.keys(files).length > 0 ? 'check_circle' : 'radio_button_unchecked'}
+              {showPreviewFrame && (
+                <GenerationTimeline
+                  open={timelineOpen}
+                  steps={timelineSteps}
+                  currentStepIndex={timelineCurrentStep}
+                  startedAt={timelineStartedAt}
+                  activeStepStartedAt={timelineActiveStepStartedAt}
+                  running={timelineRunning}
+                  onClose={handleTimelineClose}
+                />
+              )}
+
+              {(showPreviewFrame || activeSurfaceMode === 'code') && (
+                <div className={`h-8 shrink-0 border-t border-white/10 bg-black/20 px-4 flex items-center justify-between font-mono text-[10px] text-slate-500 ${(showPreviewFrame && previewMode === 'mobile') ? 'hidden' : ''}`}>
+                  <div className="flex items-center gap-4">
+                    <span className="flex items-center gap-1">
+                      <span className={`material-icons-round text-[12px] ${hasFiles ? 'text-green-500' : 'text-slate-500'}`}>
+                        {hasFiles ? 'check_circle' : 'radio_button_unchecked'}
+                      </span>
+                      {hasFiles ? 'Code Ready' : 'Standby'}
                     </span>
-                    {Object.keys(files).length > 0 ? 'Code Ready' : 'Standby'}
-                  </span>
-                  <span className="flex items-center gap-1">UTF-8</span>
+                    <span className="flex items-center gap-1">UTF-8</span>
+                  </div>
+                  <div>{hasFiles ? `Files: ${Object.keys(files).length}` : 'Ready'}</div>
                 </div>
-                <div>{Object.keys(files).length > 0 ? `Files: ${Object.keys(files).length}` : 'Ready'}</div>
-              </div>
+              )}
             </div>
           </div>
 
           {/* Decorative elements */}
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/20 blur-[120px] rounded-full -mr-48 -mt-48 pointer-events-none opacity-40 dark:opacity-20 z-0"></div>
-          <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-blue-500/20 blur-[100px] rounded-full -ml-32 -mb-32 pointer-events-none opacity-30 dark:opacity-10 z-0"></div>
+          <div className="pointer-events-none absolute -right-56 -top-56 z-0 h-[520px] w-[520px] rounded-full bg-blue-500/15 blur-[140px]"></div>
+          <div className="pointer-events-none absolute -bottom-40 -left-40 z-0 h-[340px] w-[340px] rounded-full bg-cyan-500/10 blur-[120px]"></div>
         </main >
       </div >
       {/* Enterprise Feature 5: Diff Preview */}
@@ -2669,6 +4116,18 @@ export default function Generator() {
         onRefresh={() => void loadSupabaseIntegrationStatus(currentProject?.id)}
         onConnect={startSupabaseConnect}
         onDisconnect={disconnectSupabaseConnection}
+      />
+      <PublishModal
+        open={showPublishModal}
+        onClose={() => setShowPublishModal(false)}
+        projectId={currentProject?.id}
+        projectName={currentProject?.name}
+        publication={publication}
+        loading={publishLoading}
+        submitting={publishSubmitting}
+        onRefresh={() => void loadPublishStatus(currentProject?.id)}
+        onPublish={publishProject}
+        onUnpublish={unpublishProject}
       />
     </div>
   );

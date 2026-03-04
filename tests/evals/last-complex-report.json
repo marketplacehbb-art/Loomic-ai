@@ -1,0 +1,58 @@
+{
+  "generatedAt": "2026-02-28T22:43:16.016Z",
+  "provider": "gemini",
+  "caseTimeoutMs": 180000,
+  "selectedCaseIds": [
+    "split-bill"
+  ],
+  "totalCases": 1,
+  "passedCases": 1,
+  "averageScore": 100,
+  "results": [
+    {
+      "id": "split-bill",
+      "httpStatus": 200,
+      "success": true,
+      "durationMs": 168494,
+      "fileCount": 28,
+      "errorCount": 0,
+      "warningCount": 0,
+      "pipeline": {
+        "projectType": "dashboard",
+        "pages": [
+          "/",
+          "/tool"
+        ],
+        "qualityCriticalCount": null,
+        "verifyPass": null,
+        "editOutcome": "applied"
+      },
+      "checks": [
+        {
+          "id": "calculator",
+          "ok": true
+        },
+        {
+          "id": "tip",
+          "ok": true
+        },
+        {
+          "id": "line-items",
+          "ok": true
+        },
+        {
+          "id": "live-total",
+          "ok": true
+        }
+      ],
+      "passedChecks": 4,
+      "totalChecks": 4,
+      "coverageScore": 1,
+      "fileScore": 1,
+      "buildHealthy": true,
+      "overallScore": 100,
+      "pass": true,
+      "topError": null
+    }
+  ]
+}

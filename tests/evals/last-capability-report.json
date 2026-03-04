@@ -1,0 +1,58 @@
+{
+  "generatedAt": "2026-02-28T22:59:28.365Z",
+  "totalCases": 5,
+  "passedCases": 5,
+  "averageScore": 100,
+  "results": [
+    {
+      "id": "kanban-board",
+      "ok": true,
+      "featureScore": 1,
+      "routeScore": 1,
+      "projectTypeOk": true,
+      "validationOk": true,
+      "score": 100,
+      "details": []
+    },
+    {
+      "id": "pathfinding-visualizer",
+      "ok": true,
+      "featureScore": 1,
+      "routeScore": 1,
+      "projectTypeOk": true,
+      "validationOk": true,
+      "score": 100,
+      "details": []
+    },
+    {
+      "id": "inventory-invoice",
+      "ok": true,
+      "featureScore": 1,
+      "routeScore": 1,
+      "projectTypeOk": true,
+      "validationOk": true,
+      "score": 100,
+      "details": []
+    },
+    {
+      "id": "split-bill-calculator",
+      "ok": true,
+      "featureScore": 1,
+      "routeScore": 1,
+      "projectTypeOk": true,
+      "validationOk": true,
+      "score": 100,
+      "details": []
+    },
+    {
+      "id": "crypto-portfolio-dashboard",
+      "ok": true,
+      "featureScore": 1,
+      "routeScore": 1,
+      "projectTypeOk": true,
+      "validationOk": true,
+      "score": 100,
+      "details": []
+    }
+  ]
+}

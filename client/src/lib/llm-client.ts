@@ -11,8 +11,10 @@ export interface ProcessedFile {
 }
 
 export interface GenerateRequest {
-  provider: 'gemini' | 'deepseek' | 'openai';
+  provider: 'gemini' | 'groq' | 'openai' | 'nvidia';
   prompt: string;
+  mode?: 'generate' | 'repair';
+  errorContext?: string;
   templateId?: string;
   systemPrompt?: string;
   temperature?: number;
@@ -40,6 +42,9 @@ export interface GenerateResponse {
   errors?: string[];
   warnings?: string[];
   error?: string;
+  errorCategory?: 'rate_limit' | 'provider_down' | 'auth_error';
+  suggestedProvider?: 'gemini' | 'groq' | 'openai' | 'nvidia';
+  retryable?: boolean;
   provider: string;
   timestamp: string;
   duration?: number;
@@ -48,8 +53,20 @@ export interface GenerateResponse {
     detected: boolean;
     reason: string;
   };
+  repairStatus?: 'skipped' | 'succeeded' | 'failed';
+  repairError?: string;
+  metadata?: {
+    hydratedContext?: {
+      intent: string;
+      targetFiles: string[];
+      componentList: string[];
+      colorScheme: string;
+      complexity: 'simple' | 'moderate' | 'complex';
+    } | null;
+  };
   pipeline?: {
     mode: 'template+plan+assemble';
+    generationMode?: 'new' | 'edit';
     templateId?: string;
     selectedBlocks?: string[];
     plan?: {
@@ -98,6 +115,62 @@ export interface GenerateResponse {
       projectId?: string;
       fileCount: number;
     };
+    autoRepair?: {
+      enabled: boolean;
+      attempted: boolean;
+      applied: boolean;
+      maxAttempts: number;
+      attemptsExecuted: number;
+      initialErrorCount: number;
+      finalErrorCount: number;
+      abortedReason?: string;
+      logs?: Array<{
+        attempt: number;
+        beforeErrors: number;
+        afterErrors: number;
+        status: 'improved' | 'resolved' | 'aborted' | 'failed';
+        reason?: string;
+      }>;
+    };
+    qualityGate?: {
+      pass: boolean;
+      overall: number;
+      visualScore: number;
+      accessibilityScore: number;
+      performanceScore: number;
+      criticalCount: number;
+      warningCount: number;
+      findings: Array<{
+        id: string;
+        severity: 'critical' | 'warning' | 'info';
+        message: string;
+        suggestion: string;
+      }>;
+    };
+    qualitySummary?: {
+      score: number;
+      grade: 'A' | 'B' | 'C' | 'D' | 'E';
+      status: 'excellent' | 'good' | 'needs_improvement' | 'critical';
+      pass: boolean;
+      criticalCount: number;
+      warningCount: number;
+      topIssues: string[];
+      recommendedAction?: string;
+      repair: {
+        attempted: boolean;
+        applied: boolean;
+        initialErrorCount: number;
+        finalErrorCount: number;
+        attemptsExecuted: number;
+        abortedReason?: string;
+      };
+      critique?: {
+        score: number;
+        needsRepair: boolean;
+        issueCount: number;
+        criticalIssueCount: number;
+      };
+    };
     plannedCreate: number;
     plannedUpdate: number;
     templateFiles: number;
@@ -113,17 +186,31 @@ export class LLMClient {
   }
 
   async generate(request: GenerateRequest): Promise<GenerateResponse> {
-    const response = await fetch(`${this.baseUrl}/generate`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        ...request,
-        validate: request.validate !== false,
-        bundle: request.bundle !== false
-      })
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 90_000);
+    let response: Response;
+
+    try {
+      response = await fetch(`${this.baseUrl}/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          ...request,
+          validate: request.validate !== false,
+          bundle: request.bundle !== false
+        }),
+        signal: controller.signal,
+      });
+    } catch (error: any) {
+      if (error?.name === 'AbortError') {
+        throw new Error('Generation timed out after 90 seconds. Please try again.');
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeout);
+    }
 
     if (!response.ok) {
       let errorMessage = `API error: ${response.status}`;
@@ -145,62 +232,13 @@ export class LLMClient {
     request: GenerateRequest,
     onChunk: (chunk: string) => void
   ): Promise<void> {
-    const response = await fetch(`${this.baseUrl}/generate`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ ...request, stream: true })
-    });
-
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`);
-    }
-
-    const reader = response.body?.getReader();
-    if (!reader) throw new Error('Response body is empty');
-
-    const decoder = new TextDecoder();
-    let chunk = '';
-
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        chunk += decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
-
-        for (let i = 0; i < lines.length - 1; i++) {
-          const line = lines[i].trim();
-          if (line) {
-            try {
-              const data = JSON.parse(line);
-              if (data.choices?.[0]?.delta?.content) {
-                onChunk(data.choices[0].delta.content);
-              }
-            } catch (e) {
-              // Continue on parse error
-            }
-          }
-        }
-
-        chunk = lines[lines.length - 1];
-      }
-
-      if (chunk.trim()) {
-        const data = JSON.parse(chunk);
-        if (data.choices?.[0]?.delta?.content) {
-          onChunk(data.choices[0].delta.content);
-        }
-      }
-    } finally {
-      reader.releaseLock();
-    }
+    void request;
+    void onChunk;
+    throw new Error('Streaming is not available yet. Use generate() until the streaming API is implemented.');
   }
 
   getAvailableProviders(): string[] {
-    return ['gemini', 'deepseek', 'openai'];
+    return ['gemini', 'groq', 'openai', 'nvidia'];
   }
 }
 

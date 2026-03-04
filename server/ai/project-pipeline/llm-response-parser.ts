@@ -34,19 +34,120 @@ export interface ParsedOperationsReport {
 
 const FILE_EXTENSIONS = '(?:tsx|ts|jsx|js|css|json|html|md)';
 const FILE_PATH_REGEX = new RegExp(`[A-Za-z0-9_./-]+\\.${FILE_EXTENSIONS}`, 'gi');
+const INLINE_FILE_LABEL_REGEX = /^([A-Za-z0-9_./-]+\.(?:tsx|ts|jsx|js|css|json|html|md))\s*:\s*(.+)$/i;
+const NARRATIVE_METADATA_PREFIX_REGEX = /^(?:Dependencies?|Imports?|Notes?|Description|MainEntry|Entry|Components?|Files?|Path|Filename|Routes?|Pages?)\s*:\s+(.+)$/i;
+const CODEISH_METADATA_VALUE_REGEX = /^(?:['"`[{(<]|import\s|export\s|const\s|let\s|var\s|function\s|class\s|interface\s|type\s|enum\s|return\b|async\b)/i;
+import {
+  APP_DEFAULT_EXPORT_FALLBACK,
+  ensureAppDefaultExportInFiles,
+  hasDefaultExport,
+  isAppModulePath,
+  looksLikeHtmlDocument,
+  tryInjectDefaultExportForApp,
+} from '../../api/generate-shared.js';
 
 function normalizePath(path: string): string {
-  return path.replace(/\\/g, '/').replace(/^\.?\//, '');
+  const raw = (path || '').replace(/\\/g, '/').replace(/^\.?\//, '').trim();
+  if (!raw) return '';
+  const segments = raw.split('/');
+  const stack: string[] = [];
+  for (const segment of segments) {
+    if (!segment || segment === '.') continue;
+    if (segment === '..') {
+      if (stack.length > 0) stack.pop();
+      continue;
+    }
+    stack.push(segment);
+  }
+  return stack.join('/');
 }
 
 function normalizeGeneratedPath(path: string): string {
   const normalized = normalizePath(path);
+  const lower = normalized.toLowerCase();
   if (normalized === 'App.tsx' || normalized === 'app.tsx') return 'src/App.tsx';
   if (normalized === 'main.tsx') return 'src/main.tsx';
   if (/^[A-Za-z0-9_-]+\.(tsx|ts|jsx|js|css)$/.test(normalized) && !normalized.startsWith('src/')) {
     return `src/${normalized}`;
   }
+  const rootFiles = new Set([
+    'package.json',
+    'package-lock.json',
+    'pnpm-lock.yaml',
+    'yarn.lock',
+    'index.html',
+    'readme.md',
+    'robots.txt',
+    'sitemap.xml',
+    'vite.config.ts',
+    'vitest.config.ts',
+    'tailwind.config.ts',
+    'postcss.config.js',
+    'eslint.config.js',
+    'tsconfig.json',
+    'tsconfig.app.json',
+    'tsconfig.node.json',
+  ]);
+  const codeLikePath = /\.(tsx|ts|jsx|js|css|scss|sass|less)$/.test(normalized);
+  const shouldKeepOutsideSrc =
+    normalized.startsWith('src/') ||
+    normalized.startsWith('public/') ||
+    normalized.startsWith('server/') ||
+    normalized.startsWith('scripts/') ||
+    normalized.startsWith('tests/') ||
+    normalized.startsWith('migrations/') ||
+    normalized.startsWith('supabase/') ||
+    normalized.startsWith('.github/') ||
+    normalized.startsWith('.vscode/') ||
+    rootFiles.has(lower);
+
+  if (codeLikePath && !shouldKeepOutsideSrc) {
+    return `src/${normalized}`;
+  }
   return normalized;
+}
+
+const STRUCTURED_ALLOWED_ROOT_FILES = new Set([
+  'package.json',
+  'package-lock.json',
+  'pnpm-lock.yaml',
+  'yarn.lock',
+  'index.html',
+  'readme.md',
+  'robots.txt',
+  'sitemap.xml',
+  'src/vite-env.d.ts',
+]);
+
+const STRUCTURED_ALLOWED_PREFIXES = [
+  'src/',
+  'public/',
+  'server/',
+  'supabase/',
+  'scripts/',
+  'tests/',
+  'migrations/',
+  'data/',
+  'docs/',
+];
+
+const STRUCTURED_ALLOWED_FILE_EXTENSIONS =
+  /\.(tsx|ts|jsx|js|css|scss|sass|less|json|html|md|txt|ya?ml|toml|sql)$/i;
+
+function isAllowedStructuredFilePath(path: string): boolean {
+  const normalized = normalizeGeneratedPath(path || '');
+  if (!normalized || normalized.endsWith('/')) return false;
+  if (normalized.startsWith('.git/')) return false;
+  if (/[<>:"|?*]/.test(normalized)) return false;
+
+  const lower = normalized.toLowerCase();
+  if (STRUCTURED_ALLOWED_ROOT_FILES.has(lower)) return true;
+
+  const inAllowedPrefix = STRUCTURED_ALLOWED_PREFIXES.some((prefix) => normalized.startsWith(prefix));
+  if (!inAllowedPrefix) return false;
+
+  if (normalized.endsWith('.d.ts')) return true;
+  return STRUCTURED_ALLOWED_FILE_EXTENSIONS.test(normalized);
 }
 
 function isRuntimeModulePath(path: string): boolean {
@@ -54,17 +155,10 @@ function isRuntimeModulePath(path: string): boolean {
   return /\.(tsx|ts|jsx|js)$/.test(normalized);
 }
 
-function looksLikeFullHtmlDocument(code: string): boolean {
-  if (!code || typeof code !== 'string') return false;
-  const hasDoctype = /<!doctype\s+html/i.test(code);
-  const hasHtmlTag = /<html[\s>]/i.test(code);
-  const hasHeadTag = /<head[\s>]/i.test(code);
-  const hasBodyTag = /<body[\s>]/i.test(code);
-  return hasDoctype || (hasHtmlTag && (hasHeadTag || hasBodyTag));
-}
+
 
 function isInvalidHtmlForRuntimeModule(path: string, content: string): boolean {
-  return isRuntimeModulePath(path) && looksLikeFullHtmlDocument(content);
+  return isRuntimeModulePath(path) && looksLikeHtmlDocument(content);
 }
 
 function inferPathFromNearbyText(text: string): string | undefined {
@@ -101,7 +195,7 @@ function scoreCandidate(code: string, path?: string): number {
     score -= (defaultExports - 1) * 30;
   }
 
-  if (looksLikeFullHtmlDocument(code)) {
+  if (looksLikeHtmlDocument(code)) {
     score -= isRuntimeModulePath(path || 'src/App.tsx') ? 600 : 250;
   }
 
@@ -280,29 +374,33 @@ function consolidateImportsByModule(code: string): string {
 }
 
 function removeExtraDefaultExports(code: string): string {
-  const matches = Array.from(code.matchAll(/export\s+default\b/g));
-  if (matches.length <= 1) return code;
-
-  let keepIndex = matches[0].index || 0;
-  const appMatch = code.match(/export\s+default\s+function\s+App\b/);
-  if (appMatch && typeof appMatch.index === 'number') {
-    keepIndex = appMatch.index;
-  }
-
   let output = code;
-  for (let i = matches.length - 1; i >= 0; i -= 1) {
-    const start = matches[i].index || 0;
-    if (start === keepIndex) continue;
+
+  while (true) {
+    const matches = Array.from(output.matchAll(/export\s+default\b/g));
+    if (matches.length <= 1) break;
+
+    let keepIndex = matches[0].index || 0;
+    const appMatch = output.match(/export\s+default\s+function\s+App\b/);
+    if (appMatch && typeof appMatch.index === 'number') {
+      keepIndex = appMatch.index;
+    }
+
+    const removable = [...matches].reverse().find((match) => (match.index || 0) !== keepIndex);
+    if (!removable) break;
+    const start = removable.index || 0;
 
     const after = output.slice(start);
     const fnMatch = after.match(/^export\s+default\s+function\b/);
     if (fnMatch) {
       const openBrace = output.indexOf('{', start);
-      if (openBrace === -1) continue;
-      const closeBrace = findMatchingBrace(output, openBrace);
-      if (closeBrace === -1) continue;
-      output = output.slice(0, start) + output.slice(closeBrace + 1);
-      continue;
+      if (openBrace !== -1) {
+        const closeBrace = findMatchingBrace(output, openBrace);
+        if (closeBrace !== -1) {
+          output = output.slice(0, start) + output.slice(closeBrace + 1);
+          continue;
+        }
+      }
     }
 
     const statementEnd = output.indexOf('\n', start);
@@ -312,6 +410,50 @@ function removeExtraDefaultExports(code: string): string {
       output = output.slice(0, start) + output.slice(statementEnd + 1);
     }
   }
+
+  const explicitDefaultCount = (output.match(/export\s+default\b/g) || []).length;
+  let aliasDefaultKept = false;
+  const keepSingleAliasDefault = explicitDefaultCount === 0;
+
+  const isDefaultExportSpecifier = (specifier: string): boolean => {
+    const trimmed = specifier.trim();
+    if (!trimmed) return false;
+    if (trimmed === 'default') return true;
+    const aliasMatch = trimmed.match(
+      /^([A-Za-z_$][A-Za-z0-9_$]*|default)\s+as\s+([A-Za-z_$][A-Za-z0-9_$]*|default)$/
+    );
+    return Boolean(aliasMatch && aliasMatch[2] === 'default');
+  };
+
+  output = output.replace(
+    /export\s*\{([^}]*)\}\s*(from\s*['"][^'"]+['"])?\s*;?/g,
+    (_full, specifierBlock: string, fromClause?: string) => {
+      const specifiers = String(specifierBlock || '')
+        .split(',')
+        .map((part) => part.trim())
+        .filter(Boolean);
+
+      if (specifiers.length === 0) return '';
+
+      const remaining: string[] = [];
+      for (const specifier of specifiers) {
+        if (!isDefaultExportSpecifier(specifier)) {
+          remaining.push(specifier);
+          continue;
+        }
+
+        if (keepSingleAliasDefault && !aliasDefaultKept) {
+          remaining.push(specifier);
+          aliasDefaultKept = true;
+        }
+      }
+
+      if (remaining.length === 0) return '';
+
+      const normalizedFrom = fromClause ? ` ${String(fromClause).trim()}` : '';
+      return `export { ${remaining.join(', ')} }${normalizedFrom};`;
+    }
+  );
 
   return output;
 }
@@ -326,7 +468,7 @@ function removeDuplicateTopLevelDeclarations(code: string): string {
       ts.ScriptKind.TSX
     );
 
-    const seen = new Set<string>();
+    const seen = new Map<string, { start: number; end: number; hasDefaultExport: boolean }>();
     const removals: Array<{ start: number; end: number }> = [];
 
     const getStatementNames = (statement: ts.Statement): string[] => {
@@ -361,16 +503,44 @@ function removeDuplicateTopLevelDeclarations(code: string): string {
       const names = getStatementNames(statement);
       if (names.length === 0) return;
 
-      const hasDuplicate = names.some((name) => seen.has(name));
-      if (hasDuplicate) {
-        removals.push({
-          start: statement.getFullStart(),
-          end: statement.getEnd(),
-        });
+      const currentRange = {
+        start: statement.getFullStart(),
+        end: statement.getEnd(),
+      };
+      const currentText = code.slice(currentRange.start, currentRange.end);
+      const currentHasDefaultExport = /\bexport\s+default\b/.test(currentText);
+
+      let shouldRemoveCurrent = false;
+
+      names.forEach((name) => {
+        const previous = seen.get(name);
+        if (!previous) return;
+
+        // Prefer keeping the declaration that carries the default export,
+        // e.g. keep `export default function App` over `function App`.
+        if (currentHasDefaultExport && !previous.hasDefaultExport) {
+          removals.push({
+            start: previous.start,
+            end: previous.end,
+          });
+          return;
+        }
+
+        shouldRemoveCurrent = true;
+      });
+
+      if (shouldRemoveCurrent) {
+        removals.push(currentRange);
         return;
       }
 
-      names.forEach((name) => seen.add(name));
+      names.forEach((name) => {
+        seen.set(name, {
+          start: currentRange.start,
+          end: currentRange.end,
+          hasDefaultExport: currentHasDefaultExport,
+        });
+      });
     });
 
     if (removals.length === 0) return code;
@@ -388,10 +558,110 @@ function removeDuplicateTopLevelDeclarations(code: string): string {
   }
 }
 
+function stripNarrativePrelude(code: string): string {
+  const normalized = code.replace(/\r\n/g, '\n').replace(/^\uFEFF/, '');
+  const lines = normalized.split('\n');
+  if (lines.length <= 1) return normalized;
+
+  const codeAnchorPattern = /^(?:import\s|export\s|'use client'|["']use client["'];?|const\s|let\s|var\s|function\s|class\s|interface\s|type\s|enum\s|\/\/|\/\*|\*)/;
+  const firstAnchorIndex = lines.findIndex((line) => {
+    const trimmed = line.trim();
+    if (codeAnchorPattern.test(trimmed)) return true;
+    const inlineFileMatch = trimmed.match(INLINE_FILE_LABEL_REGEX);
+    if (!inlineFileMatch) return false;
+    return codeAnchorPattern.test(inlineFileMatch[2].trim());
+  });
+  if (firstAnchorIndex <= 0) return normalized;
+
+  return lines.slice(firstAnchorIndex).join('\n').trim();
+}
+
+function stripNarrativeNoiseLines(code: string): string {
+  const lines = code.split('\n');
+  const cleaned = lines.flatMap((line) => {
+    const trimmed = line.trim();
+    const indent = line.length - line.trimStart().length;
+
+    if (trimmed.length === 0) return [line];
+
+    if (indent === 0) {
+      const inlineFileMatch = trimmed.match(INLINE_FILE_LABEL_REGEX);
+      if (inlineFileMatch) {
+        const inlineCode = inlineFileMatch[2].trim();
+        return inlineCode ? [inlineCode] : [];
+      }
+
+      const metadataMatch = trimmed.match(NARRATIVE_METADATA_PREFIX_REGEX);
+      if (metadataMatch) {
+        const metadataValue = metadataMatch[1].trim();
+        if (!CODEISH_METADATA_VALUE_REGEX.test(metadataValue) && !/[;,{([]$/.test(metadataValue)) {
+          return [];
+        }
+      }
+    }
+
+    if (/^```/.test(trimmed)) return [];
+    if (/^[A-Za-z][A-Za-z0-9_ ./'"-]{0,120}:\s*$/.test(trimmed)) return [];
+    if (/^[-*]\s+\S+/.test(trimmed)) return [];
+    if (/^\d+\.\s+\S+/.test(trimmed)) return [];
+    if (/^#{1,6}\s+\S+/.test(trimmed)) return [];
+    return [line];
+  });
+  return cleaned.join('\n').trim();
+}
+
+function rewriteBrowserRouterToHashRouter(code: string): string {
+  let output = String(code || '');
+
+  const normalizeImportSpecifiers = (specifierBlock: string): string => {
+    const seen = new Set<string>();
+    const normalized = String(specifierBlock || '')
+      .split(',')
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .map((specifier) => {
+        const aliasMatch = specifier.match(/^BrowserRouter\s+as\s+([A-Za-z_$][\w$]*)$/);
+        if (aliasMatch?.[1]) {
+          return `HashRouter as ${aliasMatch[1]}`;
+        }
+        return specifier === 'BrowserRouter' ? 'HashRouter' : specifier;
+      })
+      .filter((specifier) => {
+        if (seen.has(specifier)) return false;
+        seen.add(specifier);
+        return true;
+      });
+
+    return normalized.join(', ');
+  };
+
+  output = output.replace(
+    /import\s*{([^}]*)}\s*from\s*['"]react-router-dom['"]\s*;?/g,
+    (_full, specifierBlock: string) => {
+      const specifiers = normalizeImportSpecifiers(specifierBlock);
+      return specifiers
+        ? `import { ${specifiers} } from 'react-router-dom';`
+        : `import 'react-router-dom';`;
+    }
+  );
+
+  output = output.replace(/<\s*BrowserRouter\b/g, '<HashRouter');
+  output = output.replace(/<\/\s*BrowserRouter\s*>/g, '</HashRouter>');
+  output = output.replace(/\.BrowserRouter\b/g, '.HashRouter');
+  output = output.replace(/\b(?:jsx|jsxs|React\.createElement)\s*\(\s*BrowserRouter\b/g, (match) =>
+    match.replace('BrowserRouter', 'HashRouter')
+  );
+
+  return output;
+}
+
 function sanitizePrimaryCode(code: string): string {
-  let sanitized = code.replace(/\r\n/g, '\n').trim();
+  let sanitized = stripNarrativePrelude(code);
+  sanitized = stripNarrativeNoiseLines(sanitized);
+  sanitized = sanitized.replace(/\r\n/g, '\n').trim();
   sanitized = dedupeImportLines(sanitized);
   sanitized = consolidateImportsByModule(sanitized);
+  sanitized = rewriteBrowserRouterToHashRouter(sanitized);
   sanitized = removeExtraDefaultExports(sanitized);
   sanitized = removeDuplicateTopLevelDeclarations(sanitized);
   return `${sanitized.trim()}\n`;
@@ -467,6 +737,16 @@ function collectJsonCandidates(raw: string): string[] {
     candidates.push(trimmed);
   }
 
+  // DeepSeek often wraps strict JSON in markdown fences (```json ... ```).
+  // Normalize this shape early so structured parsing does not fail.
+  const strippedFenceCandidate = trimmed
+    .replace(/^```(?:json|jsonc)?\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .trim();
+  if (strippedFenceCandidate.length > 0 && strippedFenceCandidate !== trimmed) {
+    candidates.push(strippedFenceCandidate);
+  }
+
   const fencedRegex = /```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g;
   let fenceMatch: RegExpExecArray | null;
   while ((fenceMatch = fencedRegex.exec(raw)) !== null) {
@@ -505,6 +785,13 @@ function looksLikeStructuredOutput(raw: string): boolean {
     return true;
   }
 
+  if (/^```(?:json|jsonc)?/i.test(trimmed)) {
+    const withoutOpeningFence = trimmed.replace(/^```(?:json|jsonc)?\s*/i, '');
+    if (directMarker.test(withoutOpeningFence.slice(0, 2000))) {
+      return true;
+    }
+  }
+
   const fencedRegex = /```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g;
   let match: RegExpExecArray | null;
   while ((match = fencedRegex.exec(raw)) !== null) {
@@ -518,23 +805,91 @@ function looksLikeStructuredOutput(raw: string): boolean {
   return false;
 }
 
-function tryParseJsonOutput(raw: string): Array<{ path: string; content: string }> {
+interface JsonFilesParseResult {
+  files: Array<{ path: string; content: string }>;
+  hasFilesPayload: boolean;
+  invalidEntries: number;
+}
+
+function tryParseJsonOutput(raw: string): JsonFilesParseResult {
   const parsed = tryParseStructuredJsonObject(raw);
-  if (!parsed) return [];
+  if (!parsed) {
+    return {
+      files: [],
+      hasFilesPayload: false,
+      invalidEntries: 0,
+    };
+  }
 
-  const filesArray = (parsed as { files?: Array<{ path?: string; content?: string }> }).files;
-  if (!Array.isArray(filesArray)) return [];
+  const filesPayload = (parsed as {
+    files?: Array<{ path?: string; content?: string }> | Record<string, unknown>;
+  }).files;
 
-  return filesArray
+  if (filesPayload && typeof filesPayload === 'object' && !Array.isArray(filesPayload)) {
+    let invalidEntries = 0;
+    const files = Object.entries(filesPayload)
+      .map(([path, content]) => ({
+        path: normalizeGeneratedPath(path || ''),
+        content: typeof content === 'string' ? content : '',
+      }))
+      .filter((file) => {
+        if (file.path.length === 0 || file.content.trim().length === 0) {
+          invalidEntries += 1;
+          return false;
+        }
+        if (!isAllowedStructuredFilePath(file.path)) {
+          invalidEntries += 1;
+          return false;
+        }
+        if (isInvalidHtmlForRuntimeModule(file.path, file.content)) {
+          invalidEntries += 1;
+          return false;
+        }
+        return true;
+      });
+
+    return {
+      files,
+      hasFilesPayload: true,
+      invalidEntries,
+    };
+  }
+
+  if (!Array.isArray(filesPayload)) {
+    return {
+      files: [],
+      hasFilesPayload: Object.prototype.hasOwnProperty.call(parsed, 'files'),
+      invalidEntries: 0,
+    };
+  }
+
+  let invalidEntries = 0;
+  const files = filesPayload
     .map((file) => ({
       path: normalizeGeneratedPath(file.path || ''),
       content: typeof file.content === 'string' ? file.content : '',
     }))
     .filter((file) => {
-      if (file.path.length === 0 || file.content.trim().length === 0) return false;
-      if (isInvalidHtmlForRuntimeModule(file.path, file.content)) return false;
+      if (file.path.length === 0 || file.content.trim().length === 0) {
+        invalidEntries += 1;
+        return false;
+      }
+      if (!isAllowedStructuredFilePath(file.path)) {
+        invalidEntries += 1;
+        return false;
+      }
+      if (isInvalidHtmlForRuntimeModule(file.path, file.content)) {
+        invalidEntries += 1;
+        return false;
+      }
       return true;
     });
+
+  return {
+    files,
+    hasFilesPayload: true,
+    invalidEntries,
+  };
 }
 
 interface JsonOperationsParseResult {
@@ -602,6 +957,10 @@ function tryParseJsonOperations(
     const path = normalizeGeneratedPath(entry.path || entry.file || entry.target || '');
     if (!path) {
       markUnresolved(index, undefined, 'missing target path');
+      return;
+    }
+    if (!isAllowedStructuredFilePath(path)) {
+      markUnresolved(index, path, 'unsupported target path');
       return;
     }
 
@@ -733,7 +1092,7 @@ function containsInvalidHtmlStructuredOutput(raw: string): boolean {
     const path = normalizeGeneratedPath(entry?.path || entry?.file || entry?.target || '');
     if (!path || !isRuntimeModulePath(path)) return false;
     if (typeof entry?.content !== 'string') return false;
-    return looksLikeFullHtmlDocument(entry.content);
+    return looksLikeHtmlDocument(entry.content);
   });
 }
 
@@ -926,7 +1285,8 @@ export function parseLLMOutput(
     };
   }
 
-  const jsonFiles = tryParseJsonOutput(rawCode);
+  const jsonFileResult = tryParseJsonOutput(rawCode);
+  const jsonFiles = ensureAppDefaultExportInFiles(jsonFileResult.files).files;
   if (jsonFiles.length > 0) {
     const runtimeCandidates = jsonFiles.filter((file) => isRuntimeModulePath(file.path));
     const primaryCode = runtimeCandidates.length > 0
@@ -942,11 +1302,20 @@ export function parseLLMOutput(
       detectedFormat: 'json',
     };
   }
+  if (jsonFileResult.hasFilesPayload) {
+    return {
+      primaryCode: '',
+      extractedFiles: [],
+      detectedFormat: 'raw',
+      parseError: 'MALFORMED_STRUCTURED_JSON',
+    };
+  }
 
   const operationResult = tryParseJsonOperations(rawCode, existingFiles);
   const astPatches = extractAstPatchesFromRaw(rawCode);
   if (operationResult.files.length > 0) {
-    const runtimeCandidates = operationResult.files.filter((file) => isRuntimeModulePath(file.path));
+    const normalizedOperationFiles = ensureAppDefaultExportInFiles(operationResult.files).files;
+    const runtimeCandidates = normalizedOperationFiles.filter((file) => isRuntimeModulePath(file.path));
     const primaryCode = runtimeCandidates.length > 0
       ? choosePrimaryCode(
         runtimeCandidates.map((f) => ({ path: f.path, content: f.content })),
@@ -956,7 +1325,7 @@ export function parseLLMOutput(
       : '';
     return {
       primaryCode,
-      extractedFiles: operationResult.files,
+      extractedFiles: normalizedOperationFiles,
       detectedFormat: 'operations',
       operationsReport: operationResult.report,
       astPatches,
@@ -1015,10 +1384,13 @@ export function parseLLMOutput(
     fencedBlocks.forEach((block) => {
       const normalizedPath = block.path ? normalizeGeneratedPath(block.path) : '';
       if (!normalizedPath) {
-        if (looksLikeFullHtmlDocument(block.content)) {
+        if (looksLikeHtmlDocument(block.content)) {
           return;
         }
         unassignedBlocks.push({ content: block.content });
+        return;
+      }
+      if (!isAllowedStructuredFilePath(normalizedPath)) {
         return;
       }
       if (isInvalidHtmlForRuntimeModule(normalizedPath, block.content)) {
@@ -1035,16 +1407,17 @@ export function parseLLMOutput(
       path,
       content: `${content.trim()}\n`,
     }));
+    const normalizedExtractedFiles = ensureAppDefaultExportInFiles(extractedFiles).files;
 
     const candidates = [
-      ...extractedFiles.map((file) => ({ path: file.path, content: file.content })),
+      ...normalizedExtractedFiles.map((file) => ({ path: file.path, content: file.content })),
       ...unassignedBlocks.map((block) => ({ content: block.content })),
     ];
 
     if (candidates.length === 0) {
       return {
         primaryCode: '',
-        extractedFiles,
+        extractedFiles: normalizedExtractedFiles,
         detectedFormat: 'fenced',
         parseError: 'INVALID_HTML_DOCUMENT_OUTPUT',
       };
@@ -1052,7 +1425,7 @@ export function parseLLMOutput(
 
     return {
       primaryCode: choosePrimaryCode(candidates, rawCode, preferredPath),
-      extractedFiles,
+      extractedFiles: normalizedExtractedFiles,
       detectedFormat: 'fenced',
     };
   }
@@ -1066,7 +1439,7 @@ export function parseLLMOutput(
     };
   }
 
-  if (looksLikeFullHtmlDocument(rawCode)) {
+  if (looksLikeHtmlDocument(rawCode)) {
     return {
       primaryCode: '',
       extractedFiles: [],
@@ -1075,8 +1448,11 @@ export function parseLLMOutput(
     };
   }
 
+  const sanitizedRawPrimary = sanitizePrimaryCode(rawCode);
   return {
-    primaryCode: sanitizePrimaryCode(rawCode),
+    primaryCode: isAppModulePath(preferredPath) && !hasDefaultExport(sanitizedRawPrimary)
+      ? APP_DEFAULT_EXPORT_FALLBACK
+      : sanitizedRawPrimary,
     extractedFiles: [],
     detectedFormat: 'raw',
   };
