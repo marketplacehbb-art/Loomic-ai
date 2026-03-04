@@ -1,0 +1,50 @@
+﻿­ƒÜÇ ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ
+Ô£à API Server running on http://localhost:3001
+­ƒôè Environment: development
+­ƒöæ Groq API Key: Ô£ô Configured
+­ƒöæ Gemini API Key: Ô£ô Configured
+­ƒöæ DeepSeek API Key: Ô£ô Configured
+ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ
+
+[2026-02-18T16:53:21.801Z] POST /api/generate
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx server/index.ts`[39m
+­ƒôé Virtual directories initialized
+Ô£à Loaded TS standard libs into memory
+Ô£à Loaded @types/react and jsx-runtime into memory
+Ô£à Loaded @types/react-dom into memory
+Ô£à CodeProcessor initialized
+­ƒöì Loading lucide-react icons from build-time generated list...
+Ô£à Loaded 1671 icons from type-definitions
+­ƒôª Version: 0.564.0
+­ƒôè Icon Registry: 1671 icons in 10 categories
+
+­ƒÜÇ ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ
+Ô£à API Server running on http://localhost:3001
+­ƒôè Environment: development
+­ƒöæ Groq API Key: Ô£ô Configured
+­ƒöæ Gemini API Key: Ô£ô Configured
+­ƒöæ DeepSeek API Key: Ô£ô Configured
+ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ
+
+[2026-02-18T16:56:12.915Z] POST /api/generate
+ÔØî Validation 
+Error: [
+  {
+    "expected": 
+"string",
+    "code": 
+"invalid_type",
+    "path": [
+      "image"
+    ],
+    "message": 
+"Invalid input: 
+expected string, 
+received null"
+  }
+]
+[2026-02-18T18:07:07.837Z] GET /api/git/status
+[2026-02-18T18:07:07.845Z] POST /api/git/branches
+[2026-02-18T18:07:07.852Z] POST /api/git/branches
+[2026-02-18T18:07:07.859Z] GET /api/git/status
