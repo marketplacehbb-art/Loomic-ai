@@ -1,5 +1,5 @@
 import React from 'react';
-import { Project } from '../../lib/api';
+import type { Project } from '../../lib/api';
 
 interface ProjectsGridProps {
   isInitialLoading: boolean;
@@ -16,6 +16,12 @@ interface ProjectsGridProps {
   onExportDocker: (project: Project, event: React.MouseEvent) => Promise<void>;
 }
 
+const statusBadgeClass = (status: Project['status']): string => {
+  if (status === 'published') return 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300';
+  if (status === 'archived') return 'border-amber-500/30 bg-amber-500/10 text-amber-300';
+  return 'border-slate-700 bg-slate-800 text-slate-300';
+};
+
 export default function ProjectsGrid({
   isInitialLoading,
   filteredProjects,
@@ -31,27 +37,27 @@ export default function ProjectsGrid({
   onExportDocker,
 }: ProjectsGridProps) {
   return (
-    <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <section className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
       {isInitialLoading ? (
         [1, 2, 3].map((index) => (
-          <div key={index} className="bg-white dark:bg-card-dark border border-slate-200 dark:border-border-dark rounded-3xl h-[280px] animate-pulse"></div>
+          <div key={index} className="h-[280px] animate-pulse rounded-2xl border border-slate-800 bg-slate-900" />
         ))
       ) : filteredProjects.length === 0 ? (
         searchQuery ? (
           <div className="col-span-full py-12 text-center text-slate-500">
-            <span className="material-symbols-rounded text-4xl mb-2 opacity-50">search_off</span>
+            <span className="material-symbols-rounded mb-2 block text-4xl opacity-50">search_off</span>
             <p>No projects found matching "{searchQuery}"</p>
           </div>
         ) : (
-          <div className="col-span-full rounded-3xl border border-slate-200 dark:border-border-dark bg-white dark:bg-card-dark p-10 text-center">
-            <div className="mx-auto mb-4 w-12 h-12 rounded-2xl bg-slate-100 dark:bg-white/5 flex items-center justify-center">
+          <div className="col-span-full rounded-2xl border border-slate-800 bg-slate-900 p-10 text-center">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-slate-800">
               <span className="material-symbols-rounded text-slate-400">inbox</span>
             </div>
-            <h3 className="text-lg font-semibold mb-2">{emptyStateTitle}</h3>
-            <p className="text-slate-500 dark:text-slate-400 mb-5">Create your first project to start generating.</p>
+            <h3 className="mb-2 text-lg font-semibold text-white">{emptyStateTitle}</h3>
+            <p className="mb-5 text-slate-400">Create your first project to start generating.</p>
             <button
               onClick={onCreateProject}
-              className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-5 py-2.5 rounded-full font-semibold transition-colors"
+              className="inline-flex items-center gap-2 rounded-xl bg-purple-600 px-5 py-2.5 font-semibold text-white transition-colors hover:bg-purple-500"
             >
               <span className="material-symbols-rounded text-base">add</span>
               Create Project
@@ -63,32 +69,32 @@ export default function ProjectsGrid({
           <div
             key={project.id}
             onClick={() => onOpenProject(project.id)}
-            className={`group relative bg-white dark:bg-card-dark border rounded-3xl overflow-hidden hover:shadow-2xl hover:shadow-primary/10 transition-all duration-300 cursor-pointer ${
+            className={`group relative cursor-pointer overflow-hidden rounded-2xl border bg-slate-900 transition-all duration-200 hover:shadow-xl hover:shadow-black/40 ${
               activeProjectId === project.id
-                ? 'border-primary/60 ring-2 ring-primary/30'
-                : 'border-slate-200 dark:border-border-dark'
+                ? 'border-purple-500/50 ring-1 ring-purple-500/40'
+                : 'border-slate-800'
             }`}
           >
-            <div className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center">
-                  <span className="material-symbols-rounded text-primary">terminal</span>
+            <div className="p-5">
+              <div className="mb-4 flex items-start justify-between">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-800">
+                  <span className="material-symbols-rounded text-purple-300">terminal</span>
                 </div>
-                <span className="bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-500 text-[10px] font-black px-2 py-1 rounded uppercase tracking-tighter border border-amber-200 dark:border-amber-500/20">
-                  {project.status.toUpperCase()}
+                <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${statusBadgeClass(project.status)}`}>
+                  {project.status}
                 </span>
               </div>
-              <h3 className="text-lg font-bold mb-4 line-clamp-1 group-hover:text-primary transition-colors italic">
-                "{project.name || 'Untitled'}"
+
+              <h3 className="mb-4 line-clamp-1 text-lg font-semibold text-white transition-colors group-hover:text-purple-300">
+                {project.name || 'Untitled'}
               </h3>
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-medium">
+
+              <div className="space-y-3 text-xs text-slate-400">
+                <div className="flex items-center gap-2">
                   <span className="material-symbols-rounded text-base">schedule</span>
                   {new Date(project.updated_at).toLocaleDateString()}
-                  <span className="w-1 h-1 bg-slate-300 dark:bg-slate-600 rounded-full"></span>
-                  v1.0
                 </div>
-                <div className="flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400 font-medium">
+                <div className="flex items-center gap-4">
                   <div className="flex items-center gap-1.5">
                     <span className="material-symbols-rounded text-base">visibility</span>
                     {project.views} views
@@ -100,38 +106,42 @@ export default function ProjectsGrid({
                 </div>
               </div>
             </div>
-            <div className="p-4 pt-0 mt-2 grid grid-cols-2 gap-2">
+
+            <div className="mt-1 grid grid-cols-2 gap-2 p-4 pt-0">
               <button
                 onClick={(event) => {
                   event.stopPropagation();
                   onOpenProject(project.id);
                 }}
-                className="bg-slate-100 dark:bg-[#25183d] hover:bg-slate-200 dark:hover:bg-[#322152] text-slate-900 dark:text-primary font-bold py-2.5 rounded-2xl transition-all flex items-center justify-center gap-2 text-sm"
+                className="flex items-center justify-center gap-2 rounded-xl border border-purple-500/30 bg-purple-500/10 py-2.5 text-sm font-semibold text-purple-200 transition-colors hover:bg-purple-500/20"
               >
                 <span className="material-symbols-rounded text-lg">edit</span>
                 Edit
               </button>
+
               <button
                 onClick={(event) => onDeleteProject(project.id, event)}
-                className="bg-slate-100 dark:bg-[#2d1212] hover:bg-red-50 dark:hover:bg-[#401a1a] text-slate-600 dark:text-red-400 font-bold py-2.5 rounded-2xl transition-all flex items-center justify-center gap-2 text-sm group/btn"
+                className="group/btn flex items-center justify-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 py-2.5 text-sm font-semibold text-red-300 transition-colors hover:bg-red-500/20"
               >
-                <span className="material-symbols-rounded text-lg group-hover/btn:text-red-500">delete</span>
+                <span className="material-symbols-rounded text-lg group-hover/btn:text-red-200">delete</span>
                 Delete
               </button>
+
               <button
                 onClick={(event) => void onExportZip(project, event)}
                 disabled={zipExportProjectId !== null}
-                className="bg-slate-100 dark:bg-[#0f2136] hover:bg-slate-200 dark:hover:bg-[#16304d] text-slate-700 dark:text-cyan-300 font-bold py-2.5 rounded-2xl transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-800 py-2.5 text-sm font-semibold text-slate-200 transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <span className={`material-symbols-rounded text-lg ${zipExportProjectId === project.id ? 'animate-spin' : ''}`}>
                   {zipExportProjectId === project.id ? 'sync' : 'download'}
                 </span>
                 ZIP
               </button>
+
               <button
                 onClick={(event) => void onExportDocker(project, event)}
                 disabled={dockerExportProjectId !== null}
-                className="bg-slate-100 dark:bg-[#142025] hover:bg-slate-200 dark:hover:bg-[#1c2c33] text-slate-700 dark:text-blue-300 font-bold py-2.5 rounded-2xl transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-800 py-2.5 text-sm font-semibold text-slate-200 transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <span className={`material-symbols-rounded text-lg ${dockerExportProjectId === project.id ? 'animate-spin' : ''}`}>
                   {dockerExportProjectId === project.id ? 'sync' : 'docker'}
@@ -139,21 +149,19 @@ export default function ProjectsGrid({
                 Docker
               </button>
             </div>
-            <div className="absolute -inset-0.5 bg-primary/20 blur opacity-0 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 -z-10"></div>
           </div>
         ))
       )}
 
       <div
         onClick={onCreateProject}
-        className="border-2 border-dashed border-slate-200 dark:border-border-dark rounded-3xl flex flex-col items-center justify-center p-8 text-slate-400 min-h-[280px] hover:border-primary/50 transition-colors group cursor-pointer"
+        className="group flex min-h-[280px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-800 p-8 text-slate-500 transition-colors hover:border-purple-500/50 hover:text-purple-300"
       >
-        <span className="material-symbols-rounded text-4xl mb-3 group-hover:text-primary transition-colors">add_circle</span>
+        <span className="material-symbols-rounded mb-3 text-4xl">add_circle</span>
         <p className="font-medium">Create New Project</p>
       </div>
 
-      <div className="hidden lg:block border-2 border-dashed border-slate-200 dark:border-border-dark rounded-3xl opacity-50"></div>
+      <div className="hidden rounded-2xl border-2 border-dashed border-slate-800 opacity-50 lg:block" />
     </section>
   );
 }
-

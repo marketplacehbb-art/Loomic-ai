@@ -95,28 +95,22 @@ export default function Dashboard() {
     [projects]
   );
 
+  const handleViewAllProjects = React.useCallback(() => {
+    document.getElementById('all-projects-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
+
   const showAllProjectsSection = filteredProjects.length > 0 || Boolean(searchQuery);
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-background-light dark:bg-background-dark flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      <div className="flex min-h-screen items-center justify-center bg-black">
+        <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-t-2 border-purple-500" />
       </div>
     );
   }
 
   return (
-    <div className="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex font-display transition-colors duration-300">
-      <style>{`
-        .sidebar-active {
-            background: linear-gradient(90deg, rgba(168, 85, 247, 0.15) 0%, rgba(168, 85, 247, 0) 100%);
-            border-left: 3px solid #a855f7;
-        }
-        .material-symbols-rounded {
-            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-        }
-      `}</style>
-
+    <div className="flex min-h-screen bg-black font-display text-white">
       <Sidebar
         onDeploy={handleSidebarDeploy}
         deployDisabled={!activeProject}
@@ -124,12 +118,12 @@ export default function Dashboard() {
         deployLabel={activeProject ? `Deploy: ${activeProject.name || 'Untitled'}` : 'Deploy'}
       />
 
-      <main className="flex-1 ml-64 p-8">
+      <main className="ml-64 flex-1 bg-black p-8">
         {uiNotice && (
           <div className={`mb-5 rounded-xl border px-4 py-3 text-sm ${
             uiNotice.type === 'error'
-              ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-500/10 dark:text-red-300 dark:border-red-500/30'
-              : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/30'
+              ? 'border-red-500/30 bg-red-500/10 text-red-300'
+              : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
           }`}>
             {uiNotice.message}
           </div>
@@ -148,8 +142,8 @@ export default function Dashboard() {
 
         <React.Suspense
           fallback={
-            <div className="mb-8 rounded-2xl border border-slate-200 dark:border-border-dark bg-white dark:bg-card-dark p-6">
-              <div className="h-52 animate-pulse rounded-xl bg-slate-100 dark:bg-white/5"></div>
+            <div className="mb-8 rounded-2xl border border-slate-800 bg-slate-900 p-6">
+              <div className="h-52 animate-pulse rounded-xl bg-slate-800" />
             </div>
           }
         >
@@ -163,14 +157,15 @@ export default function Dashboard() {
             setActiveProjectId(projectId);
             navigate(`/generator?project_id=${projectId}`);
           }}
+          onViewAll={handleViewAllProjects}
         />
 
         {showAllProjectsSection && (
-          <>
+          <section id="all-projects-section" className="scroll-mt-24">
             <div className="mb-4 mt-10 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-slate-900 dark:text-white">All Projects</h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                {searchQuery ? `Results for "${searchQuery}"` : `${totalCount} total`}
+              <h2 className="text-2xl font-semibold text-white">All Projects</h2>
+              <p className="text-sm text-slate-400">
+                {searchQuery ? `Results for \"${searchQuery}\"` : `${totalCount} total`}
               </p>
             </div>
 
@@ -191,7 +186,7 @@ export default function Dashboard() {
               onExportZip={handleExportProjectZip}
               onExportDocker={handleExportProjectDocker}
             />
-          </>
+          </section>
         )}
 
         {showAllProjectsSection && hasMore && !searchQuery && (
@@ -199,11 +194,11 @@ export default function Dashboard() {
             <button
               onClick={loadMore}
               disabled={isLoadingMore}
-              className="bg-white dark:bg-card-dark hover:bg-slate-50 dark:hover:bg-white/5 border border-slate-200 dark:border-border-dark px-6 py-2.5 rounded-full text-sm font-semibold transition-all shadow-sm hover:shadow-md flex items-center gap-2"
+              className="flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-900 px-6 py-2.5 text-sm font-semibold text-slate-200 transition-all hover:bg-slate-800"
             >
               {isLoadingMore ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-purple-400 border-t-transparent" />
                   Loading...
                 </>
               ) : (
@@ -218,7 +213,7 @@ export default function Dashboard() {
       </main>
 
       <button
-        className="fixed bottom-6 right-6 w-12 h-12 bg-white dark:bg-card-dark rounded-full shadow-2xl flex items-center justify-center border border-slate-200 dark:border-border-dark text-slate-600 dark:text-slate-300 hover:scale-110 transition-transform z-[100]"
+        className="fixed bottom-6 right-6 z-[100] flex h-12 w-12 items-center justify-center rounded-full border border-slate-800 bg-slate-900 text-slate-300 shadow-2xl transition-transform hover:scale-110"
         onClick={toggleTheme}
       >
         <span className="material-symbols-rounded dark:hidden">dark_mode</span>

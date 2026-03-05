@@ -1,4 +1,5 @@
 import type { MutableRefObject } from 'react';
+import { ChevronDown, Plus, Search } from 'lucide-react';
 
 type SortOrder = 'newest' | 'oldest' | 'az';
 
@@ -24,16 +25,19 @@ export default function DashboardHeader({
   onCreateProject,
 }: DashboardHeaderProps) {
   return (
-    <header className="flex items-center justify-between mb-10">
-      <div className="flex items-center gap-4 flex-1 max-w-2xl">
-        <div className="relative flex-1">
-          <span className="material-symbols-rounded absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xl">search</span>
+    <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
+      <div className="flex min-w-[280px] flex-1 items-center gap-3">
+        <div className="relative flex-1 max-w-md">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
           <input
-            className="w-full bg-slate-100 dark:bg-card-dark border-none rounded-full py-2.5 pl-12 pr-4 focus:ring-2 focus:ring-primary/50 text-sm outline-none"
-            placeholder="Search apps..."
+            className="w-full rounded-xl border border-slate-800 bg-slate-900 py-2.5 pl-10 pr-16 text-sm text-white outline-none transition focus:border-purple-500/60 focus:ring-2 focus:ring-purple-500/30"
+            placeholder="Search projects..."
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
           />
+          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-md border border-slate-700 bg-slate-950 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">
+            ?K
+          </span>
         </div>
 
         <div ref={sortMenuRef} className="relative">
@@ -42,19 +46,18 @@ export default function DashboardHeader({
             aria-haspopup="menu"
             aria-expanded={sortMenuOpen}
             onClick={() => setSortMenuOpen((prev) => !prev)}
-            className="flex items-center bg-slate-100 dark:bg-card-dark rounded-full px-4 py-2 text-sm cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors border border-transparent dark:border-border-dark"
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-200 transition-colors hover:bg-slate-800"
           >
-            <span className="material-symbols-rounded text-lg mr-2">sort</span>
-            <span className="font-medium mr-4">
+            <span className="text-sm font-medium">
               {sortOrder === 'newest' ? 'Newest First' : sortOrder === 'oldest' ? 'Oldest First' : 'Name (A-Z)'}
             </span>
-            <span className="material-symbols-rounded text-lg">expand_more</span>
+            <ChevronDown className="h-4 w-4 text-slate-400" />
           </button>
 
           <div
             role="menu"
-            className={`absolute right-0 top-full mt-2 w-48 bg-white dark:bg-card-dark rounded-xl shadow-xl border border-slate-200 dark:border-border-dark overflow-hidden transition-all z-10 ${
-              sortMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
+            className={`absolute right-0 top-full z-10 mt-2 w-48 overflow-hidden rounded-xl border border-slate-800 bg-slate-900 shadow-2xl transition-all ${
+              sortMenuOpen ? 'visible opacity-100' : 'invisible opacity-0'
             }`}
           >
             <button
@@ -63,7 +66,7 @@ export default function DashboardHeader({
                 setSortOrder('newest');
                 setSortMenuOpen(false);
               }}
-              className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-100 dark:hover:bg-white/5 ${sortOrder === 'newest' ? 'text-primary font-bold' : ''}`}
+              className={`w-full px-4 py-2 text-left text-sm transition-colors hover:bg-slate-800 ${sortOrder === 'newest' ? 'font-semibold text-purple-300' : 'text-slate-300'}`}
             >
               Newest First
             </button>
@@ -73,7 +76,7 @@ export default function DashboardHeader({
                 setSortOrder('oldest');
                 setSortMenuOpen(false);
               }}
-              className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-100 dark:hover:bg-white/5 ${sortOrder === 'oldest' ? 'text-primary font-bold' : ''}`}
+              className={`w-full px-4 py-2 text-left text-sm transition-colors hover:bg-slate-800 ${sortOrder === 'oldest' ? 'font-semibold text-purple-300' : 'text-slate-300'}`}
             >
               Oldest First
             </button>
@@ -83,18 +86,19 @@ export default function DashboardHeader({
                 setSortOrder('az');
                 setSortMenuOpen(false);
               }}
-              className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-100 dark:hover:bg-white/5 ${sortOrder === 'az' ? 'text-primary font-bold' : ''}`}
+              className={`w-full px-4 py-2 text-left text-sm transition-colors hover:bg-slate-800 ${sortOrder === 'az' ? 'font-semibold text-purple-300' : 'text-slate-300'}`}
             >
               Name (A-Z)
             </button>
           </div>
         </div>
       </div>
+
       <button
         onClick={onCreateProject}
-        className="bg-primary hover:bg-primary/90 text-white px-6 py-2.5 rounded-full font-semibold flex items-center gap-2 shadow-lg shadow-primary/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
+        className="inline-flex items-center gap-2 rounded-xl bg-purple-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-purple-900/30 transition-all hover:bg-purple-500 hover:scale-[1.01] active:scale-[0.98]"
       >
-        <span className="material-symbols-rounded">add</span>
+        <Plus className="h-4 w-4" />
         New Project
       </button>
     </header>

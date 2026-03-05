@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Clock3, ImageIcon, LayoutGrid, RotateCcw, RotateCw, Shuffle, X } from 'lucide-react';
+import { Clock3, LayoutGrid, RotateCcw, RotateCw, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { MonacoEditor } from '../components/MonacoEditor';
 import { CodePreview } from '../components/CodePreview';
@@ -249,31 +249,6 @@ const STARTER_SUGGESTION_CARDS: StarterSuggestionCard[] = [
     description: 'Article grid, categories, and newsletter signup.',
     prompt: 'Build a clean blog with article grid, categories, and newsletter signup',
   },
-];
-
-const RANDOM_CREATIVE_PROMPTS: string[] = [
-  'Build a futuristic AI travel planner dashboard with interactive itinerary cards and map previews.',
-  'Erstelle eine moderne Landingpage fuer eine lokale Kaffeeroesterei mit Shop und Abo-Planen.',
-  'Create a clean legal-tech homepage for a contract analysis startup with pricing and FAQ.',
-  'Baue eine minimalistische Fotografen-Portfolio-Seite mit Filter-Galerie und Kontaktformular.',
-  'Design a music festival website with lineup grid, schedule timeline, and ticket tiers.',
-  'Erstelle ein elegantes Immobilienportal mit Suchfiltern, Expose-Seiten und Favoriten.',
-  'Create a productivity app website with feature tour, integrations section, and testimonials.',
-  'Baue eine Bildungsplattform fuer Online-Kurse mit Kurskarten, Dozentenprofilen und Bewertungen.',
-  'Build a pet adoption platform with animal cards, filter chips, and application steps.',
-  'Erstelle eine moderne Arztpraxis-Webseite mit Leistungen, Team, Terminbuchung und Bewertungen.',
-  'Create a cyber-security dashboard UI with alerts panel, incident timeline, and risk score.',
-  'Baue eine nachhaltige Fashion-Storefront mit Produktkacheln, Lookbook und Warenkorb.',
-  'Build a startup investor portal with KPI widgets, funding rounds, and milestone tracker.',
-  'Erstelle eine Reiseseite fuer Island mit hero video section, tour cards und Buchungsmodul.',
-  'Create a restaurant reservation app interface with calendar slots and table availability.',
-  'Baue ein Event-Management-Dashboard mit Teilnehmerliste, Check-in Status und Umsatzkarten.',
-  'Create a bold agency website with case studies, service matrix, and lead capture form.',
-  'Erstelle eine bilinguale Unternehmensseite (DE/EN) mit Branchenloesungen und Kontaktmodul.',
-  'Build a mobile-first fintech landing page with trust badges and onboarding steps.',
-  'Baue eine smarte Smart-Home Produktseite mit Feature-Comparison und Preismodellen.',
-  'Create a marketplace for handmade goods with category browse and seller profiles.',
-  'Erstelle eine Non-Profit-Webseite mit Mission, Impact-Statistiken und Spendenformular.',
 ];
 
 interface PendingInlineDraft {
@@ -952,11 +927,6 @@ export default function Generator() {
   const liveChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const liveClientIdRef = useRef<string>(`client-${Math.random().toString(36).slice(2, 10)}`);
   const lastSecurityWarningRef = useRef<string>('');
-  const randomPromptIndexRef = useRef<number>(
-    RANDOM_CREATIVE_PROMPTS.length > 0
-      ? Math.floor(Math.random() * RANDOM_CREATIVE_PROMPTS.length)
-      : 0
-  );
   const historyRef = useRef<FileMap[]>([]);
   const historyIndexRef = useRef(-1);
   const snapshotHistoryMetaRef = useRef<SnapshotHistoryEntry[]>([]);
@@ -3835,14 +3805,6 @@ export default function Generator() {
     void handleGenerate(false, prompt);
   };
 
-  const handleFillRandomPrompt = () => {
-    if (RANDOM_CREATIVE_PROMPTS.length === 0) return;
-    const index = randomPromptIndexRef.current % RANDOM_CREATIVE_PROMPTS.length;
-    const nextPrompt = RANDOM_CREATIVE_PROMPTS[index];
-    randomPromptIndexRef.current = (index + 1) % RANDOM_CREATIVE_PROMPTS.length;
-    setPromptInput(nextPrompt);
-  };
-
   const handleUseTemplate = (template: GalleryTemplate) => {
     if (loading || isGeneratingLocked || isAutoRepairing) return;
     setShowTemplateGallery(false);
@@ -4269,25 +4231,11 @@ export default function Generator() {
                 <div className="mt-2 flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={handleFillRandomPrompt}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-600 text-slate-300 transition-colors hover:border-slate-500 hover:bg-white/5 hover:text-white"
-                      title="Random prompt"
-                    >
-                      <Shuffle className="h-4 w-4" />
-                    </button>
-                    <button
                       onClick={() => knowledgeInputRef.current?.click()}
                       className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-600 text-slate-300 transition-colors hover:border-slate-500 hover:bg-white/5 hover:text-white"
                       title="Add context"
                     >
                       <span className="material-icons-round text-[19px]">add</span>
-                    </button>
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-600 text-slate-300 transition-colors hover:border-slate-500 hover:bg-white/5 hover:text-white"
-                      title="Upload screenshot"
-                    >
-                      <ImageIcon className="h-4 w-4" />
                     </button>
 
                     <button
@@ -4323,14 +4271,6 @@ export default function Generator() {
                       title="Plan mode prompt"
                     >
                       Plan
-                    </button>
-
-                    <button
-                      disabled
-                      className="inline-flex h-8 w-8 cursor-not-allowed items-center justify-center rounded-full border border-slate-600 text-slate-500"
-                      title="Voice coming soon"
-                    >
-                      <span className="material-icons-round text-[17px]">mic</span>
                     </button>
 
                     <button
@@ -4493,6 +4433,13 @@ export default function Generator() {
                     </button>
                   );
                 })}
+                <button
+                  onClick={() => setShowTemplateGallery(true)}
+                  className="ml-1 flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-slate-300 transition-colors hover:border-[#3b4458] hover:bg-[#1c2230] hover:text-white"
+                  title="Browse templates"
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </button>
                 <div ref={surfaceMenuRef} className="relative">
                   <button
                     onClick={() => setShowSurfaceMenu((prev) => !prev)}
@@ -4701,15 +4648,6 @@ export default function Generator() {
             </div>
 
             <div className="ml-2 flex shrink-0 items-center gap-2 border-l border-white/10 pl-2">
-              <button
-                onClick={() => setShowTemplateGallery(true)}
-                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#364056] bg-[#121722] px-3 text-sm font-semibold text-slate-200 transition-colors hover:bg-[#192033] hover:text-white"
-                title="Browse templates"
-              >
-                <LayoutGrid className="h-4 w-4" />
-                Templates
-              </button>
-
               <div className="flex items-center gap-1 rounded-2xl border border-[#303749] bg-[#151923] p-1">
                 <button
                   onClick={() => setShowSupabaseModal(true)}
