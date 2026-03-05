@@ -6,7 +6,7 @@
 import { Router, Request, Response } from 'express';
 import { llmManager } from './llm/manager.js';
 import { codeProcessor } from '../utils/code-processor.js';
-import { supabase } from '../lib/supabase.js';
+import { supabase, supabaseAdmin } from '../lib/supabase.js';
 import { validateRequest, generateSchema } from '../middleware/validation.js';
 import type { AuthenticatedRequest } from '../middleware/auth.js';
 import { getBaseTemplateFiles } from '../ai/project-pipeline/template-base.js';
@@ -104,6 +104,7 @@ import { STACK_CONSTRAINT } from '../prompts/designReferences.js';
 import { hydratePrompt, inferIndustryFromPrompt, type HydratedContext } from './hydration.js';
 import { getIndustryFonts } from '../prompts/industryProfiles.js';
 import { getGitHubConnectionStatus } from './git/github-integration.js';
+import { getUserProviderApiKeys, type UserApiKeyMap } from './user-api-keys.js';
 
 import { inferPromptUnderstandingWithAI, type PromptUnderstandingResult } from './generate-prompt-builder.js';
 import {
@@ -157,6 +158,125 @@ function parseImageDataUrl(value: unknown): { mimeType: string; base64: string }
   const [, mimeType, base64] = match;
   if (!mimeType || !base64) return null;
   return { mimeType, base64 };
+}
+
+type CreditPlan = 'free' | 'pro' | 'business' | 'enterprise';
+
+interface CreditGateResult {
+  allowed: boolean;
+  plan?: CreditPlan;
+  creditsTotal?: number;
+  resetsAt?: string;
+  creditsRemaining?: number;
+}
+
+const normalizeCreditPlan = (value: unknown): CreditPlan => {
+  const plan = String(value || '').trim().toLowerCase();
+  if (plan === 'pro' || plan === 'business' || plan === 'enterprise') return plan;
+  return 'free';
+};
+
+const getPlanCreditTotal = (plan: CreditPlan): number => {
+  if (plan === 'pro') return 100;
+  if (plan === 'business') return 500;
+  if (plan === 'enterprise') return Number.MAX_SAFE_INTEGER;
+  return 5;
+};
+
+function getNextResetTime(plan: string): Date {
+  const normalizedPlan = normalizeCreditPlan(plan);
+  const now = new Date();
+  if (normalizedPlan === 'free') {
+    const next = new Date(now);
+    next.setUTCHours(24, 0, 0, 0);
+    return next;
+  }
+  const next = new Date(now);
+  next.setMonth(next.getMonth() + 1);
+  return next;
+}
+
+async function checkAndDeductCredits(userId: string): Promise<CreditGateResult> {
+  const safeUserId = String(userId || '').trim();
+  if (!safeUserId) return { allowed: true };
+  if (!supabaseAdmin) return { allowed: true };
+
+  const { data: user, error } = await supabaseAdmin
+    .from('profiles')
+    .select('plan, credits_used, credits_total, credits_reset_at')
+    .eq('id', safeUserId)
+    .maybeSingle();
+
+  const tableMissing =
+    error?.code === 'PGRST205' ||
+    error?.code === '42P01' ||
+    String(error?.message || '').toLowerCase().includes('does not exist');
+
+  if (error && !tableMissing) {
+    console.warn('[Billing] credit check failed:', error.message || error);
+    return { allowed: true };
+  }
+  if (!user) return { allowed: true };
+
+  const plan = normalizeCreditPlan((user as any).plan);
+  const planCreditTotal = getPlanCreditTotal(plan);
+  const configuredTotal = Number((user as any).credits_total);
+  const creditsTotal = Number.isFinite(configuredTotal) && configuredTotal > 0
+    ? Math.floor(configuredTotal)
+    : planCreditTotal;
+  const usedValue = Number((user as any).credits_used);
+  let creditsUsed = Number.isFinite(usedValue) && usedValue >= 0 ? Math.floor(usedValue) : 0;
+  let resetAtIso = String((user as any).credits_reset_at || '').trim();
+  let resetAtDate = resetAtIso ? new Date(resetAtIso) : new Date(0);
+  const now = new Date();
+
+  if (!resetAtIso || Number.isNaN(resetAtDate.getTime()) || now > resetAtDate) {
+    const nextReset = getNextResetTime(plan);
+    await supabaseAdmin.from('profiles').update({
+      credits_used: 0,
+      credits_total: creditsTotal,
+      credits_reset_at: nextReset.toISOString(),
+      updated_at: new Date().toISOString(),
+    }).eq('id', safeUserId);
+    creditsUsed = 0;
+    resetAtDate = nextReset;
+    resetAtIso = nextReset.toISOString();
+  }
+
+  if (plan === 'enterprise') {
+    return {
+      allowed: true,
+      plan,
+      creditsTotal,
+      resetsAt: resetAtIso,
+      creditsRemaining: Number.MAX_SAFE_INTEGER,
+    };
+  }
+
+  if (creditsUsed >= creditsTotal) {
+    return {
+      allowed: false,
+      plan,
+      creditsTotal,
+      resetsAt: resetAtIso || resetAtDate.toISOString(),
+    };
+  }
+
+  const nextUsed = creditsUsed + 1;
+  await supabaseAdmin.from('profiles').update({
+    credits_used: nextUsed,
+    credits_total: creditsTotal,
+    credits_reset_at: resetAtIso || resetAtDate.toISOString(),
+    updated_at: new Date().toISOString(),
+  }).eq('id', safeUserId);
+
+  return {
+    allowed: true,
+    plan,
+    creditsTotal,
+    resetsAt: resetAtIso || resetAtDate.toISOString(),
+    creditsRemaining: Math.max(0, creditsTotal - nextUsed),
+  };
 }
 
 function buildScreenshotSystemPromptAddon(enabled: boolean): string {
@@ -2255,7 +2375,28 @@ router.post('/generate', validateRequest(generateSchema), async (req, res) => {
       });
     }
 
-    let executionProviderHint = llmManager.getExecutionProviderHint(provider);
+    const authReq = req as AuthenticatedRequest;
+    const effectiveUserId = String(authReq.authUser?.id || userId || '').trim();
+    const creditGate = await checkAndDeductCredits(effectiveUserId);
+    if (!creditGate.allowed) {
+      return res.status(402).json({
+        error: 'NO_CREDITS',
+        message: 'No credits remaining',
+        plan: creditGate.plan || 'free',
+        resetsAt: creditGate.resetsAt || null,
+      });
+    }
+
+    let userProviderApiKeys: UserApiKeyMap = {};
+    if (effectiveUserId) {
+      try {
+        userProviderApiKeys = await getUserProviderApiKeys(effectiveUserId);
+      } catch (apiKeyLoadError: any) {
+        console.warn('[Generate] Failed to load user API keys:', apiKeyLoadError?.message || apiKeyLoadError);
+      }
+    }
+
+    let executionProviderHint = llmManager.getExecutionProviderHint(provider, userProviderApiKeys);
     const normalizedScreenshotBase64 = typeof screenshotBase64 === 'string' ? screenshotBase64.trim() : '';
     const screenshotMimeFromImage = parseImageDataUrl(image)?.mimeType || '';
     const normalizedScreenshotMimeType = typeof screenshotMimeType === 'string' && /^image\/[a-zA-Z0-9.+-]+$/.test(screenshotMimeType.trim())
@@ -2463,7 +2604,7 @@ router.post('/generate', validateRequest(generateSchema), async (req, res) => {
     const plannedFiles = plannedFileContract.validPaths;
 
     const promptUnderstanding = await promptUnderstandingPromise;
-    executionProviderHint = llmManager.getExecutionProviderHint(provider);
+    executionProviderHint = llmManager.getExecutionProviderHint(provider, userProviderApiKeys);
     stageTimings.promptUnderstanding = Date.now() - promptUnderstandingStartedAt;
     const aiHint: PromptIntentHint = {
       targetedCategories: promptUnderstanding.targetedCategories,
@@ -2894,7 +3035,8 @@ ${contractReadOnlyFiles.map((path) => `  - ${path}`).join('\n')}
               image: effectiveImagePayload,
               screenshotBase64: normalizedScreenshotBase64 || undefined,
               screenshotMimeType: hasScreenshotInput ? normalizedScreenshotMimeType : undefined,
-              knowledgeBase
+              knowledgeBase,
+              providerApiKeys: userProviderApiKeys,
             }),
             TIMEOUT_MS
           );
@@ -2924,7 +3066,8 @@ ${contractReadOnlyFiles.map((path) => `  - ${path}`).join('\n')}
               stream: false,
               currentFiles: scopedContextFiles,
               image,
-              knowledgeBase
+              knowledgeBase,
+              providerApiKeys: userProviderApiKeys,
             }),
             TIMEOUT_MS
           );
@@ -2999,7 +3142,8 @@ ${contractReadOnlyFiles.map((path) => `  - ${path}`).join('\n')}
             image: effectiveImagePayload,
             screenshotBase64: normalizedScreenshotBase64 || undefined,
             screenshotMimeType: hasScreenshotInput ? normalizedScreenshotMimeType : undefined,
-            knowledgeBase
+            knowledgeBase,
+            providerApiKeys: userProviderApiKeys,
           }),
           TIMEOUT_MS
         );
@@ -3026,7 +3170,8 @@ ${contractReadOnlyFiles.map((path) => `  - ${path}`).join('\n')}
           image: effectiveImagePayload,
           screenshotBase64: normalizedScreenshotBase64 || undefined,
           screenshotMimeType: hasScreenshotInput ? normalizedScreenshotMimeType : undefined,
-          knowledgeBase
+          knowledgeBase,
+          providerApiKeys: userProviderApiKeys,
         }),
         TIMEOUT_MS
       );
@@ -3372,7 +3517,8 @@ CRITICAL STYLE ENFORCEMENT:
               image: effectiveImagePayload,
               screenshotBase64: normalizedScreenshotBase64 || undefined,
               screenshotMimeType: hasScreenshotInput ? normalizedScreenshotMimeType : undefined,
-              knowledgeBase
+              knowledgeBase,
+              providerApiKeys: userProviderApiKeys,
             }),
             TIMEOUT_MS
           );
@@ -3863,6 +4009,7 @@ EDIT MODE REDO:
                 screenshotBase64: normalizedScreenshotBase64 || undefined,
                 screenshotMimeType: hasScreenshotInput ? normalizedScreenshotMimeType : undefined,
                 knowledgeBase,
+                providerApiKeys: userProviderApiKeys,
               }),
               Math.min(TIMEOUT_MS, 45000)
             );
@@ -4647,7 +4794,7 @@ EDIT MODE REDO:
     // We log even if it failed? No, usually only success consumes quota, unless we want to track failures too.
     // Let's log success for now to track usage.
 
-    if (userId) {
+    if (effectiveUserId) {
       (async () => {
         try {
           // 0. Save Chat Messages (Persistence)
@@ -4731,10 +4878,13 @@ EDIT MODE REDO:
 
           // 2. Write Audit Log
           await supabase.from('audit_logs').insert({
-            user_id: userId,
+            user_id: effectiveUserId,
             action: 'generate_code',
             details: {
               provider,
+              requested_provider: provider,
+              effective_provider: executionProviderHint,
+              fallback_applied: fallbackApplied,
               model:
                 provider === 'openai'
                   ? 'gpt-4o'
@@ -4743,12 +4893,41 @@ EDIT MODE REDO:
                     : provider === 'nvidia'
                       ? 'qwen3.5-397b-a17b'
                       : 'gemini-pro',
-              tokens_input: (prompt.length / 4), // Estimate
-              tokens_output: tokensUsed,
+              tokens_input: Math.max(0, Math.round(estimatedInputTokens)),
+              tokens_output: Math.max(0, Math.round(estimatedOutputTokens)),
               duration,
-              success: isSuccess
+              success: isSuccess,
+              prompt: String(prompt || '').slice(0, 320),
             }
           });
+
+          const responseUsage = (response as any)?.usage || {};
+          const usageTokens = Number(responseUsage?.total_tokens || responseUsage?.totalTokens || 0);
+          const generationTokensUsed = Number.isFinite(usageTokens) && usageTokens > 0
+            ? Math.round(usageTokens)
+            : Math.max(0, Math.round(estimatedInputTokens + estimatedOutputTokens));
+
+          const generationInsertPayload = {
+            user_id: effectiveUserId,
+            project_id: typeof projectId === 'string' && projectId.trim() ? projectId.trim() : null,
+            tokens_used: generationTokensUsed,
+            provider: executionProviderHint,
+            prompt_preview: String(prompt || '').slice(0, 100),
+            pipeline: String(routedPipelinePath || 'deep'),
+            latency_ms: Math.max(0, Math.round(Date.now() - startTime)),
+          };
+
+          const generationClient = supabaseAdmin || supabase;
+          const { error: generationInsertError } = await generationClient
+            .from('generations')
+            .insert(generationInsertPayload);
+          const generationTableMissing =
+            (generationInsertError as any)?.code === 'PGRST205' ||
+            (generationInsertError as any)?.code === '42P01' ||
+            String((generationInsertError as any)?.message || '').toLowerCase().includes('does not exist');
+          if (generationInsertError && !generationTableMissing) {
+            console.warn('[Billing] Failed to insert generation usage row:', (generationInsertError as any)?.message || generationInsertError);
+          }
         } catch (logError) {
           console.error('âš ï¸ Failed to write audit/persistence log:', logError);
         }

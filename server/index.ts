@@ -16,6 +16,9 @@ import gitRouter from './api/git/routes.js';
 import supabaseIntegrationRouter from './api/integrations/supabase.js';
 import cloudRouter from './api/cloud.js';
 import publishRouter from './api/publish.js';
+import metricsRouter from './api/metrics.js';
+import userRouter from './api/user.js';
+import billingRouter from './api/billing.js';
 import securityScanRouter from './api/security/scan.js';
 import { apiLimiter, generationLimiter, gitLimiter, securityLimiter } from './middleware/rate-limiter.js';
 import { usageMonitor } from './middleware/usage-monitor.js';
@@ -77,6 +80,9 @@ app.use('/api/git', requireAuth);
 app.use('/api/security', requireAuth);
 app.use('/api/cloud', requireAuth);
 app.use('/api/publish', requireAuth);
+app.use('/api/metrics', requireAuth);
+app.use('/api/user', requireAuth);
+app.use('/api/billing', requireAuth);
 app.use('/api/integrations', (req: Request, res: Response, next: NextFunction) => {
   if (req.path === '/supabase/callback') return next();
   return requireAuth(req, res, next);
@@ -196,6 +202,9 @@ app.use('/api/git', gitRouter);
 app.use('/api/security', securityScanRouter);
 app.use('/api/cloud', cloudRouter);
 app.use('/api/publish', publishRouter);
+app.use('/api/metrics', metricsRouter);
+app.use('/api/user', userRouter);
+app.use('/api/billing', billingRouter);
 app.use('/api/integrations/supabase', supabaseIntegrationRouter);
 
 // 404 handler

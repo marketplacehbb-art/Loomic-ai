@@ -7,6 +7,8 @@ import { CodePreview } from '../components/CodePreview';
 import { ThinkingProcess } from '../components/ThinkingProcess';
 import {
   api,
+  type BillingPlan,
+  type BillingStatusResponse,
   Project,
   type CloudOverviewResponse,
   type CloudState,
@@ -797,6 +799,28 @@ const formatSnapshotTimestamp = (value: string): string => {
   });
 };
 
+const normalizeBillingPlan = (value: unknown): BillingPlan => {
+  if (value === 'pro' || value === 'business' || value === 'enterprise') return value;
+  return 'free';
+};
+
+const formatCreditsResetCountdown = (resetsAt: string | null | undefined): string => {
+  const resetMs = Date.parse(String(resetsAt || ''));
+  if (!Number.isFinite(resetMs)) return '0h 0m 0s';
+  const diffSeconds = Math.max(0, Math.floor((resetMs - Date.now()) / 1000));
+  const hours = Math.floor(diffSeconds / 3600);
+  const minutes = Math.floor((diffSeconds % 3600) / 60);
+  const seconds = diffSeconds % 60;
+  return `${hours}h ${minutes}m ${seconds}s`;
+};
+
+const getNoCreditsPlanMessage = (plan: BillingPlan): string => {
+  if (plan === 'pro') return "You've used all 100 monthly credits.";
+  if (plan === 'business') return "You've used all 500 monthly credits.";
+  if (plan === 'enterprise') return 'Enterprise plan is currently marked as out of credits.';
+  return 'Free plan includes 5 generations per day.';
+};
+
 export default function Generator() {
   const { user, session } = useAuth();
   const { updateRateLimit } = useUsage();
@@ -895,6 +919,18 @@ export default function Generator() {
   const [cloudStateLoading, setCloudStateLoading] = useState(false);
   const [cloudOverview, setCloudOverview] = useState<CloudOverviewResponse | null>(null);
   const [cloudOverviewLoading, setCloudOverviewLoading] = useState(false);
+  const [billingStatus, setBillingStatus] = useState<BillingStatusResponse | null>(null);
+  const [noCreditsModal, setNoCreditsModal] = useState<{
+    open: boolean;
+    plan: BillingPlan;
+    resetsAt: string | null;
+  }>({
+    open: false,
+    plan: 'free',
+    resetsAt: null,
+  });
+  const [noCreditsCountdown, setNoCreditsCountdown] = useState('0h 0m 0s');
+  const [noCreditsUpgradeLoading, setNoCreditsUpgradeLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const modelSwitcherRef = useRef<HTMLDivElement>(null);
   const surfaceMenuRef = useRef<HTMLDivElement>(null);
@@ -1382,6 +1418,30 @@ export default function Generator() {
       setGitHubSyncLoading(false);
     }
   }, []);
+
+  const loadBillingStatus = useCallback(async () => {
+    if (!user?.id) {
+      setBillingStatus(null);
+      return;
+    }
+    try {
+      const response = await api.getBillingStatus();
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      if (!response || typeof response.plan !== 'string') return;
+      setBillingStatus({
+        plan: normalizeBillingPlan(response.plan),
+        status: response.status === 'canceled' || response.status === 'past_due' ? response.status : 'active',
+        creditsUsed: Number.isFinite(Number(response.creditsUsed)) ? Number(response.creditsUsed) : 0,
+        creditsTotal: Number.isFinite(Number(response.creditsTotal)) ? Number(response.creditsTotal) : 5,
+        creditsResetAt: typeof response.creditsResetAt === 'string' ? response.creditsResetAt : new Date().toISOString(),
+        stripeConnected: Boolean(response.stripeConnected),
+      });
+    } catch (billingError) {
+      console.error('Failed to load billing status:', billingError);
+    }
+  }, [user?.id]);
 
   const publishProject = useCallback(async (input: {
     slug: string;
@@ -2185,7 +2245,17 @@ export default function Generator() {
     void loadCloudOverview(currentProject?.id);
     void loadPublishStatus(currentProject?.id);
     void loadGitHubSyncStatus(currentProject?.id);
-  }, [currentProject?.id, loadCloudOverview, loadCloudState, loadPublishStatus, loadSupabaseIntegrationStatus, loadGitHubSyncStatus]);
+    void loadBillingStatus();
+  }, [currentProject?.id, loadCloudOverview, loadCloudState, loadPublishStatus, loadSupabaseIntegrationStatus, loadGitHubSyncStatus, loadBillingStatus]);
+
+  useEffect(() => {
+    if (!noCreditsModal.open) return;
+    setNoCreditsCountdown(formatCreditsResetCountdown(noCreditsModal.resetsAt));
+    const timer = window.setInterval(() => {
+      setNoCreditsCountdown(formatCreditsResetCountdown(noCreditsModal.resetsAt));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [noCreditsModal.open, noCreditsModal.resetsAt]);
 
   useEffect(() => {
     const oauthStatus = searchParams.get('supabase_oauth');
@@ -3101,6 +3171,23 @@ export default function Generator() {
 
         setProviderRecoveryHint(null);
 
+        if (response.status === 402 && data?.error === 'NO_CREDITS') {
+          const blockedPlan = normalizeBillingPlan(data?.plan);
+          const resetsAt = typeof data?.resetsAt === 'string' ? data.resetsAt : null;
+          setNoCreditsModal({
+            open: true,
+            plan: blockedPlan,
+            resetsAt,
+          });
+          setNoCreditsCountdown(formatCreditsResetCountdown(resetsAt));
+          setError(null);
+          setPromptInput(userMessage);
+          setMessages(prev => prev.slice(0, -1));
+          markTimelineFailed();
+          void loadBillingStatus();
+          return;
+        }
+
         if (
           normalizedCategory === 'rate_limit' ||
           data.code === 'DAILY_REQUEST_LIMIT_EXCEEDED' ||
@@ -3177,6 +3264,8 @@ export default function Generator() {
         markTimelineFailed();
         return;
       }
+
+      void loadBillingStatus();
 
       const filesObj = data.files.reduce((acc: any, file: any) => {
         acc[file.path] = file.content;
@@ -3609,6 +3698,22 @@ export default function Generator() {
   const showPreviewFrame = activeSurfaceMode === 'preview' || activeSurfaceMode === 'design';
   const hasFiles = Object.keys(files).length > 0;
   const showStarterSuggestions = !currentProject?.id && !hasFiles && messages.length === 0 && !isVisualMode;
+  const creditTotal = Math.max(1, Math.round(Number(billingStatus?.creditsTotal || 1)));
+  const creditUsed = Math.max(0, Math.round(Number(billingStatus?.creditsUsed || 0)));
+  const creditRemaining = Math.max(0, creditTotal - creditUsed);
+  const creditRemainingRatio = billingStatus?.plan === 'enterprise'
+    ? 1
+    : Math.max(0, Math.min(1, creditRemaining / creditTotal));
+  const creditsBadgeToneClass = billingStatus?.plan === 'enterprise'
+    ? 'border-emerald-400/40 bg-emerald-500/15 text-emerald-100'
+    : creditRemainingRatio < 0.2
+      ? 'border-red-400/40 bg-red-500/15 text-red-100'
+      : creditRemainingRatio < 0.5
+        ? 'border-amber-400/40 bg-amber-500/15 text-amber-100'
+        : 'border-emerald-400/40 bg-emerald-500/15 text-emerald-100';
+  const creditsBadgeLabel = billingStatus
+    ? (billingStatus.plan === 'enterprise' ? 'Unlimited credits' : `${creditRemaining} credits left`)
+    : '';
 
   const handleToggleSurfacePin = (mode: SurfaceMode) => {
     setPinnedSurfaceModes((prev) => {
@@ -3659,6 +3764,40 @@ export default function Generator() {
     setShowPublishModal(true);
     void loadPublishStatus(currentProject.id);
   };
+
+  const openBillingPage = useCallback(() => {
+    window.open('/billing', '_blank', 'noopener,noreferrer');
+  }, []);
+
+  const closeNoCreditsModal = useCallback(() => {
+    setNoCreditsModal((prev) => ({
+      ...prev,
+      open: false,
+    }));
+  }, []);
+
+  const handleNoCreditsUpgrade = useCallback(async () => {
+    try {
+      setNoCreditsUpgradeLoading(true);
+      setError(null);
+      // TODO: Replace mock-upgrade with Stripe checkout when ready
+      // await fetch('/api/billing/create-checkout-session', { ... })
+      const response = await api.mockUpgradePlan('pro');
+      if (!response.success) {
+        throw new Error(response.error || 'Upgrade failed');
+      }
+      setMessages((prev) => [
+        ...prev,
+        { role: 'assistant', content: 'Plan upgraded to Pro (mock billing).' },
+      ]);
+      await loadBillingStatus();
+      closeNoCreditsModal();
+    } catch (upgradeError: any) {
+      setError(upgradeError?.message || 'Upgrade failed');
+    } finally {
+      setNoCreditsUpgradeLoading(false);
+    }
+  }, [closeNoCreditsModal, loadBillingStatus]);
 
   const handleShareProject = async () => {
     if (!currentProject?.id) {
@@ -4618,6 +4757,17 @@ export default function Generator() {
                 </button>
               </div>
 
+              {billingStatus && (
+                <button
+                  onClick={openBillingPage}
+                  className={`inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-lg border px-3 text-sm font-semibold transition-colors hover:opacity-90 ${creditsBadgeToneClass}`}
+                  title="Open billing details"
+                >
+                  <span className="text-sm">⚡</span>
+                  {creditsBadgeLabel}
+                </button>
+              )}
+
               <Link
                 to="/billing"
                 className="inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-lg bg-[#5e43dd] px-3 text-sm font-semibold text-white transition-colors hover:bg-[#6a4af6]"
@@ -4916,6 +5066,41 @@ export default function Generator() {
         onDeployVercel={deployProjectToVercel}
         onUnpublish={unpublishProject}
       />
+      {noCreditsModal.open && (
+        <div className="fixed inset-0 z-[140] flex items-center justify-center bg-black/75 px-4">
+          <div className="relative w-full max-w-xl rounded-2xl border border-white/15 bg-[#101622] p-6 shadow-2xl">
+            <button
+              onClick={closeNoCreditsModal}
+              className="absolute right-4 top-4 rounded-md p-1 text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
+              aria-label="Close no credits modal"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <h3 className="text-2xl font-semibold text-white">You&apos;ve used all your credits 🚀</h3>
+            <p className="mt-2 text-sm text-slate-300">{getNoCreditsPlanMessage(noCreditsModal.plan)}</p>
+            <p className="mt-4 rounded-lg border border-violet-400/35 bg-violet-500/10 px-3 py-2 text-sm text-violet-200">
+              Your credits reset in: {noCreditsCountdown}
+            </p>
+            <button
+              onClick={() => void handleNoCreditsUpgrade()}
+              disabled={noCreditsUpgradeLoading}
+              className="mt-5 inline-flex w-full items-center justify-center rounded-lg bg-[#6a4af6] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#7758ff] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {noCreditsUpgradeLoading
+                ? 'Upgrading...'
+                : 'Upgrade to Pro — 100 credits/month — EUR 25/mo'}
+            </button>
+            {noCreditsModal.plan === 'free' && (
+              <button
+                onClick={closeNoCreditsModal}
+                className="mt-3 inline-flex w-full items-center justify-center rounded-lg border border-white/15 px-4 py-2 text-sm text-slate-300 transition-colors hover:bg-white/5"
+              >
+                Wait for reset (free users only)
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

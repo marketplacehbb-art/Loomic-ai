@@ -24,6 +24,16 @@ export default function Sidebar({
 
 
     const isActive = (path: string) => location.pathname === path;
+    const navItemClass = (active: boolean) =>
+        `flex items-center gap-3 px-3 py-3 font-medium transition-colors ${
+            active
+                ? 'bg-gradient-to-r from-primary/10 to-transparent border-l-4 border-primary text-primary'
+                : 'text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary border-l-4 border-transparent'
+        }`;
+    const isDeployActive = location.pathname === '/deploy' || location.pathname === '/publish';
+    const deployButtonClass = isDeployActive
+        ? 'mt-2 w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/90 hover:bg-primary text-white text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
+        : 'mt-2 w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border border-slate-300 dark:border-border-dark bg-slate-100 dark:bg-card-dark text-slate-700 dark:text-slate-200 text-sm font-semibold hover:bg-slate-200 dark:hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors';
 
     const handleLogout = async () => {
         await signOut();
@@ -44,76 +54,44 @@ export default function Sidebar({
             <nav className="mt-4 flex-1 space-y-1 px-3">
                 <Link
                     to="/dashboard"
-                    className={`flex items-center gap-3 px-3 py-3 font-medium transition-colors ${isActive('/dashboard')
-                        ? 'bg-gradient-to-r from-primary/10 to-transparent border-l-4 border-primary text-primary'
-                        : 'text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary border-l-4 border-transparent'
-                        }`}
+                    className={navItemClass(isActive('/dashboard'))}
                 >
                     <span className="material-symbols-rounded">dashboard</span>
                     Dashboard
                 </Link>
                 <Link
                     to="/generator"
-                    className={`flex items-center gap-3 px-3 py-3 font-medium transition-colors ${isActive('/generator')
-                        ? 'bg-gradient-to-r from-primary/10 to-transparent border-l-4 border-primary text-primary'
-                        : 'text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary border-l-4 border-transparent'
-                        }`}
+                    className={navItemClass(isActive('/generator'))}
                 >
                     <span className="material-symbols-rounded">temp_preferences_custom</span>
                     Generator
                 </Link>
                 <Link
                     to="/settings"
-                    className={`flex items-center gap-3 px-3 py-3 font-medium transition-colors ${isActive('/settings')
-                        ? 'bg-gradient-to-r from-primary/10 to-transparent border-l-4 border-primary text-primary'
-                        : 'text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary border-l-4 border-transparent'
-                        }`}
+                    className={navItemClass(isActive('/settings'))}
                 >
                     <span className="material-symbols-rounded">settings</span>
                     Settings
                 </Link>
                 <Link
                     to="/billing"
-                    className={`flex items-center gap-3 px-3 py-3 font-medium transition-colors ${isActive('/billing')
-                        ? 'bg-gradient-to-r from-primary/10 to-transparent border-l-4 border-primary text-primary'
-                        : 'text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary border-l-4 border-transparent'
-                        }`}
+                    className={navItemClass(isActive('/billing'))}
                 >
                     <span className="material-symbols-rounded">payments</span>
                     Billing
                 </Link>
                 <div className="pt-4 mt-2 mb-2 border-t border-slate-200 dark:border-white/5">
                     <p className="px-3 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Enterprise</p>
-                    <Link
-                        to="/database-designer"
-                        className={`flex items-center gap-3 px-3 py-3 font-medium transition-colors ${isActive('/database-designer')
-                            ? 'bg-gradient-to-r from-primary/10 to-transparent border-l-4 border-primary text-primary'
-                            : 'text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary border-l-4 border-transparent'
-                            }`}
+                    <div
+                        title="Coming Soon"
+                        className="flex items-center gap-3 px-3 py-3 text-slate-500 dark:text-slate-400 border-l-4 border-transparent cursor-not-allowed"
                     >
-                        <span className="material-symbols-rounded">schema</span>
-                        DB Designer
-                    </Link>
-                    <Link
-                        to="/source-control"
-                        className={`flex items-center gap-3 px-3 py-3 font-medium transition-colors ${isActive('/source-control')
-                            ? 'bg-gradient-to-r from-primary/10 to-transparent border-l-4 border-primary text-primary'
-                            : 'text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary border-l-4 border-transparent'
-                            }`}
-                    >
-                        <span className="material-symbols-rounded">source</span>
-                        Source Control
-                    </Link>
-                    <Link
-                        to="/security"
-                        className={`flex items-center gap-3 px-3 py-3 font-medium transition-colors ${isActive('/security')
-                            ? 'bg-gradient-to-r from-primary/10 to-transparent border-l-4 border-primary text-primary'
-                            : 'text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary border-l-4 border-transparent'
-                            }`}
-                    >
-                        <span className="material-symbols-rounded">security</span>
-                        Security
-                    </Link>
+                        <span className="material-symbols-rounded">workspace_premium</span>
+                        <span>Enterprise</span>
+                        <span className="ml-auto rounded-full border border-slate-600/70 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                            Soon
+                        </span>
+                    </div>
                     {onDeploy && (
                         <button
                             onClick={() => {
@@ -121,7 +99,7 @@ export default function Sidebar({
                                 void onDeploy();
                             }}
                             disabled={deployDisabled || deployBusy}
-                            className="mt-2 w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/90 hover:bg-primary text-white text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            className={deployButtonClass}
                         >
                             <span className={`material-symbols-rounded text-base ${deployBusy ? 'animate-spin' : ''}`}>
                                 {deployBusy ? 'sync' : 'rocket_launch'}

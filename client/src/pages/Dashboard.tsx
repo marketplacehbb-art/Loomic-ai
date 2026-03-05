@@ -6,7 +6,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useDashboardData } from '../hooks/useDashboardData';
 import { useDashboardActions } from '../hooks/useDashboardActions';
 import DashboardHeader from '../components/dashboard/DashboardHeader';
-import DashboardStats from '../components/dashboard/DashboardStats';
+import RecentProjectsSection from '../components/dashboard/RecentProjectsSection';
 import ProjectsGrid from '../components/dashboard/ProjectsGrid';
 import DeleteProjectModal from '../components/dashboard/DeleteProjectModal';
 
@@ -22,6 +22,7 @@ export default function Dashboard() {
   const sortMenuRef = React.useRef<HTMLDivElement | null>(null);
 
   const {
+    projects,
     setProjects,
     searchInput,
     setSearchInput,
@@ -30,7 +31,6 @@ export default function Dashboard() {
     setSortOrder,
     hasMore,
     totalCount,
-    publishedCount,
     activeProjectId,
     setActiveProjectId,
     filteredProjects,
@@ -86,6 +86,16 @@ export default function Dashboard() {
       window.removeEventListener('keydown', onKeyDown);
     };
   }, []);
+
+  const recentProjects = React.useMemo(
+    () =>
+      [...projects]
+        .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+        .slice(0, 6),
+    [projects]
+  );
+
+  const showAllProjectsSection = filteredProjects.length > 0 || Boolean(searchQuery);
 
   if (authLoading) {
     return (
@@ -146,33 +156,45 @@ export default function Dashboard() {
           <MetricsWidget />
         </React.Suspense>
 
-        <DashboardStats
-          isInitialLoading={isInitialLoading}
-          searchQuery={searchQuery}
-          filteredProjectCount={filteredProjects.length}
-          totalCount={totalCount}
-          publishedCount={publishedCount}
-        />
-
-        <ProjectsGrid
-          isInitialLoading={isInitialLoading}
-          filteredProjects={filteredProjects}
-          searchQuery={searchQuery}
-          activeProjectId={activeProjectId}
-          zipExportProjectId={zipExportProjectId}
-          dockerExportProjectId={dockerExportProjectId}
-          emptyStateTitle={NO_PROJECTS_TITLE}
+        <RecentProjectsSection
+          projects={recentProjects}
           onCreateProject={() => navigate('/generator')}
           onOpenProject={(projectId) => {
             setActiveProjectId(projectId);
             navigate(`/generator?project_id=${projectId}`);
           }}
-          onDeleteProject={handleDeleteClick}
-          onExportZip={handleExportProjectZip}
-          onExportDocker={handleExportProjectDocker}
         />
 
-        {hasMore && !searchQuery && (
+        {showAllProjectsSection && (
+          <>
+            <div className="mb-4 mt-10 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-white">All Projects</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                {searchQuery ? `Results for "${searchQuery}"` : `${totalCount} total`}
+              </p>
+            </div>
+
+            <ProjectsGrid
+              isInitialLoading={isInitialLoading}
+              filteredProjects={filteredProjects}
+              searchQuery={searchQuery}
+              activeProjectId={activeProjectId}
+              zipExportProjectId={zipExportProjectId}
+              dockerExportProjectId={dockerExportProjectId}
+              emptyStateTitle={NO_PROJECTS_TITLE}
+              onCreateProject={() => navigate('/generator')}
+              onOpenProject={(projectId) => {
+                setActiveProjectId(projectId);
+                navigate(`/generator?project_id=${projectId}`);
+              }}
+              onDeleteProject={handleDeleteClick}
+              onExportZip={handleExportProjectZip}
+              onExportDocker={handleExportProjectDocker}
+            />
+          </>
+        )}
+
+        {showAllProjectsSection && hasMore && !searchQuery && (
           <div className="mt-8 flex justify-center">
             <button
               onClick={loadMore}
@@ -211,4 +233,3 @@ export default function Dashboard() {
     </div>
   );
 }
-

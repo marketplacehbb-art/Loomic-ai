@@ -30,10 +30,13 @@ export interface LLMRequest {
   knowledgeBase?: Array<{ path: string, content: string }>; // Context files
   featureFlags?: Partial<FeatureFlags>; // Optional feature flags override
   signal?: AbortSignal;
+  providerApiKeys?: ProviderApiKeyOverrides;
 }
 
 type ProviderName = LLMRequest['provider'];
 type ExternalProviderName = Exclude<ProviderName, 'deepseek'>;
+type ProviderApiKeyName = ProviderName | 'openrouter';
+export type ProviderApiKeyOverrides = Partial<Record<ProviderApiKeyName, string>>;
 
 export interface LLMResponse {
   content: string;
@@ -120,9 +123,9 @@ export class LLMManager {
     return true;
   }
 
-  private hasProviderKey(provider: ProviderName): boolean {
+  private hasProviderKey(provider: ProviderName, request?: LLMRequest): boolean {
     try {
-      const cfg = this.getProviderConfig(provider);
+      const cfg = this.getProviderConfig(provider, request);
       return typeof cfg.apiKey === 'string' && cfg.apiKey.trim().length > 0;
     } catch {
       return false;
@@ -133,7 +136,7 @@ export class LLMManager {
     providerName: ProviderName,
     request: LLMRequest
   ): Promise<{ content: string, rateLimit?: any } | ReadableStream<any>> {
-    const provider = this.getProviderConfig(providerName);
+    const provider = this.getProviderConfig(providerName, request);
     if (!provider.apiKey) {
       const error: any = new Error(`API Key missing for provider: ${providerName}`);
       error.status = 401;
@@ -182,7 +185,7 @@ export class LLMManager {
   private async callGeminiVision(
     request: LLMRequest
   ): Promise<{ content: string; rateLimit?: any }> {
-    const geminiKey = getGeminiApiKey();
+    const geminiKey = this.resolveProviderApiKey(request, 'gemini') || getGeminiApiKey();
     if (!geminiKey) {
       const error: any = new Error('Gemini API key is missing for screenshot-to-code generation');
       error.status = 401;
@@ -262,14 +265,14 @@ export class LLMManager {
     };
   }
 
-  private resolveActiveFallbackProvider(primary: ProviderName): ProviderName | null {
+  private resolveActiveFallbackProvider(primary: ProviderName, request?: LLMRequest): ProviderName | null {
     const state = this.providerFallbackState.get(primary);
     if (!state) return null;
     if (Date.now() > state.expiresAt) {
       this.providerFallbackState.delete(primary);
       return null;
     }
-    if (!this.hasProviderKey(state.fallbackProvider)) {
+    if (!this.hasProviderKey(state.fallbackProvider, request)) {
       this.providerFallbackState.delete(primary);
       return null;
     }
@@ -317,14 +320,22 @@ export class LLMManager {
     return true;
   }
 
-  public getExecutionProviderHint(primary: ExternalProviderName): ExternalProviderName {
-    const cachedFallback = this.resolveActiveFallbackProvider(primary);
+  public getExecutionProviderHint(
+    primary: ExternalProviderName,
+    providerApiKeys?: ProviderApiKeyOverrides
+  ): ExternalProviderName {
+    const requestContext: LLMRequest = {
+      provider: primary,
+      prompt: '',
+      providerApiKeys,
+    };
+    const cachedFallback = this.resolveActiveFallbackProvider(primary, requestContext);
     if (cachedFallback && cachedFallback !== 'deepseek') return cachedFallback;
 
     if (!this.isProviderHardBlocked(primary)) return primary;
 
     const fallback = this.getFallbackOrder(primary).find((candidate) =>
-      candidate !== 'deepseek' && this.hasProviderKey(candidate)
+      candidate !== 'deepseek' && this.hasProviderKey(candidate, requestContext)
     );
     return (fallback as ExternalProviderName | undefined) || primary;
   }
@@ -340,17 +351,25 @@ export class LLMManager {
    * Dynamically get provider configuration
    * Reads from environment variables at request time (not at initialization)
    */
-  private getProviderConfig(name: string): LLMProvider {
+  private resolveProviderApiKey(
+    request: LLMRequest | undefined,
+    keyName: ProviderApiKeyName
+  ): string {
+    const raw = request?.providerApiKeys?.[keyName];
+    return typeof raw === 'string' ? raw.trim() : '';
+  }
+
+  private getProviderConfig(name: string, request?: LLMRequest): LLMProvider {
     if (name === 'deepseek') {
       return {
         name: 'deepseek',
-        apiKey: getDeepSeekApiKey() || '',
+        apiKey: this.resolveProviderApiKey(request, 'deepseek') || getDeepSeekApiKey() || '',
         model: process.env.DEEPSEEK_MODEL || 'deepseek-chat',
         endpoint: process.env.DEEPSEEK_ENDPOINT || 'https://api.deepseek.com/v1/chat/completions',
       };
     } else if (name === 'gemini') {
-      const openRouterKey = getOpenRouterApiKey();
-      const geminiKey = getGeminiApiKey();
+      const openRouterKey = this.resolveProviderApiKey(request, 'openrouter') || getOpenRouterApiKey();
+      const geminiKey = this.resolveProviderApiKey(request, 'gemini') || getGeminiApiKey();
       return {
         name: 'gemini',
         // Gemini provider is routed via OpenRouter in this project.
@@ -362,7 +381,7 @@ export class LLMManager {
     } else if (name === 'groq') {
       return {
         name: 'groq',
-        apiKey: getGroqApiKey() || '',
+        apiKey: this.resolveProviderApiKey(request, 'groq') || getGroqApiKey() || '',
         // Strongest generally available Llama class model on Groq.
         model: process.env.GROQ_MODEL || 'meta-llama/llama-4-maverick-17b-128e-instruct',
         endpoint: 'https://api.groq.com/openai/v1/chat/completions',
@@ -370,14 +389,14 @@ export class LLMManager {
     } else if (name === 'openai') {
       return {
         name: 'openai',
-        apiKey: getOpenAIApiKey() || '',
+        apiKey: this.resolveProviderApiKey(request, 'openai') || getOpenAIApiKey() || '',
         model: 'gpt-4o',
         endpoint: 'https://api.openai.com/v1/chat/completions'
       };
     } else if (name === 'nvidia') {
       return {
         name: 'nvidia',
-        apiKey: getNvidiaApiKey() || '',
+        apiKey: this.resolveProviderApiKey(request, 'nvidia') || getNvidiaApiKey() || '',
         model: process.env.NVIDIA_MODEL || 'qwen/qwen3.5-397b-a17b',
         endpoint: process.env.NVIDIA_ENDPOINT || 'https://integrate.api.nvidia.com/v1/chat/completions'
       };
@@ -907,11 +926,11 @@ Requirements:
         `[LLMManager] Requested provider "${requestedProvider}" routed to primary "${primaryProvider}".`
       );
     }
-    const activeFallback = this.resolveActiveFallbackProvider(primaryProvider);
-    const providerHardBlocked = this.isProviderHardBlocked(primaryProvider) || !this.hasProviderKey(primaryProvider);
+    const activeFallback = this.resolveActiveFallbackProvider(primaryProvider, effectiveRequest);
+    const providerHardBlocked = this.isProviderHardBlocked(primaryProvider) || !this.hasProviderKey(primaryProvider, effectiveRequest);
 
     if (providerHardBlocked) {
-      if (!this.hasProviderKey(primaryProvider)) {
+      if (!this.hasProviderKey(primaryProvider, effectiveRequest)) {
         console.warn(
           `[LLMManager] Primary provider "${primaryProvider}" has no API key configured. Falling back by priority.`
         );
@@ -922,7 +941,7 @@ Requirements:
       ]
         .filter((candidate, index, list) => list.indexOf(candidate) === index)
         .filter((candidate) => this.shouldAllowGenerationFallbackProvider(primaryProvider, candidate))
-        .filter((candidate) => this.hasProviderKey(candidate));
+        .filter((candidate) => this.hasProviderKey(candidate, effectiveRequest));
 
       if (forcedFallbackOrder.length > 0) {
         console.warn(
@@ -1014,7 +1033,7 @@ Requirements:
       }
 
       const fallbacks = this.getFallbackOrder(primaryProvider).filter((candidate) =>
-        this.hasProviderKey(candidate) &&
+        this.hasProviderKey(candidate, effectiveRequest) &&
         this.shouldAllowGenerationFallbackProvider(primaryProvider, candidate)
       );
 

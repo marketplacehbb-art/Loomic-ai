@@ -431,6 +431,138 @@ export interface GenerateSloResponse {
     error?: string;
 }
 
+export interface LiveMetricsChartPoint {
+    time: string;
+    requests: number;
+    latency: number;
+}
+
+export interface LiveMetricsResponse {
+    p95Latency: number;
+    successRate: number;
+    fallbackRate: number;
+    costPerRequest: number;
+    requestsToday: number;
+    tokenVolumeToday: number;
+    chartData: LiveMetricsChartPoint[];
+    requestsNeeded?: number;
+    message?: string;
+    totalProjects?: number;
+    totalGenerations?: number;
+    thisMonthGenerations?: number;
+    error?: string;
+}
+
+export type ApiKeyProvider = 'deepseek' | 'openai' | 'gemini' | 'groq' | 'openrouter' | 'nvidia';
+
+export interface UserApiKeyStatusResponse {
+    success: boolean;
+    keys?: Record<ApiKeyProvider, {
+        configured: boolean;
+        masked: string;
+    }>;
+    error?: string;
+}
+
+export interface UserApiKeySaveResponse {
+    success: boolean;
+    provider?: ApiKeyProvider;
+    mode?: 'db' | 'memory';
+    error?: string;
+}
+
+export interface UserApiKeyTestResponse {
+    success: boolean;
+    provider?: ApiKeyProvider;
+    valid: boolean;
+    message?: string;
+    error?: string;
+}
+
+export interface DeleteAccountResponse {
+    success: boolean;
+    error?: string;
+}
+
+export interface UserUsageResponse {
+    creditsUsed: number;
+    creditsTotal: number;
+    resetsAt: string;
+    error?: string;
+}
+
+export interface PaymentHistoryItem {
+    id: string;
+    date: string;
+    description: string;
+    amount: number;
+    status: string;
+    invoiceUrl: string;
+}
+
+export interface PaymentHistoryResponse {
+    success: boolean;
+    rows: PaymentHistoryItem[];
+    error?: string;
+}
+
+export interface MonthlyUsageHistoryItem {
+    id: string;
+    date: string;
+    projectName: string;
+    tokensUsed: number;
+    provider: string;
+    prompt?: string;
+}
+
+export interface MonthlyUsageHistoryResponse {
+    success: boolean;
+    rows: MonthlyUsageHistoryItem[];
+    total: number;
+    hasMore: boolean;
+    error?: string;
+}
+
+export interface BillingWaitlistResponse {
+    success: boolean;
+    message?: string;
+    mode?: 'db' | 'memory';
+    error?: string;
+}
+
+export type BillingPlan = 'free' | 'pro' | 'business' | 'enterprise';
+export type BillingSubscriptionStatus = 'active' | 'canceled' | 'past_due';
+
+export interface BillingStatusResponse {
+    plan: BillingPlan;
+    status: BillingSubscriptionStatus;
+    creditsUsed: number;
+    creditsTotal: number;
+    creditsResetAt: string;
+    stripeConnected: boolean;
+    error?: string;
+}
+
+export interface BillingMockUpgradeResponse {
+    success: boolean;
+    plan?: BillingPlan;
+    creditsTotal?: number;
+    error?: string;
+}
+
+export interface BillingMockDowngradeResponse {
+    success: boolean;
+    error?: string;
+}
+
+export interface BillingHistoryItem {
+    date: string;
+    description: string;
+    amount: string;
+    status: string;
+    invoice: string;
+}
+
 const normalizeApiBaseUrl = (value?: string): string => {
     const trimmed = String(value || '').trim().replace(/\/+$/, '');
     if (!trimmed) return '';
@@ -691,6 +823,126 @@ export const api = {
             headers: await buildAuthHeaders(false),
         });
         return response.json() as Promise<GenerateSloResponse>;
+    },
+
+    async getLiveMetrics(): Promise<LiveMetricsResponse> {
+        const response = await fetch(`${API_URL}/api/metrics/live`, {
+            method: 'GET',
+            headers: await buildAuthHeaders(false),
+        });
+        return response.json() as Promise<LiveMetricsResponse>;
+    },
+
+    async getBillingStatus(): Promise<BillingStatusResponse> {
+        const response = await fetch(`${API_URL}/api/billing/status`, {
+            method: 'GET',
+            headers: await buildAuthHeaders(false),
+        });
+        return response.json() as Promise<BillingStatusResponse>;
+    },
+
+    async mockUpgradePlan(plan: 'pro' | 'business' | 'enterprise'): Promise<BillingMockUpgradeResponse> {
+        const response = await fetch(`${API_URL}/api/billing/mock-upgrade`, {
+            method: 'POST',
+            headers: await buildAuthHeaders(true),
+            body: JSON.stringify({ plan }),
+        });
+        return response.json() as Promise<BillingMockUpgradeResponse>;
+    },
+
+    async mockDowngradePlan(): Promise<BillingMockDowngradeResponse> {
+        const response = await fetch(`${API_URL}/api/billing/mock-downgrade`, {
+            method: 'POST',
+            headers: await buildAuthHeaders(true),
+            body: JSON.stringify({}),
+        });
+        return response.json() as Promise<BillingMockDowngradeResponse>;
+    },
+
+    async getBillingHistory(): Promise<BillingHistoryItem[]> {
+        const response = await fetch(`${API_URL}/api/billing/history`, {
+            method: 'GET',
+            headers: await buildAuthHeaders(false),
+        });
+        return response.json() as Promise<BillingHistoryItem[]>;
+    },
+
+    async getUserUsage(): Promise<UserUsageResponse> {
+        const response = await fetch(`${API_URL}/api/user/usage`, {
+            method: 'GET',
+            headers: await buildAuthHeaders(false),
+        });
+        return response.json() as Promise<UserUsageResponse>;
+    },
+
+    async getPaymentHistory(): Promise<PaymentHistoryResponse> {
+        const response = await fetch(`${API_URL}/api/user/payment-history`, {
+            method: 'GET',
+            headers: await buildAuthHeaders(false),
+        });
+        return response.json() as Promise<PaymentHistoryResponse>;
+    },
+
+    async getMonthlyUsageHistory(limit = 10, offset = 0): Promise<MonthlyUsageHistoryResponse> {
+        const query = new URLSearchParams({
+            limit: String(Math.max(1, Math.min(100, Math.floor(limit)))),
+            offset: String(Math.max(0, Math.floor(offset))),
+        }).toString();
+        const response = await fetch(`${API_URL}/api/user/usage-history?${query}`, {
+            method: 'GET',
+            headers: await buildAuthHeaders(false),
+        });
+        return response.json() as Promise<MonthlyUsageHistoryResponse>;
+    },
+
+    async joinBillingWaitlist(email: string): Promise<BillingWaitlistResponse> {
+        const response = await fetch(`${API_URL}/api/user/waitlist`, {
+            method: 'POST',
+            headers: await buildAuthHeaders(true),
+            body: JSON.stringify({ email }),
+        });
+        return response.json() as Promise<BillingWaitlistResponse>;
+    },
+
+    async getUserApiKeysStatus(): Promise<UserApiKeyStatusResponse> {
+        const response = await fetch(`${API_URL}/api/user/api-keys`, {
+            method: 'GET',
+            headers: await buildAuthHeaders(false),
+        });
+        return response.json() as Promise<UserApiKeyStatusResponse>;
+    },
+
+    async saveUserApiKey(input: {
+        provider: ApiKeyProvider;
+        apiKey: string;
+    }): Promise<UserApiKeySaveResponse> {
+        const response = await fetch(`${API_URL}/api/user/api-keys`, {
+            method: 'POST',
+            headers: await buildAuthHeaders(true),
+            body: JSON.stringify(input),
+        });
+        return response.json() as Promise<UserApiKeySaveResponse>;
+    },
+
+    async testUserApiKey(input: {
+        provider: ApiKeyProvider;
+        apiKey?: string;
+    }): Promise<UserApiKeyTestResponse> {
+        const response = await fetch(`${API_URL}/api/user/api-keys/test`, {
+            method: 'POST',
+            headers: await buildAuthHeaders(true),
+            body: JSON.stringify(input),
+        });
+        return response.json() as Promise<UserApiKeyTestResponse>;
+    },
+
+    async deleteAccount(input: { email: string }): Promise<DeleteAccountResponse> {
+        const response = await fetch(`${API_URL}/api/user/delete-account`, {
+            method: 'POST',
+            headers: await buildAuthHeaders(true),
+            body: JSON.stringify(input),
+        });
+        return response.json() as Promise<DeleteAccountResponse>;
     },
 
     // Deterministic visual edits via AST patch pipeline
