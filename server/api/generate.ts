@@ -95,7 +95,8 @@ import {
   normalizeArchitectPaths,
 } from './generate-architect-utils.js';
 import { STACK_CONSTRAINT } from '../prompts/designReferences.js';
-import { hydratePrompt, type HydratedContext } from './hydration.js';
+import { hydratePrompt, inferIndustryFromPrompt, type HydratedContext } from './hydration.js';
+import { getIndustryFonts } from '../prompts/industryProfiles.js';
 
 import { inferPromptUnderstandingWithAI, type PromptUnderstandingResult } from './generate-prompt-builder.js';
 import {
@@ -271,6 +272,203 @@ ${renderLines.join('\n')}
   );
 }
 `;
+}
+
+const POST_GENERATION_MIN_FILES = 5;
+const POST_GENERATION_REQUIRED_PATHS = [
+  'src/App.tsx',
+  'src/pages/HomePage.tsx',
+  'src/components/layout/Navbar.tsx',
+  'src/components/layout/Footer.tsx',
+] as const;
+
+function buildRequiredFileFallback(path: (typeof POST_GENERATION_REQUIRED_PATHS)[number]): string {
+  if (path === 'src/App.tsx') {
+    return `import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import HomePage from './pages/HomePage';
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path='/' element={<HomePage />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+`;
+  }
+  if (path === 'src/pages/HomePage.tsx') {
+    return `import Navbar from '../components/layout/Navbar';
+import Footer from '../components/layout/Footer';
+
+export default function HomePage() {
+  return (
+    <main className="min-h-screen bg-slate-950 text-slate-100">
+      <Navbar />
+      <section className="mx-auto max-w-6xl px-6 py-24">
+        <h1 className="text-4xl font-bold tracking-tight">Welcome</h1>
+        <p className="mt-3 text-slate-300">Launch-ready layout with responsive sections and clean content hierarchy.</p>
+      </section>
+      <Footer />
+    </main>
+  );
+}
+`;
+  }
+  if (path === 'src/components/layout/Navbar.tsx') {
+    return `export default function Navbar() {
+  return (
+    <header className="border-b border-slate-800 bg-slate-950/90 px-6 py-4">
+      <div className="mx-auto flex max-w-6xl items-center justify-between">
+        <span className="text-lg font-semibold text-slate-100">Brand</span>
+        <nav className="text-sm text-slate-300">Navigation</nav>
+      </div>
+    </header>
+  );
+}
+`;
+  }
+  return `export default function Footer() {
+  return (
+    <footer className="border-t border-slate-800 bg-slate-950 px-6 py-8 text-slate-400">
+      <div className="mx-auto max-w-6xl text-sm">Copyright 2026</div>
+    </footer>
+  );
+}
+`;
+}
+
+function applyPostGenerationFileGuard(
+  files: Array<{ path: string; content: string }>,
+  generationMode: 'new' | 'edit'
+): {
+  files: Array<{ path: string; content: string }>;
+  createdPaths: string[];
+} {
+  const byPath = new Map<string, string>();
+  (files || []).forEach((file) => {
+    const normalizedPath = normalizeGeneratedPath(file?.path || '');
+    if (!normalizedPath) return;
+    const content = typeof file?.content === 'string' ? file.content : '';
+    byPath.set(normalizedPath, content);
+  });
+
+  const createdPaths: string[] = [];
+  if (generationMode === 'new') {
+    for (const requiredPath of POST_GENERATION_REQUIRED_PATHS) {
+      if (!byPath.has(requiredPath)) {
+        byPath.set(requiredPath, buildRequiredFileFallback(requiredPath));
+        createdPaths.push(requiredPath);
+      }
+    }
+  }
+
+  if (generationMode === 'new' && byPath.size < POST_GENERATION_MIN_FILES) {
+    throw new Error(
+      `POST_GENERATION_GUARD_MIN_FILES: expected at least ${POST_GENERATION_MIN_FILES} files, got ${byPath.size}`
+    );
+  }
+
+  const normalizedFiles = [...byPath.entries()].map(([path, content]) => ({ path, content }));
+  return {
+    files: normalizedFiles,
+    createdPaths,
+  };
+}
+
+const FONT_SYSTEM_MARKER_START = '<!-- AI_BUILDER_FONT_SYSTEM_START -->';
+const FONT_SYSTEM_MARKER_END = '<!-- AI_BUILDER_FONT_SYSTEM_END -->';
+
+type ProjectTypographyFonts = {
+  heading: string;
+  body: string;
+};
+
+function toGoogleFontToken(fontFamily: string): string {
+  return encodeURIComponent(String(fontFamily || 'Inter')).replace(/%20/g, '+');
+}
+
+function buildFontSystemBlock(fonts: ProjectTypographyFonts): string {
+  const headingToken = toGoogleFontToken(fonts.heading);
+  const bodyToken = toGoogleFontToken(fonts.body);
+  const googleFontsHref = `https://fonts.googleapis.com/css2?family=${headingToken}:wght@400;600;700;900&family=${bodyToken}:wght@400;500;600&display=swap`;
+
+  return [
+    `  ${FONT_SYSTEM_MARKER_START}`,
+    '  <link rel="preconnect" href="https://fonts.googleapis.com">',
+    '  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>',
+    `  <link href="${googleFontsHref}" rel="stylesheet">`,
+    '  <style>',
+    '    :root {',
+    `      --font-heading: '${fonts.heading}', sans-serif;`,
+    `      --font-body: '${fonts.body}', sans-serif;`,
+    '    }',
+    '    body { font-family: var(--font-body); }',
+    '    h1,h2,h3,h4 { font-family: var(--font-heading); }',
+    '  </style>',
+    `  ${FONT_SYSTEM_MARKER_END}`,
+  ].join('\n');
+}
+
+function injectFontSystemIntoIndexHtml(source: string, fonts: ProjectTypographyFonts): string {
+  const html = String(source || '').trim();
+  if (!html) return html;
+
+  const escapedStart = FONT_SYSTEM_MARKER_START.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const escapedEnd = FONT_SYSTEM_MARKER_END.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const managedBlockRegex = new RegExp(`${escapedStart}[\\s\\S]*?${escapedEnd}\\s*`, 'm');
+  const withoutManagedBlock = html.replace(managedBlockRegex, '');
+  const block = buildFontSystemBlock(fonts);
+
+  if (withoutManagedBlock.includes('</head>')) {
+    return withoutManagedBlock.replace('</head>', `${block}\n</head>`);
+  }
+
+  return `${block}\n${withoutManagedBlock}`;
+}
+
+function ensureViewportMetaTag(source: string): string {
+  const html = String(source || '').trim();
+  if (!html) return html;
+
+  const viewportMeta = "  <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=5.0'>";
+  const withoutViewport = html.replace(/<meta[^>]*name=["']viewport["'][^>]*>\s*/gi, '');
+
+  if (withoutViewport.includes('</head>')) {
+    return withoutViewport.replace('</head>', `${viewportMeta}\n</head>`);
+  }
+
+  return `${viewportMeta}\n${withoutViewport}`;
+}
+
+function ensureProjectFontSystem(input: {
+  files: Record<string, string>;
+  prompt: string;
+  hydratedContext: HydratedContext | null;
+  generationMode: 'new' | 'edit';
+}): Record<string, string> {
+  const next = { ...input.files };
+  const hasIndexHtml = typeof next['index.html'] === 'string';
+  if (!hasIndexHtml && input.generationMode !== 'new') {
+    return next;
+  }
+
+  if (!hasIndexHtml && input.generationMode === 'new') {
+    const baseIndex = getBaseTemplateFiles()['index.html'];
+    if (typeof baseIndex === 'string' && baseIndex.trim().length > 0) {
+      next['index.html'] = baseIndex;
+    }
+  }
+
+  const indexSource = typeof next['index.html'] === 'string' ? next['index.html'] : '';
+  if (!indexSource.trim()) return next;
+
+  const industry = inferIndustryFromPrompt(`${input.prompt} ${input.hydratedContext?.intent || ''}`);
+  const fonts = getIndustryFonts(industry);
+  const withViewportMeta = ensureViewportMetaTag(indexSource);
+  next['index.html'] = injectFontSystemIntoIndexHtml(withViewportMeta, fonts);
+  return next;
 }
 
 function isFallbackAppPlaceholder(code: string): boolean {
@@ -760,6 +958,159 @@ interface ValidationErrorBreakdown {
   dominantType: 'import' | 'icon' | 'syntax' | 'type' | 'runtime' | 'other' | 'none';
 }
 
+type DetectedIndustry = ReturnType<typeof inferIndustryFromPrompt>;
+
+type FallbackTemplateContext = {
+  productName: string;
+  industry: DetectedIndustry;
+  colorScheme: 'dark' | 'light' | 'colorful';
+  intent: string;
+};
+
+const FORCE_NEW_PROJECT_PROMPT_REGEX =
+  /\b(mach mir|erstelle|baue|neue seite|new page|create|build me|make me)\b/i;
+
+const INDUSTRY_SIGNAL_PATTERNS: Record<DetectedIndustry, RegExp[]> = {
+  restaurant: [/\b(restaurant|pizza|cafe|bistro|food|menu|delivery)\b/g],
+  saas: [/\b(saas|platform|software|cloud|automation|b2b)\b/g],
+  portfolio: [/\b(portfolio|agency|studio|showcase|creative)\b/g],
+  ecommerce: [/\b(e-?commerce|shop|store|checkout|cart|product)\b/g],
+  wedding: [/\b(wedding|marriage|ceremony|bride|groom)\b/g],
+  photography: [/\b(photography|photographer|photos|shots|gallery)\b/g],
+  fitness: [/\b(fitness|gym|workout|trainer|nutrition|health)\b/g],
+  medical: [/\b(medical|clinic|doctor|healthcare|dental|patient)\b/g],
+  realestate: [/\b(real estate|property|apartment|house|realtor)\b/g],
+  music: [/\b(music|band|artist|concert|album|tour)\b/g],
+  education: [/\b(education|course|learning|tutorial|academy|student)\b/g],
+  legal: [/\b(legal|lawyer|attorney|law firm|case)\b/g],
+  nonprofit: [/\b(nonprofit|charity|donation|fundraising|ngo)\b/g],
+  startup: [/\b(startup|launch|waitlist|mvp|founder)\b/g],
+};
+
+function detectIndustrySignals(text: string): { industry: DetectedIndustry | null; score: number } {
+  const normalized = String(text || '').toLowerCase();
+  let bestIndustry: DetectedIndustry | null = null;
+  let bestScore = 0;
+
+  (Object.keys(INDUSTRY_SIGNAL_PATTERNS) as DetectedIndustry[]).forEach((industry) => {
+    const patterns = INDUSTRY_SIGNAL_PATTERNS[industry] || [];
+    const score = patterns.reduce((acc, pattern) => {
+      const matches = normalized.match(pattern);
+      return acc + (matches ? matches.length : 0);
+    }, 0);
+    if (score > bestScore) {
+      bestScore = score;
+      bestIndustry = industry;
+    }
+  });
+
+  return {
+    industry: bestScore > 0 ? bestIndustry : null,
+    score: bestScore,
+  };
+}
+
+function detectExistingProjectIndustry(files: Record<string, string> | undefined): { industry: DetectedIndustry | null; score: number } {
+  const entries = Object.entries(files || {});
+  if (entries.length === 0) {
+    return { industry: null, score: 0 };
+  }
+
+  const sampled = entries
+    .slice(0, 28)
+    .map(([path, content]) => `${path}\n${String(content || '').slice(0, 820)}`)
+    .join('\n');
+
+  return detectIndustrySignals(sampled);
+}
+
+function normalizeColorScheme(value: string): 'dark' | 'light' | 'colorful' {
+  const lower = String(value || '').toLowerCase();
+  if (/\b(light|white|clean|minimal|hell)\b/.test(lower)) return 'light';
+  if (/\b(colorful|vibrant|bold|bunt)\b/.test(lower)) return 'colorful';
+  return 'dark';
+}
+
+function extractFallbackProductName(prompt: string, hydratedContext: HydratedContext | null): string {
+  const source = String(prompt || '').trim();
+  const matches = [
+    source.match(/(?:for|f(?:u|ue|\u00fc)r|named|called)\s+([a-z0-9][a-z0-9&\-\s]{2,40})/i),
+    source.match(/([a-z0-9][a-z0-9&\-\s]{2,40})\s+(?:website|webseite|landing page|landing|shop|store|dashboard)/i),
+  ];
+
+  for (const match of matches) {
+    const candidate = String(match?.[1] || '')
+      .replace(/\b(website|webseite|landing|page|seite|app|shop|store|dashboard)\b/gi, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (candidate.length >= 2) {
+      return candidate
+        .split(' ')
+        .map((token) => token.charAt(0).toUpperCase() + token.slice(1))
+        .join(' ');
+    }
+  }
+
+  const fromIntent = String(hydratedContext?.intent || '').trim().split(/\s+/).slice(0, 2).join(' ');
+  if (fromIntent) {
+    return fromIntent
+      .split(' ')
+      .map((token) => token.charAt(0).toUpperCase() + token.slice(1))
+      .join(' ');
+  }
+
+  return 'Northstar Studio';
+}
+
+function buildFallbackTemplateContext(prompt: string, hydratedContext: HydratedContext | null): FallbackTemplateContext {
+  const intent = String(hydratedContext?.intent || prompt).trim().replace(/\s+/g, ' ');
+  return {
+    productName: extractFallbackProductName(prompt, hydratedContext),
+    industry: inferIndustryFromPrompt(`${prompt} ${hydratedContext?.intent || ''}`),
+    colorScheme: normalizeColorScheme(hydratedContext?.colorScheme || prompt),
+    intent: intent.length > 140 ? `${intent.slice(0, 137).trimEnd()}...` : intent,
+  };
+}
+
+function personalizeFallbackFiles(
+  files: Record<string, string>,
+  context: FallbackTemplateContext
+): Record<string, string> {
+  const next: Record<string, string> = {};
+  const replacements: Array<[RegExp, string]> = [
+    [/\bAcme Cloud\b/g, context.productName],
+    [/\bAcme\b/g, context.productName],
+    [/\bNorthstar (Studio|Shop|Analytics|Journal)\b/g, context.productName],
+    [/Build something amazing/gi, context.intent],
+    [/Your subtitle goes here\. Keep it short and compelling\./gi, context.intent],
+  ];
+
+  Object.entries(files || {}).forEach(([path, content]) => {
+    const normalizedPath = normalizeGeneratedPath(path || '');
+    const isRuntimeText = /\.(tsx|ts|jsx|js|html)$/i.test(normalizedPath);
+    let nextContent = String(content || '');
+    if (isRuntimeText) {
+      replacements.forEach(([pattern, value]) => {
+        nextContent = nextContent.replace(pattern, value);
+      });
+      if (context.colorScheme === 'light') {
+        nextContent = nextContent.replace(
+          /bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900/g,
+          'bg-gradient-to-br from-white via-slate-100 to-purple-100'
+        );
+      } else if (context.colorScheme === 'colorful') {
+        nextContent = nextContent.replace(
+          /bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900/g,
+          'bg-gradient-to-br from-fuchsia-950 via-purple-900 to-indigo-950'
+        );
+      }
+    }
+    next[path] = nextContent;
+  });
+
+  return next;
+}
+
 const STYLE_ANCHOR_REGEX = /\b(?:bg|text|border|from|to|via|shadow|rounded|font)-[a-z0-9:/%.[\]-]+|--[a-z0-9-]+|linear-gradient|radial-gradient|backdrop-blur|transition-[a-z-]+|animate-[a-z-]+/gi;
 
 function extractStyleAnchors(content: string): Set<string> {
@@ -854,6 +1205,52 @@ function classifyValidationErrors(errors: string[]): ValidationErrorBreakdown {
     byType,
     dominantType: (dominant[0] || 'none') as ValidationErrorBreakdown['dominantType'],
   };
+}
+
+function hasValidAppEntryPointFromCode(code: string): boolean {
+  const normalized = String(code || '').trim();
+  if (!normalized) return false;
+  if (looksLikeHtmlDocument(normalized)) return false;
+  return hasDefaultExport(normalized);
+}
+
+function hasValidGeneratedEntryPoint(input: {
+  validationTargetPath: string;
+  codeToProcess: string;
+  normalizedGeneratedCode: string;
+  orchestrationFiles: Array<{ path: string; content: string }>;
+  contextualFiles?: Record<string, string>;
+}): boolean {
+  const appFromFiles = (input.orchestrationFiles || []).find((file) => {
+    const normalized = normalizeGeneratedPath(file.path || '');
+    return normalized === 'src/App.tsx';
+  })?.content;
+
+  if (hasValidAppEntryPointFromCode(String(appFromFiles || ''))) return true;
+  const appFromContext = input.contextualFiles?.['src/App.tsx'] || input.contextualFiles?.['App.tsx'] || '';
+  if (hasValidAppEntryPointFromCode(String(appFromContext || ''))) return true;
+  if (normalizeGeneratedPath(input.validationTargetPath || '') === 'src/App.tsx') {
+    if (hasValidAppEntryPointFromCode(input.codeToProcess)) return true;
+    if (hasValidAppEntryPointFromCode(input.normalizedGeneratedCode)) return true;
+  }
+  return false;
+}
+
+function hasValidAssembledEntryPoint(fileMap: Record<string, string>, fallbackCode: string): boolean {
+  const appCode = fileMap['src/App.tsx'] || fileMap['App.tsx'] || '';
+  if (hasValidAppEntryPointFromCode(appCode)) return true;
+  return hasValidAppEntryPointFromCode(fallbackCode);
+}
+
+function shouldRollbackForValidationOutcome(
+  breakdown: ValidationErrorBreakdown,
+  noValidEntryPoint: boolean
+): boolean {
+  const criticalErrors =
+    breakdown.byType.syntax +
+    breakdown.byType.import +
+    breakdown.byType.runtime;
+  return criticalErrors > 2 && noValidEntryPoint;
 }
 
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -1217,7 +1614,27 @@ router.post('/generate', validateRequest(generateSchema), async (req, res) => {
       });
     }
 
-    const effectiveGenerationMode: 'new' | 'edit' = (requestMode === 'repair' || hasEditableFiles) ? 'edit' : 'new';
+    const promptSignals = detectIndustrySignals(prompt);
+    const existingSignals = detectExistingProjectIndustry(files);
+    const hasIndustryMismatch =
+      Boolean(promptSignals.industry) &&
+      Boolean(existingSignals.industry) &&
+      promptSignals.industry !== existingSignals.industry;
+    const forceNewProject =
+      requestMode === 'generate' &&
+      hasEditableFiles &&
+      FORCE_NEW_PROJECT_PROMPT_REGEX.test(prompt) &&
+      hasIndustryMismatch;
+
+    if (forceNewProject) {
+      console.log(
+        `[ModeSwitch] Forced generationMode=new due to new-project prompt in edit context (${existingSignals.industry} -> ${promptSignals.industry}).`
+      );
+    }
+
+    const effectiveGenerationMode: 'new' | 'edit' = forceNewProject
+      ? 'new'
+      : ((requestMode === 'repair' || hasEditableFiles) ? 'edit' : 'new');
     const hasVisualAnchorInput = Boolean(
       editAnchor &&
       Object.values(editAnchor).some((value) => typeof value === 'string' && value.trim().length > 0)
@@ -1646,6 +2063,7 @@ ${contractReadOnlyFiles.map((path) => `  - ${path}`).join('\n')}
         let resolvedViaDeterministicFallback = false;
         if (isOrchestratorTimeout) {
           console.warn(`Orchestrator timeout after ${orchestratorTimeoutMs / 1000}s. Falling back to standard generation...`);
+          const timeoutFallbackContext = buildFallbackTemplateContext(prompt, hydratedContextForResponse);
           const deterministicTimeoutFallback = applyDeterministicDomainFallback({
             packIds: domainPack.packIds,
             files: scopedContextFiles,
@@ -1658,9 +2076,13 @@ ${contractReadOnlyFiles.map((path) => `  - ${path}`).join('\n')}
           });
           if (effectiveGenerationMode === 'new' && deterministicTimeoutFallback.applied.length > 0) {
             console.warn(`[Orchestrator] Timeout fallback resolved via deterministic domain packs: ${deterministicTimeoutFallback.applied.join(', ')}`);
-            const fallbackEntries = Object.entries(deterministicTimeoutFallback.files);
+            const personalizedTimeoutFallbackFiles = personalizeFallbackFiles(
+              deterministicTimeoutFallback.files,
+              timeoutFallbackContext
+            );
+            const fallbackEntries = Object.entries(personalizedTimeoutFallbackFiles);
             rawCode =
-              deterministicTimeoutFallback.files['src/App.tsx'] ||
+              personalizedTimeoutFallbackFiles['src/App.tsx'] ||
               fallbackEntries.find(([path]) => /\.(tsx|ts|jsx|js)$/.test(normalizeGeneratedPath(path)))?.[1] ||
               '';
             orchestrationFiles = fallbackEntries.map(([path, content]) => ({
@@ -1981,6 +2403,17 @@ ${contractReadOnlyFiles.map((path) => `  - ${path}`).join('\n')}
         ...parsedOutput.extractedFiles
       ];
       console.log(`[Parser] Parsed ${parsedOutput.extractedFiles.length} file(s) from LLM ${parsedOutput.detectedFormat} output`);
+    }
+
+    const postGenerationGuardResult = applyPostGenerationFileGuard(
+      orchestrationFiles,
+      effectiveGenerationMode
+    );
+    orchestrationFiles = postGenerationGuardResult.files;
+    if (effectiveGenerationMode === 'new' && postGenerationGuardResult.createdPaths.length > 0) {
+      console.warn(
+        `[PostGenerationGuard] Auto-created missing required files: ${postGenerationGuardResult.createdPaths.join(', ')}`
+      );
     }
 
     const orchestratedAppFile = orchestrationFiles.find((file) => {
@@ -2338,16 +2771,24 @@ CRITICAL STYLE ENFORCEMENT:
     let rollbackFileMap: Record<string, string> | null = null;
 
     const rollbackErrorBreakdown = classifyValidationErrors(processed.errors);
-    const hasCriticalValidationErrors = rollbackErrorBreakdown.byType.syntax > 0
-      || rollbackErrorBreakdown.byType.import > 0
-      || rollbackErrorBreakdown.byType.runtime > 0;
-    if (effectiveGenerationMode === 'edit' && hasCriticalValidationErrors) {
+    const initialNoValidEntryPoint = !hasValidGeneratedEntryPoint({
+      validationTargetPath,
+      codeToProcess,
+      normalizedGeneratedCode,
+      orchestrationFiles,
+      contextualFiles,
+    });
+    const shouldRollbackInitialValidation = shouldRollbackForValidationOutcome(
+      rollbackErrorBreakdown,
+      initialNoValidEntryPoint
+    );
+    if (effectiveGenerationMode === 'edit' && shouldRollbackInitialValidation) {
       const hasContextFiles = Object.keys(contextualFiles).length > 0;
       if (hasContextFiles) {
         rollbackApplied = true;
         rollbackTrigger = 'validation';
         rollbackSource = 'context-files';
-        rollbackReason = `Validation failed with ${processed.errors.length} errors; keeping previous project state.`;
+        rollbackReason = `Validation failed critically (${rollbackErrorBreakdown.total} errors, invalid entry-point); keeping previous project state.`;
         rollbackFileMap = { ...contextualFiles };
       } else {
         const latestSnapshot = projectSnapshotStore.getLatest(requestBody.projectId);
@@ -2356,7 +2797,7 @@ CRITICAL STYLE ENFORCEMENT:
           rollbackTrigger = 'validation';
           rollbackSource = 'snapshot';
           rollbackSnapshotId = latestSnapshot.id;
-          rollbackReason = `Validation failed with ${processed.errors.length} errors; restored latest snapshot.`;
+          rollbackReason = `Validation failed critically (${rollbackErrorBreakdown.total} errors, invalid entry-point); restored latest snapshot.`;
           rollbackFileMap = { ...latestSnapshot.files };
         }
       }
@@ -2423,15 +2864,17 @@ CRITICAL STYLE ENFORCEMENT:
 
     const duration = Date.now() - startTime;
     stageTimings.total = duration;
+    const fallbackTemplateContext = buildFallbackTemplateContext(prompt, hydratedContextForResponse);
     const assemblyStartedAt = Date.now();
     let assembledFileMap = assembleProjectFiles({
       templateFiles,
-      existingFiles: files || {},
+      existingFiles: contextualFiles,
       plannedFiles,
       generatedCode: normalizedGeneratedCode,
       generatedFiles: filteredOrchestrationFiles,
       processedFiles: filteredProcessedFiles as any,
       dependencies: processed.dependencies,
+      fallbackContext: fallbackTemplateContext,
     });
     stageTimings.assembly = Date.now() - assemblyStartedAt;
     if (rollbackApplied && rollbackFileMap) {
@@ -2515,7 +2958,7 @@ CRITICAL STYLE ENFORCEMENT:
     }
 
     if (!rollbackApplied) {
-      const hydration = hydrateMissingLocalImports({ ...sanitizedFileMap });
+      const hydration = hydrateMissingLocalImports({ ...sanitizedFileMap }, fallbackTemplateContext);
       sanitizedFileMap = sanitizeProjectSourceFiles(hydration.files);
       if (hydration.addedPaths.length > 0) {
         processed.warnings = [
@@ -2544,7 +2987,9 @@ CRITICAL STYLE ENFORCEMENT:
         forcePacks: shouldForceKanbanFallback ? ['kanban'] : [],
       });
       if (fallbackResult.applied.length > 0) {
-        sanitizedFileMap = sanitizeProjectSourceFiles(fallbackResult.files);
+        sanitizedFileMap = sanitizeProjectSourceFiles(
+          personalizeFallbackFiles(fallbackResult.files, fallbackTemplateContext)
+        );
         domainFallbackApplied = true;
         processed.warnings = [
           ...processed.warnings,
@@ -2554,7 +2999,7 @@ CRITICAL STYLE ENFORCEMENT:
     }
 
     if (!rollbackApplied && domainFallbackApplied) {
-      const hydration = hydrateMissingLocalImports({ ...sanitizedFileMap });
+      const hydration = hydrateMissingLocalImports({ ...sanitizedFileMap }, fallbackTemplateContext);
       sanitizedFileMap = sanitizeProjectSourceFiles(hydration.files);
     }
 
@@ -2612,7 +3057,11 @@ CRITICAL STYLE ENFORCEMENT:
     if (!rollbackApplied && appFallbackPlaceholderDetected) {
       const fallbackErrorMessage = 'Generation incomplete: App scaffold fallback placeholder was produced.';
       const hasContextFiles = Object.keys(contextualFiles).length > 0;
-      if (effectiveGenerationMode === 'edit' && hasContextFiles) {
+      const shouldRollbackPlaceholder = shouldRollbackForValidationOutcome(
+        classifyValidationErrors(processed.errors),
+        true
+      );
+      if (effectiveGenerationMode === 'edit' && hasContextFiles && shouldRollbackPlaceholder) {
         rollbackApplied = true;
         rollbackTrigger = 'validation';
         rollbackSource = 'context-files';
@@ -2657,12 +3106,18 @@ CRITICAL STYLE ENFORCEMENT:
       });
 
       if (finalProcessed.errors.length > 0) {
+        const finalErrorBreakdown = classifyValidationErrors(finalProcessed.errors);
+        const finalNoValidEntryPoint = !hasValidAssembledEntryPoint(sanitizedFileMap, finalValidationCode);
+        const shouldRollbackFinalValidation = shouldRollbackForValidationOutcome(
+          finalErrorBreakdown,
+          finalNoValidEntryPoint
+        );
         const hasContextFiles = Object.keys(contextualFiles).length > 0;
-        if (effectiveGenerationMode === 'edit' && hasContextFiles) {
+        if (effectiveGenerationMode === 'edit' && hasContextFiles && shouldRollbackFinalValidation) {
           rollbackApplied = true;
           rollbackTrigger = 'final_validation';
           rollbackSource = 'context-files';
-          rollbackReason = `Final validation failed with ${finalProcessed.errors.length} errors after post-processing; keeping previous project state.`;
+          rollbackReason = `Final validation failed critically (${finalErrorBreakdown.total} errors, invalid entry-point); keeping previous project state.`;
           sanitizedFileMap = sanitizeProjectSourceFiles({ ...contextualFiles });
           const rollbackTargetPath = normalizeGeneratedPath(validationTargetPath);
           codeToProcess =
@@ -2806,6 +3261,17 @@ CRITICAL STYLE ENFORCEMENT:
         ...processed.warnings,
         'Quality gate detected critical findings. No automatic post-quality repair/rollback was applied.',
       ];
+    }
+
+    if (effectiveGenerationMode === 'new') {
+      sanitizedFileMap = sanitizeProjectSourceFiles(
+        ensureProjectFontSystem({
+          files: sanitizedFileMap,
+          prompt,
+          hydratedContext: hydratedContextForResponse,
+          generationMode: effectiveGenerationMode,
+        })
+      );
     }
 
     storeDesignGenome(requestBody.projectId, extractDesignGenomeFromFiles(sanitizedFileMap));

@@ -6,6 +6,7 @@ interface CodePreviewProps {
     dependencies?: Record<string, string>;
     previewPath?: string;
     refreshToken?: number;
+    previewMode?: 'desktop' | 'tablet' | 'mobile';
     onPreviewDocument?: (html: string) => void;
     onPreviewIssue?: (issue: {
         type: 'bundler' | 'runtime';
@@ -74,7 +75,15 @@ class PreviewErrorBoundary extends Component<{ children: ReactNode }, ErrorBound
     }
 }
 
-export function CodePreview({ files, dependencies, previewPath = '/', refreshToken = 0, onPreviewDocument, onPreviewIssue }: CodePreviewProps) {
+export function CodePreview({
+    files,
+    dependencies,
+    previewPath = '/',
+    refreshToken = 0,
+    previewMode = 'desktop',
+    onPreviewDocument,
+    onPreviewIssue
+}: CodePreviewProps) {
     // Falls nur eine Datei vorhanden ist, nehmen wir diese als App.tsx Basis
     const entryPath =
         files['src/App.tsx'] !== undefined ? 'src/App.tsx' :
@@ -94,6 +103,7 @@ export function CodePreview({ files, dependencies, previewPath = '/', refreshTok
                     dependencies={dependencies}
                     previewPath={previewPath}
                     refreshToken={refreshToken}
+                    previewMode={previewMode}
                     onPreviewDocument={onPreviewDocument}
                     onPreviewIssue={onPreviewIssue}
                 />

@@ -4022,6 +4022,7 @@ export default function Generator() {
                   dependencies={dependencies}
                   previewPath={previewPath}
                   refreshToken={previewRefreshToken}
+                  previewMode={previewMode}
                   onPreviewDocument={setLatestPreviewHtml}
                   onPreviewIssue={handlePreviewIssue}
                 />

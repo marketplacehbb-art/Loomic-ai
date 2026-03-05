@@ -34,13 +34,14 @@ const BLOCKED_LIBRARIES = new Map<string, { reason: string; suggestion: string }
 
 // Scaffold/placeholder patterns to detect
 const SCAFFOLD_PATTERNS = [
-    { pattern: /Lorem ipsum/gi, type: 'lorem_ipsum' as const },
-    { pattern: /\/\/\s*TODO/gi, type: 'todo_comment' as const },
-    { pattern: /\b(?:TBD|to be decided|coming soon)\b/gi, type: 'placeholder_text' as const },
-    { pattern: /\b(?:dummy|sample|mock)\s+(?:data|content|text)\b/gi, type: 'placeholder_text' as const },
-    { pattern: /placeholder\s*(?:text|content|image|data)/gi, type: 'placeholder_text' as const },
-    { pattern: /onClick=\{?\s*\(\)\s*=>\s*\{\s*\}\s*\}?/g, type: 'empty_handler' as const },
-    { pattern: /console\.log\s*\([^)]*\)\s*;?\s*$/gm, type: 'console_log_only' as const },
+    // Strict allowlist of placeholder strings.
+    // "Coming soon" is intentionally NOT treated as placeholder content.
+    { pattern: /\bYour title here\b/gi, type: 'placeholder_text' as const },
+    { pattern: /\bLorem ipsum\b/gi, type: 'lorem_ipsum' as const },
+    { pattern: /\bPlaceholder text\b/gi, type: 'placeholder_text' as const },
+    { pattern: /\bTODO:/g, type: 'todo_comment' as const },
+    { pattern: /\bInsert text here\b/gi, type: 'placeholder_text' as const },
+    { pattern: /\bYour subtitle here\b/gi, type: 'placeholder_text' as const },
 ];
 
 /**

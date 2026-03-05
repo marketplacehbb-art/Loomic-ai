@@ -55,36 +55,36 @@ export function createTokenBudget(input: {
     };
 
     const cap = providerHardCap[input.provider];
-    const baseByMode = input.generationMode === 'new' ? 4200 : 3200;
+    const pipelinePath = input.pipelinePath === 'fast' ? 'fast' : 'deep';
+    const baselineByPath = pipelinePath === 'fast' ? 6000 : 8000;
+    const baseByModeOffset = input.generationMode === 'new' ? 400 : -300;
 
-    let generationTarget = baseByMode;
+    let generationTarget = baselineByPath + baseByModeOffset;
     if (input.semantic.intent === 'layout-change' || input.semantic.intent === 'feature-addition') {
-        generationTarget += 700;
+        generationTarget += 500;
     }
     if (input.semantic.intensity === 'high' || input.semantic.touchesStructure) {
-        generationTarget += 900;
+        generationTarget += 800;
     } else if (input.semantic.intensity === 'low') {
-        generationTarget -= 500;
+        generationTarget -= 250;
     }
     const promptLower = String(input.prompt || '').toLowerCase();
     const hasComplexDomainSignal = /kanban|trello|drag-and-drop|drag and drop|dijkstra|pathfinding|inventory|invoice|split-bill|split bill|calculator|@react-pdf\/renderer|pdf/.test(promptLower);
     if (hasComplexDomainSignal) {
         generationTarget += 1200;
     }
+    generationTarget = Math.max(generationTarget, baselineByPath);
 
     const requested = typeof input.requestedMaxTokens === 'number' ? input.requestedMaxTokens : undefined;
     const requestedSafe = typeof requested === 'number'
         ? Math.max(256, Math.min(cap, Math.floor(requested)))
         : undefined;
-    const generationFloor = requestedSafe ? Math.min(900, requestedSafe) : 1400;
+    const generationFloor = requestedSafe ? Math.min(requestedSafe, baselineByPath) : baselineByPath;
     let generationMaxTokens = clampTokens(
-        requestedSafe ? Math.min(requestedSafe, generationTarget) : generationTarget,
+        requestedSafe ? Math.min(requestedSafe, Math.max(generationTarget, baselineByPath)) : generationTarget,
         generationFloor,
         cap
     );
-    if (input.pipelinePath === 'fast') {
-        generationMaxTokens = Math.min(generationMaxTokens, 3200);
-    }
     const repairFloor = requestedSafe ? Math.min(700, requestedSafe) : 900;
     let repairMaxTokens = clampTokens(Math.round(generationMaxTokens * 0.65), repairFloor, Math.min(cap, 5200));
     const repairAttempts = 2;
@@ -94,7 +94,7 @@ export function createTokenBudget(input: {
         generationMaxTokens,
         repairMaxTokens,
         repairAttempts,
-        reason: `provider_cap=${cap}, deepseek_routed=true, mode=${input.generationMode}, intent=${input.semantic.intent}, intensity=${input.semantic.intensity}, complex=${hasComplexDomainSignal}`,
+        reason: `provider_cap=${cap}, deepseek_routed=true, path=${pipelinePath}, baseline=${baselineByPath}, mode=${input.generationMode}, intent=${input.semantic.intent}, intensity=${input.semantic.intensity}, complex=${hasComplexDomainSignal}`,
     };
 }
 

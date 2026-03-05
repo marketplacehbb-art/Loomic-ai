@@ -10,6 +10,22 @@ export interface HydratedContext {
   complexity: 'simple' | 'moderate' | 'complex';
 }
 
+export type HydrationIndustry =
+  | 'restaurant'
+  | 'saas'
+  | 'portfolio'
+  | 'ecommerce'
+  | 'wedding'
+  | 'photography'
+  | 'fitness'
+  | 'medical'
+  | 'realestate'
+  | 'music'
+  | 'education'
+  | 'legal'
+  | 'nonprofit'
+  | 'startup';
+
 const HYDRATION_TIMEOUT_MS = 1900;
 const MAX_TARGET_FILES = 12;
 const MAX_COMPONENTS = 16;
@@ -29,6 +45,27 @@ const COMPONENT_KEYWORDS: Array<{ regex: RegExp; components: string[] }> = [
   { regex: /\b(gallery|portfolio|showcase)\b/i, components: ['GallerySection'] },
   { regex: /\b(card|grid|tile)\b/i, components: ['CardGrid'] },
 ];
+
+export function inferIndustryFromPrompt(prompt: string): HydrationIndustry {
+  const lower = String(prompt || '').toLowerCase();
+
+  if (/\b(wedding|marriage|ceremony)\b/.test(lower)) return 'wedding';
+  if (/\b(photography|photographer|photos|shots)\b/.test(lower)) return 'photography';
+  if (/\b(medical|clinic|doctor|healthcare|dental)\b/.test(lower)) return 'medical';
+  if (/\b(fitness|gym|workout|trainer|health)\b/.test(lower)) return 'fitness';
+  if (/\b(real estate|property|apartment|house)\b/.test(lower)) return 'realestate';
+  if (/\b(music|band|artist|concert|album)\b/.test(lower)) return 'music';
+  if (/\b(education|course|learning|tutorial)\b/.test(lower)) return 'education';
+  if (/\b(legal|lawyer|attorney|law firm)\b/.test(lower)) return 'legal';
+  if (/\b(nonprofit|charity|donation)\b/.test(lower)) return 'nonprofit';
+  if (/\b(startup|product launch|waitlist)\b/.test(lower)) return 'startup';
+
+  if (/\b(restaurant|pizza|cafe|bistro|food)\b/.test(lower)) return 'restaurant';
+  if (/\b(portfolio|showcase|agency|studio)\b/.test(lower)) return 'portfolio';
+  if (/\b(ecommerce|e-commerce|shop|store|product)\b/.test(lower)) return 'ecommerce';
+
+  return 'saas';
+}
 
 function truncate(input: string, max = 240): string {
   const normalized = String(input || '').trim().replace(/\s+/g, ' ');
@@ -55,12 +92,18 @@ function summarizeFiles(files: FileMap): { paths: string[]; count: number } {
 
 function inferColorScheme(prompt: string): string {
   const lower = String(prompt || '').toLowerCase();
-  if (/dark|dunkel|nacht/.test(lower) && /gold|amber/.test(lower)) return 'dark, warm slate tones, gold accent';
-  if (/dark|dunkel|nacht/.test(lower) && /blue|cyan/.test(lower)) return 'dark, deep slate tones, blue accent';
-  if (/dark|dunkel|nacht/.test(lower)) return 'dark, slate tones, subtle cool accent';
-  if (/light|hell|clean|minimal/.test(lower)) return 'light, neutral tones, restrained accent';
-  if (/luxury|premium|elegant/.test(lower)) return 'dark, premium neutrals, metallic accent';
-  return 'balanced neutral palette with clear contrast';
+  if (/\b(dark|black|night|dunkel|nacht)\b/.test(lower)) return 'dark';
+  if (/\b(light|white|clean|minimal|hell)\b/.test(lower)) return 'light';
+  if (/\b(colorful|vibrant|bold|bunt)\b/.test(lower)) return 'colorful';
+  return 'dark';
+}
+
+function normalizeColorScheme(value: unknown, fallback: string): string {
+  const lower = String(value || '').toLowerCase();
+  if (/\b(dark|black|night|dunkel|nacht)\b/.test(lower)) return 'dark';
+  if (/\b(light|white|clean|minimal|hell)\b/.test(lower)) return 'light';
+  if (/\b(colorful|vibrant|bold|bunt)\b/.test(lower)) return 'colorful';
+  return inferColorScheme(fallback);
 }
 
 function inferComponents(prompt: string): string[] {
@@ -121,7 +164,10 @@ function sanitizeHydratedContext(raw: any, fallback: HydratedContext): HydratedC
     .map((value: unknown) => String(value || '').trim())
     .filter(Boolean)
     .slice(0, MAX_COMPONENTS);
-  const colorScheme = truncate(typeof raw?.colorScheme === 'string' ? raw.colorScheme : fallback.colorScheme, 120) || fallback.colorScheme;
+  const colorScheme = normalizeColorScheme(
+    typeof raw?.colorScheme === 'string' ? raw.colorScheme : fallback.colorScheme,
+    fallback.colorScheme
+  );
   const complexityRaw = String(raw?.complexity || '').toLowerCase();
   const complexity: HydratedContext['complexity'] =
     complexityRaw === 'complex' || complexityRaw === 'moderate' || complexityRaw === 'simple'
@@ -183,6 +229,13 @@ async function callFastHydrationLLM(prompt: string, files: FileMap, signal: Abor
     '- targetFiles must be empty array for new projects (when existing_file_count is 0).',
     '- Keep intent concise and implementation-oriented.',
     '- Keep componentList specific but short.',
+    '- Infer industry internally from prompt keywords. Supported industries: wedding, photography, fitness, medical, realestate, music, education, legal, nonprofit, startup, restaurant, portfolio, ecommerce, saas.',
+    '- If industry is unclear, default to saas visual profile.',
+    '- colorScheme must be exactly one of: dark, light, colorful.',
+    '- Use colorScheme=dark when prompt mentions dark/black/night.',
+    '- Use colorScheme=light when prompt mentions light/white/clean/minimal.',
+    '- Use colorScheme=colorful when prompt mentions colorful/vibrant/bold.',
+    '- Default colorScheme to dark when unclear.',
     '- For repair/fix requests, ALWAYS return complexity: "simple".',
     '- For prompts under 150 words with no existing files, ALWAYS return complexity: "simple".',
     '- Only return complexity: "complex" if the request explicitly mentions: authentication, database, multi-page app, real-time features, or file uploads.',

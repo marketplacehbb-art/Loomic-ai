@@ -9,6 +9,7 @@ interface LocalPreviewProps {
   dependencies?: Record<string, string>;
   previewPath?: string;
   refreshToken?: number;
+  previewMode?: 'desktop' | 'tablet' | 'mobile';
   onPreviewDocument?: (html: string) => void;
   onPreviewIssue?: (issue: {
     type: 'bundler' | 'runtime';
@@ -114,6 +115,7 @@ const LocalPreview: React.FC<LocalPreviewProps> = ({
   dependencies = {},
   previewPath = '/',
   refreshToken = 0,
+  previewMode = 'desktop',
   onPreviewDocument,
   onPreviewIssue
 }) => {
@@ -1350,6 +1352,10 @@ const LocalPreview: React.FC<LocalPreviewProps> = ({
     }
   }, [previewPath]);
 
+  const iframeInlineStyle: React.CSSProperties | undefined = previewMode === 'mobile'
+    ? { width: '390px', maxWidth: '100%', display: 'block', margin: '0 auto' }
+    : undefined;
+
   if (error) {
     return (
       <div className="p-4 bg-red-100 text-red-800 rounded-lg overflow-auto h-full font-mono text-sm">
@@ -1375,6 +1381,7 @@ const LocalPreview: React.FC<LocalPreviewProps> = ({
       <iframe
         ref={iframeRef}
         className="w-full h-full border-none bg-white rounded-lg shadow-inner"
+        style={iframeInlineStyle}
         title="Local Preview"
         sandbox="allow-scripts"
       />
