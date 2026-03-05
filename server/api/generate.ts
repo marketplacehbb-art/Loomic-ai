@@ -96,12 +96,23 @@ import {
   withTimeout,
 } from './generate-edit-mode-utils.js';
 import {
+  applyEditDiff,
+  buildEditTypePrompt,
+  buildExistingProjectContextBlock,
+  buildProjectContext,
+  buildProjectContextSnapshotPrompt,
+  classifyEdit,
+  type EditHistoryEntry,
+  type EditInstructionType,
+  type ProjectContextSnapshot,
+} from './edit-system.js';
+import {
   inferFallbackEditScope,
   normalizeArchitectPath,
   normalizeArchitectPaths,
 } from './generate-architect-utils.js';
 import { STACK_CONSTRAINT } from '../prompts/designReferences.js';
-import { hydratePrompt, inferIndustryFromPrompt, type HydratedContext } from './hydration.js';
+import { hydratePrompt, inferDatabaseTablesFromPrompt, inferIndustryFromPrompt, type HydratedContext } from './hydration.js';
 import { getIndustryFonts } from '../prompts/industryProfiles.js';
 import { getGitHubConnectionStatus } from './git/github-integration.js';
 import { getUserProviderApiKeys, type UserApiKeyMap } from './user-api-keys.js';
@@ -277,6 +288,55 @@ async function checkAndDeductCredits(userId: string): Promise<CreditGateResult> 
     resetsAt: resetAtIso || resetAtDate.toISOString(),
     creditsRemaining: Math.max(0, creditsTotal - nextUsed),
   };
+}
+
+function normalizeDatabaseTables(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const deduped = new Set<string>();
+  value.forEach((entry) => {
+    const normalized = String(entry || '')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9_]/g, '')
+      .slice(0, 48);
+    if (normalized) deduped.add(normalized);
+  });
+  return [...deduped].slice(0, 8);
+}
+
+function buildSupabaseSchemaFallback(tableNames: string[]): string {
+  const tables = normalizeDatabaseTables(tableNames).slice(0, 5);
+  if (tables.length === 0) return '';
+
+  const statements: string[] = [
+    '-- Generated fallback Supabase schema',
+    'create extension if not exists "pgcrypto";',
+  ];
+
+  tables.forEach((table) => {
+    statements.push(
+      `create table if not exists public.${table} (`,
+      '  id uuid primary key default gen_random_uuid(),',
+      '  name text not null,',
+      '  status text default \'active\',',
+      '  metadata jsonb default \'{}\'::jsonb,',
+      '  created_at timestamptz not null default now()',
+      ');',
+      `alter table public.${table} enable row level security;`,
+      `create policy if not exists "${table}_select_authenticated" on public.${table} for select to authenticated using (true);`,
+      `create policy if not exists "${table}_insert_authenticated" on public.${table} for insert to authenticated with check (true);`,
+      `create policy if not exists "${table}_update_authenticated" on public.${table} for update to authenticated using (true) with check (true);`,
+      `create policy if not exists "${table}_delete_authenticated" on public.${table} for delete to authenticated using (true);`,
+      `insert into public.${table} (name, status, metadata) values`,
+      `  ('Sample ${table} 1', 'active', '{"seed":1}'::jsonb),`,
+      `  ('Sample ${table} 2', 'active', '{"seed":2}'::jsonb),`,
+      `  ('Sample ${table} 3', 'active', '{"seed":3}'::jsonb)`,
+      'on conflict do nothing;',
+      ''
+    );
+  });
+
+  return statements.join('\n').trim();
 }
 
 function buildScreenshotSystemPromptAddon(enabled: boolean): string {
@@ -2008,6 +2068,235 @@ function shouldRollbackForValidationOutcome(
   return criticalErrors > 3 && noValidEntryPoint && bundlingFailed;
 }
 
+function isMissingTableError(error: any): boolean {
+  if (!error) return false;
+  const code = String(error?.code || '').trim();
+  if (code === 'PGRST205' || code === '42P01') return true;
+  const message = String(error?.message || '').toLowerCase();
+  return message.includes('does not exist') || (message.includes('relation') && message.includes('not found'));
+}
+
+async function getRecentEdits(projectId: string, limit = 5): Promise<EditHistoryEntry[]> {
+  const safeProjectId = String(projectId || '').trim();
+  if (!safeProjectId) return [];
+  const readLimit = Math.max(1, Math.min(20, Math.floor(limit || 5)));
+  const client = supabaseAdmin || supabase;
+
+  try {
+    const { data, error } = await client
+      .from('edit_history')
+      .select('instruction, edit_type, files_changed, created_at')
+      .eq('project_id', safeProjectId)
+      .order('created_at', { ascending: false })
+      .limit(readLimit);
+
+    if (error) {
+      if (isMissingTableError(error)) return [];
+      console.warn('[EditHistory] Failed to fetch recent edits:', error.message || error);
+      return [];
+    }
+
+    return (data || []).map((row: any) => ({
+      instruction: String(row?.instruction || '').trim(),
+      editType: String(row?.edit_type || '').trim(),
+      filesChanged: Array.isArray(row?.files_changed)
+        ? row.files_changed.map((entry: unknown) => String(entry || '').trim()).filter(Boolean)
+        : [],
+      createdAt: typeof row?.created_at === 'string' ? row.created_at : undefined,
+    }));
+  } catch (error: any) {
+    console.warn('[EditHistory] Unexpected fetch error:', error?.message || error);
+    return [];
+  }
+}
+
+type EditValidationOutcome = {
+  files: Record<string, string>;
+  revertedPaths: string[];
+  retriedPaths: string[];
+  retryFailedPaths: string[];
+};
+
+async function getBlockingValidationErrorCount(content: string, path: string): Promise<number> {
+  const source = String(content || '');
+  if (!source.trim()) return 1;
+  const targetPath = normalizeGeneratedPath(path || '') || path || 'src/App.tsx';
+  if (!/\.(tsx|ts|jsx|js)$/.test(targetPath)) return 0;
+
+  try {
+    const result = await codeProcessor.process(source, targetPath, {
+      validate: true,
+      bundle: false,
+    });
+    const partitioned = partitionValidationErrorsForStability(result.errors || []);
+    return partitioned.blocking.length;
+  } catch {
+    return 1;
+  }
+}
+
+async function validateAndRepairEditedFiles(input: {
+  candidateFiles: Record<string, string>;
+  baselineFiles: Record<string, string>;
+  changedPaths: string[];
+  editInstruction: string;
+  provider: SupportedProvider;
+  systemPrompt: string;
+  maxTokens: number;
+  userProviderApiKeys: UserApiKeyMap;
+  image?: string;
+  screenshotBase64?: string;
+  screenshotMimeType?: string;
+  knowledgeBase?: Array<{ path: string; content: string }>;
+}): Promise<EditValidationOutcome> {
+  const candidateFiles = { ...(input.candidateFiles || {}) };
+  const baselineFiles = input.baselineFiles || {};
+  const runtimePaths = Array.from(
+    new Set(
+      (input.changedPaths || [])
+        .map((entry) => normalizeGeneratedPath(entry))
+        .filter((entry) => Boolean(entry && /\.(tsx|ts|jsx|js)$/.test(entry)))
+    )
+  );
+
+  if (runtimePaths.length === 0) {
+    return {
+      files: candidateFiles,
+      revertedPaths: [],
+      retriedPaths: [],
+      retryFailedPaths: [],
+    };
+  }
+
+  const revertedPaths: string[] = [];
+  for (const path of runtimePaths) {
+    const nextContent = candidateFiles[path];
+    if (typeof nextContent !== 'string') continue;
+    const baselineContent = typeof baselineFiles[path] === 'string' ? baselineFiles[path] : '';
+    const baselineBlocking = await getBlockingValidationErrorCount(baselineContent, path);
+    const nextBlocking = await getBlockingValidationErrorCount(nextContent, path);
+    if (nextBlocking > baselineBlocking) {
+      if (typeof baselineFiles[path] === 'string') {
+        candidateFiles[path] = baselineFiles[path];
+      } else {
+        delete candidateFiles[path];
+      }
+      revertedPaths.push(path);
+    }
+  }
+
+  if (revertedPaths.length === 0) {
+    return {
+      files: candidateFiles,
+      revertedPaths,
+      retriedPaths: [],
+      retryFailedPaths: [],
+    };
+  }
+
+  const retryFailedPaths = [...revertedPaths];
+  const retriedPaths: string[] = [];
+  const strictContextFiles: Record<string, string> = {};
+  revertedPaths.forEach((path) => {
+    if (typeof baselineFiles[path] === 'string') {
+      strictContextFiles[path] = baselineFiles[path];
+    }
+  });
+
+  if (Object.keys(strictContextFiles).length === 0) {
+    return {
+      files: candidateFiles,
+      revertedPaths,
+      retriedPaths,
+      retryFailedPaths,
+    };
+  }
+
+  const strictPrompt = `EDIT INSTRUCTION:
+${input.editInstruction}
+
+STRICT FILE-LEVEL RETRY:
+- Retry only these files:
+${revertedPaths.map((path) => `  - ${path}`).join('\n')}
+- Preserve all existing imports and logic.
+- Return complete file content for changed files only.
+- Do not touch any other file.`;
+
+  const strictSystemPrompt = `${String(input.systemPrompt || '').trim()}
+
+STRICT RETRY GUARD:
+- You are repairing a previous edit that introduced validation issues.
+- Keep all previously working behavior intact.
+- Make the smallest possible change that satisfies the instruction.
+- Return complete file content, not snippets.`;
+
+  try {
+    const retryResult = await withTimeout(
+      llmManager.generate({
+        provider: input.provider,
+        generationMode: 'edit',
+        prompt: strictPrompt,
+        systemPrompt: strictSystemPrompt,
+        temperature: 0.2,
+        maxTokens: Math.max(900, Math.min(input.maxTokens || 1800, 2200)),
+        stream: false,
+        currentFiles: strictContextFiles,
+        image: input.image,
+        screenshotBase64: input.screenshotBase64,
+        screenshotMimeType: input.screenshotMimeType,
+        knowledgeBase: input.knowledgeBase,
+        providerApiKeys: input.userProviderApiKeys,
+      }),
+      Math.min(TIMEOUT_MS, 45000)
+    );
+
+    const retryRaw = typeof retryResult === 'string'
+      ? retryResult
+      : String((retryResult as any)?.content || '');
+    if (retryRaw.trim().length === 0) {
+      return { files: candidateFiles, revertedPaths, retriedPaths, retryFailedPaths };
+    }
+
+    const parsedRetry = parseLLMOutputWithDebugLogs(retryRaw, revertedPaths[0], strictContextFiles);
+    const parsedByPath: Record<string, string> = {};
+    (parsedRetry.extractedFiles || []).forEach((file) => {
+      const normalizedPath = normalizeGeneratedPath(file.path || '');
+      if (!normalizedPath) return;
+      parsedByPath[normalizedPath] = String(file.content || '');
+    });
+
+    if (
+      revertedPaths.length === 1 &&
+      Object.keys(parsedByPath).length === 0 &&
+      String(parsedRetry.primaryCode || '').trim().length > 0
+    ) {
+      parsedByPath[revertedPaths[0]] = String(parsedRetry.primaryCode || '');
+    }
+
+    for (const path of revertedPaths) {
+      const candidate = parsedByPath[path];
+      if (typeof candidate !== 'string' || candidate.trim().length === 0) continue;
+      const baselineContent = typeof baselineFiles[path] === 'string' ? baselineFiles[path] : '';
+      const baselineBlocking = await getBlockingValidationErrorCount(baselineContent, path);
+      const retryBlocking = await getBlockingValidationErrorCount(candidate, path);
+      if (retryBlocking <= baselineBlocking) {
+        candidateFiles[path] = candidate;
+        retriedPaths.push(path);
+      }
+    }
+  } catch (error: any) {
+    console.warn('[EditValidation] Strict retry failed:', error?.message || error);
+  }
+
+  const retriedSet = new Set(retriedPaths);
+  return {
+    files: candidateFiles,
+    revertedPaths,
+    retriedPaths,
+    retryFailedPaths: retryFailedPaths.filter((path) => !retriedSet.has(path)),
+  };
+}
+
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // POST /api/generate
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -2119,6 +2408,8 @@ interface GenerateResponse {
   metadata?: {
     hydratedContext?: HydratedContext | null;
   };
+  supabaseSchema?: string;
+  databaseTables?: string[];
   rateLimit?: {
     remaining?: number;
     limit?: number;
@@ -2537,6 +2828,34 @@ router.post('/generate', validateRequest(generateSchema), async (req, res) => {
     }
 
     const contextualFiles = effectiveGenerationMode === 'edit' && files ? files : {};
+    const editInstructionForContext = String(editInstruction || prompt || '').trim();
+    const detectedEditType: EditInstructionType | null = effectiveGenerationMode === 'edit'
+      ? classifyEdit(editInstructionForContext)
+      : null;
+    const projectContextSnapshot: ProjectContextSnapshot | null = effectiveGenerationMode === 'edit'
+      ? await buildProjectContext(
+        String(requestBody.projectId || '').trim(),
+        contextualFiles,
+        editInstructionForContext
+      )
+      : null;
+    const recentEditHistory: EditHistoryEntry[] = effectiveGenerationMode === 'edit'
+      ? await getRecentEdits(String(requestBody.projectId || '').trim(), 5)
+      : [];
+    const editTypePromptBlock = effectiveGenerationMode === 'edit' && detectedEditType
+      ? buildEditTypePrompt(detectedEditType)
+      : '';
+    const existingProjectContextBlock = effectiveGenerationMode === 'edit'
+      ? buildExistingProjectContextBlock({
+        projectContext: projectContextSnapshot,
+        instruction: editInstructionForContext || prompt,
+        editType: detectedEditType,
+        recentEdits: recentEditHistory,
+      })
+      : '';
+    const projectContextSnapshotPrompt = effectiveGenerationMode === 'edit'
+      ? buildProjectContextSnapshotPrompt(projectContextSnapshot)
+      : '';
 
     // -------------------------------------------------------------------------
     // Start Prompt Understanding Early (Parallel)
@@ -2715,7 +3034,7 @@ ${contractReadOnlyFiles.map((path) => `  - ${path}`).join('\n')}
         contextualFiles,
         resolvedProjectPlan.finalPlan.brand,
         resolvedProjectPlan.finalPlan.language
-      )}\n\n${editQualityContext}${domainPackSuffix}${diversityContext}${integrationContextSuffix}${contractContextSuffix}${sectionPlan.instructionSuffix}${complexRouteSuffix}`;
+      )}\n\n${editQualityContext}${domainPackSuffix}${diversityContext}${integrationContextSuffix}${contractContextSuffix}${sectionPlan.instructionSuffix}${complexRouteSuffix}${projectContextSnapshotPrompt ? `\n\n${projectContextSnapshotPrompt}` : ''}`;
     const classifiedPipelinePath = hasScreenshotInput
       ? 'deep'
       : classifyRequest(prompt, contextualFiles);
@@ -2742,8 +3061,11 @@ ${contractReadOnlyFiles.map((path) => `  - ${path}`).join('\n')}
       lowTokenMode ? 5000 : complexRouteProfile.promptLimit
     );
     const screenshotSystemPromptAddon = buildScreenshotSystemPromptAddon(hasScreenshotInput);
+    const editSystemPromptAddon = effectiveGenerationMode === 'edit'
+      ? [existingProjectContextBlock, editTypePromptBlock].filter(Boolean).join('\n\n')
+      : '';
     const generationSystemPrompt = truncateForPrompt(
-      `${ensureStackConstraintInSystemPrompt(systemPrompt || '')}${screenshotSystemPromptAddon ? `\n\n${screenshotSystemPromptAddon}` : ''}`,
+      `${ensureStackConstraintInSystemPrompt(systemPrompt || '')}${screenshotSystemPromptAddon ? `\n\n${screenshotSystemPromptAddon}` : ''}${editSystemPromptAddon ? `\n\n${editSystemPromptAddon}` : ''}`,
       lowTokenMode ? 7000 : complexRouteProfile.systemLimit
     );
 
@@ -2883,6 +3205,8 @@ ${contractReadOnlyFiles.map((path) => `  - ${path}`).join('\n')}
       effectiveFeatureFlags.phase3.componentMemory;
     const useNodeGraphRouter = !useMultiAgent;
     let hydratedContextForResponse: HydratedContext | null = null;
+    let supabaseSchemaForResponse = '';
+    let databaseTablesForResponse: string[] = [];
     let routedPipelinePath: PipelinePath = useNodeGraphRouter ? classifiedPipelinePath : 'deep';
     if (hasScreenshotInput) {
       routedPipelinePath = 'deep';
@@ -2940,6 +3264,10 @@ ${contractReadOnlyFiles.map((path) => `  - ${path}`).join('\n')}
             hydratedContext: hydratedContextForResponse,
             supabaseIntegration,
             githubIntegration,
+            projectContext: projectContextSnapshot,
+            editType: detectedEditType || undefined,
+            recentEdits: recentEditHistory,
+            editInstruction: editInstructionForContext,
             visualEditContext: requestMode === 'visual-edit'
               ? {
                 targetElement: {
@@ -2959,6 +3287,14 @@ ${contractReadOnlyFiles.map((path) => `  - ${path}`).join('\n')}
         orchestrationFiles = orchestrationResult.files || [];
         requestRateLimit = orchestrationResult.rateLimit || requestRateLimit;
         hydratedContextForResponse = (orchestrationResult as any)?.metadata?.hydratedContext || hydratedContextForResponse;
+        const orchestrationSupabaseSchema = String((orchestrationResult as any)?.metadata?.supabaseSchema || '').trim();
+        if (orchestrationSupabaseSchema) {
+          supabaseSchemaForResponse = orchestrationSupabaseSchema;
+        }
+        const orchestrationDatabaseTables = normalizeDatabaseTables((orchestrationResult as any)?.metadata?.databaseTables);
+        if (orchestrationDatabaseTables.length > 0) {
+          databaseTablesForResponse = orchestrationDatabaseTables;
+        }
         const nodeGraphQuality = (orchestrationResult as any)?.metadata?.qualityScore;
         if (nodeGraphQuality && typeof nodeGraphQuality.overall === 'number') {
           const mappedIssues = Array.isArray(nodeGraphQuality.recommendations)
@@ -4250,6 +4586,114 @@ EDIT MODE REDO:
       primaryPath: finalValidationPath,
       prompt: stylePolicyPrompt,
     });
+    const minimumQualityScore = 60;
+    if (
+      effectiveGenerationMode === 'new' &&
+      qualityGate.overall < minimumQualityScore &&
+      !rollbackApplied
+    ) {
+      const qualityFeedback = qualityGate.findings
+        .slice(0, 6)
+        .map((finding, index) => `${index + 1}. ${finding.message} Fix: ${finding.suggestion}`)
+        .join('\n');
+      const retryPrompt = `${generationPrompt}
+
+QUALITY IMPROVEMENT REQUIRED:
+The previous output scored ${qualityGate.overall}/100. Minimum required score is ${minimumQualityScore}/100.
+Improve visual quality and production readiness before returning files.
+Address these issues first:
+${qualityFeedback || '- Improve visual hierarchy, interactions, and responsive polish.'}`;
+
+      try {
+        const retryResult = await withTimeout(
+          llmManager.generate({
+            provider: executionProviderHint,
+            generationMode: effectiveGenerationMode,
+            prompt: retryPrompt,
+            systemPrompt: generationSystemPrompt,
+            temperature: 0.35,
+            maxTokens: tokenBudget.generationMaxTokens,
+            stream: false,
+            currentFiles: scopedContextFiles,
+            image: effectiveImagePayload,
+            screenshotBase64: normalizedScreenshotBase64 || undefined,
+            screenshotMimeType: hasScreenshotInput ? normalizedScreenshotMimeType : undefined,
+            knowledgeBase,
+            providerApiKeys: userProviderApiKeys,
+          }),
+          TIMEOUT_MS
+        );
+
+        if (typeof retryResult === 'object' && retryResult && 'rateLimit' in retryResult) {
+          requestRateLimit = (retryResult as any).rateLimit || requestRateLimit;
+        }
+        const retryRawCode = typeof retryResult === 'object' && retryResult && 'content' in retryResult && !('getReader' in retryResult)
+          ? String((retryResult as any).content || '')
+          : (typeof retryResult === 'string' ? retryResult : '');
+        if (retryRawCode.trim().length > 0) {
+          const retryParsed = parseLLMOutputWithDebugLogs(retryRawCode, finalValidationPath, scopedContextFiles);
+          if (!retryParsed.parseError) {
+            const retryEntries = retryParsed.extractedFiles
+              .map((file) => ({
+                path: normalizeGeneratedPath(file.path || ''),
+                content: String(file.content || ''),
+              }))
+              .filter((file) => Boolean(file.path && file.content));
+            const candidateFileMapRaw: Record<string, string> = { ...sanitizedFileMap };
+
+            if (retryEntries.length > 0) {
+              retryEntries.forEach((file) => {
+                candidateFileMapRaw[file.path] = file.content;
+              });
+            } else if (retryParsed.primaryCode && retryParsed.primaryCode.trim().length > 0) {
+              candidateFileMapRaw[finalValidationPath] = retryParsed.primaryCode;
+            }
+
+            const candidateFileMap = sanitizeProjectSourceFiles(candidateFileMapRaw);
+            const candidateCode =
+              candidateFileMap[finalValidationPath] ||
+              candidateFileMap['src/App.tsx'] ||
+              codeToProcess;
+            const candidateProcessed = await codeProcessor.process(candidateCode, finalValidationPath, {
+              validate,
+              bundle,
+            });
+            if (candidateProcessed.errors.length === 0) {
+              const candidateQualityGate = await evaluateQualityGates({
+                files: candidateFileMap,
+                primaryPath: finalValidationPath,
+                prompt: stylePolicyPrompt,
+              });
+              if (candidateQualityGate.overall > qualityGate.overall) {
+                sanitizedFileMap = candidateFileMap;
+                codeToProcess = candidateCode;
+                processed = candidateProcessed;
+                processed.warnings = [
+                  ...processed.warnings,
+                  `Quality regeneration improved score from ${qualityGate.overall} to ${candidateQualityGate.overall}.`,
+                ];
+                qualityGate = candidateQualityGate;
+              } else {
+                processed.warnings = [
+                  ...processed.warnings,
+                  `Quality regeneration attempted but score did not improve (current ${qualityGate.overall}, retry ${candidateQualityGate.overall}).`,
+                ];
+              }
+            } else {
+              processed.warnings = [
+                ...processed.warnings,
+                'Quality regeneration attempt produced validation errors and was discarded.',
+              ];
+            }
+          }
+        }
+      } catch (qualityRetryError: any) {
+        processed.warnings = [
+          ...processed.warnings,
+          `Quality regeneration attempt failed: ${qualityRetryError?.message || 'unknown error'}.`,
+        ];
+      }
+    }
     if (domainCoverage.issues.length > 0) {
       qualityGate.findings.push(
         ...domainCoverage.issues.map((issue, index) => ({
@@ -4385,6 +4829,64 @@ EDIT MODE REDO:
           repoUrl: githubIntegration?.repoUrl || null,
         })
       );
+    }
+
+    let editDiffChangedPaths: string[] = [];
+    let editValidationRevertedPaths: string[] = [];
+    let editRetryRecoveredPaths: string[] = [];
+    if (effectiveGenerationMode === 'edit' && !rollbackApplied) {
+      const diffResult = applyEditDiff(
+        contextualFiles,
+        sanitizedFileMap,
+        detectedEditType || 'feature-modify'
+      );
+      sanitizedFileMap = sanitizeProjectSourceFiles(diffResult.files);
+      editDiffChangedPaths = diffResult.changedPaths;
+
+      if (diffResult.revertedByChangeRatio.length > 0) {
+        processed.warnings = [
+          ...processed.warnings,
+          `[EditDiff] Reverted ${diffResult.revertedByChangeRatio.length} suspicious file change(s) by ratio guard: ${diffResult.revertedByChangeRatio.slice(0, 5).join(', ')}${diffResult.revertedByChangeRatio.length > 5 ? ' ...' : ''}`,
+        ];
+      }
+
+      const validationOutcome = await validateAndRepairEditedFiles({
+        candidateFiles: sanitizedFileMap,
+        baselineFiles: contextualFiles,
+        changedPaths: diffResult.changedPaths,
+        editInstruction: editInstructionForContext || prompt,
+        provider: executionProviderHint,
+        systemPrompt: generationSystemPrompt,
+        maxTokens: tokenBudget.generationMaxTokens,
+        userProviderApiKeys,
+        image: effectiveImagePayload,
+        screenshotBase64: normalizedScreenshotBase64 || undefined,
+        screenshotMimeType: hasScreenshotInput ? normalizedScreenshotMimeType : undefined,
+        knowledgeBase,
+      });
+
+      sanitizedFileMap = sanitizeProjectSourceFiles(validationOutcome.files);
+      editValidationRevertedPaths = validationOutcome.revertedPaths;
+      editRetryRecoveredPaths = validationOutcome.retriedPaths;
+
+      if (validationOutcome.revertedPaths.length > 0) {
+        processed.warnings = [
+          ...processed.warnings,
+          `[EditValidation] Reverted ${validationOutcome.revertedPaths.length} file(s) due to introduced validation errors: ${validationOutcome.revertedPaths.slice(0, 5).join(', ')}${validationOutcome.revertedPaths.length > 5 ? ' ...' : ''}`,
+        ];
+      }
+      if (validationOutcome.retriedPaths.length > 0) {
+        processed.warnings = [
+          ...processed.warnings,
+          `[EditValidation] Strict retry recovered ${validationOutcome.retriedPaths.length} file(s): ${validationOutcome.retriedPaths.slice(0, 5).join(', ')}${validationOutcome.retriedPaths.length > 5 ? ' ...' : ''}`,
+        ];
+      }
+      if (validationOutcome.retryFailedPaths.length > 0) {
+        processed.warnings = [
+          ...processed.warnings,
+          `[EditValidation] Strict retry could not recover ${validationOutcome.retryFailedPaths.length} file(s): ${validationOutcome.retryFailedPaths.slice(0, 5).join(', ')}${validationOutcome.retryFailedPaths.length > 5 ? ' ...' : ''}`,
+        ];
+      }
     }
 
     storeDesignGenome(requestBody.projectId, extractDesignGenomeFromFiles(sanitizedFileMap));
@@ -4738,6 +5240,25 @@ EDIT MODE REDO:
       }
     };
 
+    const needsDatabaseForResponse = Boolean(hydratedContextForResponse?.needsDatabase);
+    const hydratedTableFallback = needsDatabaseForResponse
+      ? normalizeDatabaseTables(
+        Array.isArray(hydratedContextForResponse?.databaseTables)
+          ? hydratedContextForResponse.databaseTables
+          : inferDatabaseTablesFromPrompt(promptForPlanning)
+      )
+      : [];
+    if (needsDatabaseForResponse && databaseTablesForResponse.length === 0 && hydratedTableFallback.length > 0) {
+      databaseTablesForResponse = hydratedTableFallback;
+    }
+    if (
+      !supabaseSchemaForResponse &&
+      needsDatabaseForResponse &&
+      databaseTablesForResponse.length > 0
+    ) {
+      supabaseSchemaForResponse = buildSupabaseSchemaFallback(databaseTablesForResponse);
+    }
+
     const response = buildGenerateSuccessResponse({
       isSuccess,
       codeToProcess,
@@ -4757,6 +5278,8 @@ EDIT MODE REDO:
       routedPipelinePath,
       hydratedContextForResponse,
       finalRateLimit,
+      supabaseSchema: supabaseSchemaForResponse,
+      databaseTables: databaseTablesForResponse,
       pipeline: pipelinePayload,
     }) as GenerateResponse;
 
@@ -4826,6 +5349,31 @@ EDIT MODE REDO:
             // Note: Saving the entire code in chat history might be heavy. 
             // Ideally we save a "Thinking Process" or "Code Generated" marker if the code is huge.
             // But for restoration, we need the content.
+
+            if (effectiveGenerationMode === 'edit') {
+              const editHistoryChangedFiles = Array.from(
+                new Set([
+                  ...editDiffChangedPaths,
+                  ...smartDiff.added,
+                  ...smartDiff.updated,
+                  ...smartDiff.removed,
+                  ...editValidationRevertedPaths,
+                  ...editRetryRecoveredPaths,
+                ].map((entry) => normalizeGeneratedPath(entry)).filter(Boolean))
+              );
+              const editHistoryClient = supabaseAdmin || supabase;
+              const { error: editHistoryError } = await editHistoryClient
+                .from('edit_history')
+                .insert({
+                  project_id: projectId,
+                  instruction: editInstructionForContext || prompt,
+                  edit_type: detectedEditType || 'feature-modify',
+                  files_changed: editHistoryChangedFiles,
+                });
+              if (editHistoryError && !isMissingTableError(editHistoryError)) {
+                console.warn('[EditHistory] Failed to insert edit history:', editHistoryError.message || editHistoryError);
+              }
+            }
           }
 
           // 0b. Save Knowledge Base Files (Persistence)

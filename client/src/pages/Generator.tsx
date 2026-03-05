@@ -43,6 +43,13 @@ import {
   normalizeRuntimeIssuePayload,
   type PreviewRuntimeIssuePayload,
 } from './generator-runtime-utils';
+import {
+  applyStrategyPromptTemplate,
+  classifyError,
+  FIX_STRATEGIES,
+  type ErrorClassificationType,
+  type RuntimeErrorPayload,
+} from '../lib/auto-debug';
 
 import { useUsage } from '../contexts/UsageContext';
 
@@ -258,6 +265,16 @@ interface PendingInlineDraft {
 }
 
 type FixStatus = 'idle' | 'auto_fixed' | 'needs_fix';
+type AutoRepairState = 'idle' | 'detecting' | 'fixing' | 'fixed' | 'failed';
+
+interface RepairRequestOptions {
+  prompt?: string;
+  errorContext?: string;
+  maxTokens?: number;
+  source?: 'manual' | 'auto';
+}
+
+const MAX_AUTO_REPAIRS = 3;
 
 const escapeRegExp = (input: string): string =>
   input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -779,6 +796,20 @@ const normalizeBillingPlan = (value: unknown): BillingPlan => {
   return 'free';
 };
 
+const normalizeGeneratedDatabaseTables = (value: unknown): string[] => {
+  if (!Array.isArray(value)) return [];
+  const deduped = new Set<string>();
+  value.forEach((entry) => {
+    const normalized = String(entry || '')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9_]/g, '')
+      .slice(0, 48);
+    if (normalized) deduped.add(normalized);
+  });
+  return [...deduped].slice(0, 8);
+};
+
 const formatCreditsResetCountdown = (resetsAt: string | null | undefined): string => {
   const resetMs = Date.parse(String(resetsAt || ''));
   if (!Number.isFinite(resetMs)) return '0h 0m 0s';
@@ -839,6 +870,16 @@ export default function Generator() {
   const [timelineRunning, setTimelineRunning] = useState(false);
   const [fixStatus, setFixStatus] = useState<FixStatus>('idle');
   const [fixErrorContext, setFixErrorContext] = useState<string | null>(null);
+  const [autoRepairState, setAutoRepairState] = useState<AutoRepairState>('idle');
+  const [autoRepairErrorType, setAutoRepairErrorType] = useState<ErrorClassificationType | null>(null);
+  const [repairAttempts, setRepairAttempts] = useState(0);
+  const [lastRuntimeError, setLastRuntimeError] = useState<RuntimeErrorPayload | null>(null);
+  const [buildErrors, setBuildErrors] = useState<Array<{
+    file: string;
+    line: number;
+    message: string;
+    suggestion: string;
+  }>>([]);
   const [error, setError] = useState<string | null>(null);
   const [, setIsRateLimited] = useState(false);
   const [providerRecoveryHint, setProviderRecoveryHint] = useState<ProviderRecoveryHint | null>(null);
@@ -894,6 +935,9 @@ export default function Generator() {
   const [cloudStateLoading, setCloudStateLoading] = useState(false);
   const [cloudOverview, setCloudOverview] = useState<CloudOverviewResponse | null>(null);
   const [cloudOverviewLoading, setCloudOverviewLoading] = useState(false);
+  const [generatedSupabaseSchema, setGeneratedSupabaseSchema] = useState('');
+  const [generatedDatabaseTables, setGeneratedDatabaseTables] = useState<string[]>([]);
+  const [databaseSchemaCopied, setDatabaseSchemaCopied] = useState(false);
   const [billingStatus, setBillingStatus] = useState<BillingStatusResponse | null>(null);
   const [noCreditsModal, setNoCreditsModal] = useState<{
     open: boolean;
@@ -924,6 +968,8 @@ export default function Generator() {
   const timelineDismissedRef = useRef(false);
   const lastLocalProjectWriteAtRef = useRef(0);
   const lastAppliedFileMapRef = useRef('{}');
+  const lastAutoRepairFingerprintRef = useRef('');
+  const lastAutoRepairAtRef = useRef(0);
   const liveChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const liveClientIdRef = useRef<string>(`client-${Math.random().toString(36).slice(2, 10)}`);
   const lastSecurityWarningRef = useRef<string>('');
@@ -1671,21 +1717,31 @@ export default function Generator() {
     setFixErrorContext(normalized);
   }, []);
 
-  const handleFixIssue = useCallback(async () => {
-    if (loading || isApplyingVisualPatch || isAutoRepairing || isGenerating.current) return;
+  const handleFixIssue = useCallback(async (options?: RepairRequestOptions): Promise<boolean> => {
+    if (loading || isApplyingVisualPatch || isAutoRepairing || isGenerating.current) return false;
     if (!session?.access_token) {
       setError('Session abgelaufen. Bitte erneut einloggen.');
-      return;
+      return false;
     }
     if (Object.keys(files).length === 0) {
       setError('Keine Projektdateien vorhanden, die repariert werden koennen.');
-      return;
+      return false;
     }
 
-    const errorContext = (fixErrorContext || (typeof error === 'string' ? error : '') || 'Unknown runtime/build error').trim();
+    const repairSource = options?.source || 'manual';
+    const repairPrompt = String(options?.prompt || 'Fix the current project runtime/build issue with minimal code changes.').trim();
+    const maxTokens = Number.isFinite(Number(options?.maxTokens))
+      ? Math.max(300, Math.min(2400, Number(options?.maxTokens)))
+      : 1200;
+    const errorContext = String(
+      options?.errorContext
+      || fixErrorContext
+      || (typeof error === 'string' ? error : '')
+      || 'Unknown runtime/build error'
+    ).trim();
     if (!errorContext) {
       setError('Kein Fehlerkontext verfuegbar.');
-      return;
+      return false;
     }
 
     isGenerating.current = true;
@@ -1700,12 +1756,12 @@ export default function Generator() {
           provider,
           mode: 'repair',
           generationMode: 'edit',
-          prompt: 'Fix the current project runtime/build issue with minimal code changes.',
+          prompt: repairPrompt,
           errorContext,
           files,
           validate: true,
           bundle: true,
-          maxTokens: 1200,
+          maxTokens,
           projectId: currentProject?.id,
           userId: user?.id,
           featureFlags: {
@@ -1715,7 +1771,7 @@ export default function Generator() {
       );
 
       const text = await response.text();
-      const data = parseJsonPayload(text, `Manual Fix (${response.status})`);
+      const data = parseJsonPayload(text, `${repairSource === 'auto' ? 'Auto' : 'Manual'} Fix (${response.status})`);
       if (data?.rateLimit) {
         updateRateLimit(data.rateLimit);
       }
@@ -1733,7 +1789,10 @@ export default function Generator() {
         setFixErrorContext(message);
         setError(message);
         setMessages((prev) => [...prev, { role: 'assistant', content: `Fix fehlgeschlagen: ${message}` }]);
-        return;
+        if (repairSource === 'auto') {
+          setAutoRepairState('failed');
+        }
+        return false;
       }
 
       const nextDependencies = mergeDependencyMaps(
@@ -1755,22 +1814,22 @@ export default function Generator() {
       applyOperationEntry({
         files: filesObj,
         dependencies: nextDependencies,
-        message: 'Manual fix applied.',
+        message: repairSource === 'auto' ? 'Auto repair applied.' : 'Manual fix applied.',
       });
       pushSnapshot(filesObj, {
-        label: 'Manual fix',
+        label: repairSource === 'auto' ? 'Auto repair' : 'Manual fix',
         snapshotId: repairSnapshotId,
         timestamp: repairSnapshotTimestamp,
       });
       pushOperationHistory({
-        label: 'Manual fix',
+        label: repairSource === 'auto' ? 'Auto repair' : 'Manual fix',
         beforeFiles,
         afterFiles: filesObj,
         changedPaths,
         beforeDependencies,
         afterDependencies: nextDependencies,
         metadata: {
-          prompt: `manual-fix: ${errorContext.slice(0, 240)}`,
+          prompt: `${repairSource}-fix: ${errorContext.slice(0, 240)}`,
           outcome: data?.repairStatus === 'failed' ? 'failed' : 'applied',
           generationMode: 'edit',
         },
@@ -1780,11 +1839,11 @@ export default function Generator() {
         try {
           await api.updateProject(currentProject.id, {
             code: JSON.stringify(filesObj),
-            prompt: `Manual fix: ${errorContext.slice(0, 240)}`,
+            prompt: `${repairSource === 'auto' ? 'Auto repair' : 'Manual fix'}: ${errorContext.slice(0, 240)}`,
             updated_at: new Date().toISOString(),
           });
         } catch (persistError) {
-          console.error('Failed to persist manual fix result:', persistError);
+          console.error(`Failed to persist ${repairSource} fix result:`, persistError);
         }
       }
 
@@ -1794,20 +1853,43 @@ export default function Generator() {
         setFixErrorContext(failedMessage);
         setError(failedMessage);
         setMessages((prev) => [...prev, { role: 'assistant', content: `Fix fehlgeschlagen: ${failedMessage}` }]);
+        if (repairSource === 'auto') {
+          setAutoRepairState('failed');
+        }
+        return false;
+      }
+
+      setFixStatus('auto_fixed');
+      setFixErrorContext(null);
+      setError(null);
+      setBuildErrors([]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: repairSource === 'auto' ? 'Auto-fixed successfully.' : 'Issue fixed successfully.',
+        },
+      ]);
+
+      if (repairSource === 'auto') {
+        setAutoRepairState('fixed');
       } else {
-        setFixStatus('auto_fixed');
-        setFixErrorContext(null);
-        setError(null);
-        setMessages((prev) => [...prev, { role: 'assistant', content: 'Issue fixed successfully.' }]);
+        setAutoRepairState('idle');
+        setAutoRepairErrorType(null);
       }
 
       refreshPreview();
+      return true;
     } catch (fixError: any) {
       const message = fixError?.message || 'Fix request failed.';
       setFixStatus('needs_fix');
       setFixErrorContext(message);
       setError(message);
       setMessages((prev) => [...prev, { role: 'assistant', content: `Fix Fehler: ${message}` }]);
+      if (repairSource === 'auto') {
+        setAutoRepairState('failed');
+      }
+      return false;
     } finally {
       isGenerating.current = false;
       setIsGeneratingLocked(false);
@@ -1832,13 +1914,174 @@ export default function Generator() {
     user?.id,
   ]);
 
-  const handlePreviewIssue = useCallback((issue: PreviewRuntimeIssuePayload) => {
+  const handleRuntimeError = useCallback(async (runtimeError: RuntimeErrorPayload) => {
+    const normalizedMessage = String(runtimeError?.message || '').trim();
+    if (!normalizedMessage) return;
+
+    const normalizedError: RuntimeErrorPayload = {
+      ...runtimeError,
+      message: normalizedMessage,
+      line: Number.isFinite(Number(runtimeError?.line)) ? Number(runtimeError?.line) : undefined,
+      col: Number.isFinite(Number(runtimeError?.col)) ? Number(runtimeError?.col) : undefined,
+    };
+    setLastRuntimeError(normalizedError);
+    markNeedsFix(normalizedError.message);
+
+    const fingerprint = [
+      normalizedError.message,
+      normalizedError.filename || '',
+      String(normalizedError.line || ''),
+      normalizedError.source || '',
+      normalizedError.buildError?.type || '',
+    ].join('|');
+    const now = Date.now();
+    if (lastAutoRepairFingerprintRef.current === fingerprint && now - lastAutoRepairAtRef.current < 1200) {
+      return;
+    }
+    lastAutoRepairFingerprintRef.current = fingerprint;
+    lastAutoRepairAtRef.current = now;
+
+    if (loading || isApplyingVisualPatch || isAutoRepairing || isGenerating.current) {
+      return;
+    }
+
+    if (repairAttempts >= MAX_AUTO_REPAIRS) {
+      setAutoRepairState('failed');
+      return;
+    }
+
+    setAutoRepairState('detecting');
+    const classification = classifyError(normalizedError);
+    setAutoRepairErrorType(classification.type);
+
+    if (!classification.autoFixable || classification.confidence < 0.8 || classification.type === 'unknown') {
+      setAutoRepairState('failed');
+      return;
+    }
+
+    const strategy = FIX_STRATEGIES[classification.type];
+    if (!strategy) {
+      setAutoRepairState('failed');
+      return;
+    }
+
+    setAutoRepairState('fixing');
+    setRepairAttempts((prev) => prev + 1);
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: 'assistant',
+        content: `Auto-fixing: ${classification.type}...`,
+      },
+    ]);
+
+    const fixPrompt = applyStrategyPromptTemplate(strategy.prompt, normalizedError);
+    const repairOk = await handleFixIssue({
+      source: 'auto',
+      prompt: fixPrompt,
+      errorContext: normalizedError.message,
+      maxTokens: strategy.maxTokens,
+    });
+
+    if (!repairOk) {
+      setAutoRepairState('failed');
+    }
+  }, [
+    handleFixIssue,
+    isApplyingVisualPatch,
+    isAutoRepairing,
+    loading,
+    markNeedsFix,
+    repairAttempts,
+  ]);
+
+  const handleAutoRepairRetry = useCallback(() => {
+    if (!lastRuntimeError) return;
+    void handleRuntimeError(lastRuntimeError);
+  }, [handleRuntimeError, lastRuntimeError]);
+
+  const handleBuildErrorAutoFix = useCallback(() => {
+    if (buildErrors.length === 0) return;
+    const primary = buildErrors[0];
+    void handleRuntimeError({
+      message: primary.message,
+      filename: primary.file,
+      line: primary.line,
+      source: 'bundler',
+      buildError: {
+        type: 'build-error',
+        errors: buildErrors,
+      },
+    });
+  }, [buildErrors, handleRuntimeError]);
+
+  const handleCopyLastRuntimeError = useCallback(async () => {
+    if (!lastRuntimeError) return;
+    const payload = JSON.stringify(lastRuntimeError, null, 2);
+    try {
+      await navigator.clipboard.writeText(payload);
+      setMessages((prev) => [...prev, { role: 'assistant', content: 'Error copied to clipboard.' }]);
+    } catch {
+      setMessages((prev) => [...prev, { role: 'assistant', content: payload }]);
+    }
+  }, [lastRuntimeError]);
+
+  useEffect(() => {
+    if (autoRepairState !== 'fixed') return;
+    const timer = window.setTimeout(() => {
+      setAutoRepairState('idle');
+      setAutoRepairErrorType(null);
+    }, 3000);
+    return () => window.clearTimeout(timer);
+  }, [autoRepairState]);
+
+  const handlePreviewIssue = useCallback((issue: PreviewRuntimeIssuePayload & {
+    type?: 'bundler' | 'runtime';
+    buildError?: {
+      type: 'build-error';
+      errors: Array<{
+        file: string;
+        line: number;
+        message: string;
+        suggestion: string;
+      }>;
+    };
+  }) => {
     const normalized = normalizeRuntimeIssuePayload(issue);
     if (!normalized) return;
-    const message = `Preview runtime error: ${normalized.message}`;
+    const message = issue.type === 'bundler'
+      ? `Build error: ${normalized.message}`
+      : `Preview runtime error: ${normalized.message}`;
     setError(message);
-    markNeedsFix(normalized.message);
-  }, [markNeedsFix]);
+
+    const runtimeErrorPayload: RuntimeErrorPayload = {
+      message: normalized.message,
+      stack: normalized.stack || undefined,
+      source: normalized.source || undefined,
+      routePath: normalized.routePath || '/',
+      buildError: issue.buildError,
+    };
+
+    const buildErrorPayload = issue.buildError;
+    if (buildErrorPayload?.type === 'build-error' && Array.isArray(buildErrorPayload.errors)) {
+      setBuildErrors(
+        buildErrorPayload.errors
+          .filter((entry) => entry && typeof entry.message === 'string')
+          .map((entry) => ({
+            file: typeof entry.file === 'string' ? entry.file : 'src/App.tsx',
+            line: Number.isFinite(Number(entry.line)) ? Number(entry.line) : 1,
+            message: String(entry.message || 'Build error'),
+            suggestion: typeof entry.suggestion === 'string'
+              ? entry.suggestion
+              : 'Inspect file and apply a minimal compile fix.',
+          }))
+      );
+    } else {
+      setBuildErrors([]);
+    }
+
+    void handleRuntimeError(runtimeErrorPayload);
+  }, [handleRuntimeError]);
 
   const clearVisualSelection = useCallback(() => {
     setSelectedEditAnchor(null);
@@ -2483,7 +2726,42 @@ export default function Generator() {
         if (!normalized) return;
 
         setError(`Preview runtime error: ${normalized.message}`);
-        markNeedsFix(normalized.message);
+        void handleRuntimeError({
+          message: normalized.message,
+          stack: normalized.stack || undefined,
+          source: normalized.source || undefined,
+          routePath: normalized.routePath || '/',
+        });
+        return;
+      }
+
+      if (event.data.type === 'RUNTIME_ERROR') {
+        const rawError = event.data?.error || {};
+        const message = typeof rawError?.message === 'string'
+          ? rawError.message
+          : 'Unknown runtime error';
+        setError(`Preview runtime error: ${message}`);
+        void handleRuntimeError({
+          message,
+          filename: typeof rawError?.filename === 'string' ? rawError.filename : undefined,
+          line: Number.isFinite(Number(rawError?.line)) ? Number(rawError.line) : undefined,
+          col: Number.isFinite(Number(rawError?.col)) ? Number(rawError.col) : undefined,
+          stack: typeof rawError?.stack === 'string' ? rawError.stack : undefined,
+          source: typeof rawError?.source === 'string' ? rawError.source : 'runtime',
+        });
+        return;
+      }
+
+      if (event.data.type === 'CONSOLE_ERROR') {
+        const message = typeof event.data?.message === 'string'
+          ? event.data.message.trim()
+          : '';
+        if (!message) return;
+        setError(`Preview runtime error: ${message}`);
+        void handleRuntimeError({
+          message,
+          source: 'console.error',
+        });
         return;
       }
 
@@ -2494,6 +2772,7 @@ export default function Generator() {
           }
           return prev;
         });
+        setBuildErrors([]);
         markTimelineReady();
       }
     };
@@ -2503,7 +2782,7 @@ export default function Generator() {
     return () => {
       window.removeEventListener('message', handleMessage);
     };
-  }, [commitPreviewPath, isReliableVisualAnchor, markNeedsFix, markTimelineReady, normalizeAnchor, selectorForAnchor, workspaceMode]);
+  }, [commitPreviewPath, handleRuntimeError, isReliableVisualAnchor, markTimelineReady, normalizeAnchor, selectorForAnchor, workspaceMode]);
 
   // Inspector: Toggle mode in iframe
   useEffect(() => {
@@ -3076,6 +3355,14 @@ export default function Generator() {
     setLastQualitySummary(null);
     setFixStatus('idle');
     setFixErrorContext(null);
+    setAutoRepairState('idle');
+    setAutoRepairErrorType(null);
+    setRepairAttempts(0);
+    setLastRuntimeError(null);
+    setBuildErrors([]);
+    setGeneratedSupabaseSchema('');
+    setGeneratedDatabaseTables([]);
+    setDatabaseSchemaCopied(false);
     if (workspaceMode === 'visual') {
       setPendingPatch(null);
       setLastVisualDiagnostics(null);
@@ -3236,6 +3523,13 @@ export default function Generator() {
       }
 
       void loadBillingStatus();
+      const responseSupabaseSchema = typeof data?.supabaseSchema === 'string'
+        ? data.supabaseSchema.trim()
+        : '';
+      const responseDatabaseTables = normalizeGeneratedDatabaseTables(data?.databaseTables);
+      setGeneratedSupabaseSchema(responseSupabaseSchema);
+      setGeneratedDatabaseTables(responseDatabaseTables);
+      setDatabaseSchemaCopied(false);
 
       const filesObj = data.files.reduce((acc: any, file: any) => {
         acc[file.path] = file.content;
@@ -3684,6 +3978,15 @@ export default function Generator() {
   const creditsBadgeLabel = billingStatus
     ? (billingStatus.plan === 'enterprise' ? 'Unlimited credits' : `${creditRemaining} credits left`)
     : '';
+  const supabaseSqlEditorUrl =
+    supabaseStatus.live?.links?.sqlEditor ||
+    supabaseStatus.test?.links?.sqlEditor ||
+    (supabaseStatus.live?.projectRef
+      ? `https://supabase.com/dashboard/project/${supabaseStatus.live.projectRef}/sql/new`
+      : supabaseStatus.test?.projectRef
+        ? `https://supabase.com/dashboard/project/${supabaseStatus.test.projectRef}/sql/new`
+        : 'https://supabase.com/dashboard/projects');
+  const showDatabaseSetupPanel = generatedSupabaseSchema.length > 0;
 
   const handleToggleSurfacePin = (mode: SurfaceMode) => {
     setPinnedSurfaceModes((prev) => {
@@ -3796,6 +4099,20 @@ export default function Generator() {
       if (shareError?.name !== 'AbortError') {
         setError('Projekt-Link konnte nicht geteilt werden.');
       }
+    }
+  };
+
+  const handleCopySupabaseSchema = async () => {
+    if (!generatedSupabaseSchema.trim()) return;
+    try {
+      await navigator.clipboard.writeText(generatedSupabaseSchema);
+      setDatabaseSchemaCopied(true);
+      setMessages((prev) => [
+        ...prev,
+        { role: 'assistant', content: 'Supabase SQL wurde in die Zwischenablage kopiert.' },
+      ]);
+    } catch {
+      setError('SQL konnte nicht kopiert werden.');
     }
   };
 
@@ -4405,6 +4722,31 @@ export default function Generator() {
                 )}
               </div>
             )}
+
+            {buildErrors.length > 0 && (
+              <div className="mt-3 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-200">
+                <div className="mb-2 inline-flex items-center gap-1 rounded-md border border-red-400/40 bg-red-500/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
+                  Build Error
+                </div>
+                <div className="space-y-2">
+                  {buildErrors.slice(0, 2).map((entry, index) => (
+                    <div key={`${entry.file}:${entry.line}:${index}`} className="rounded-lg border border-red-400/20 bg-black/20 p-2">
+                      <p className="font-semibold text-red-100">{entry.file}:{entry.line}</p>
+                      <p className="mt-1 text-red-200/90">{entry.message}</p>
+                      <p className="mt-1 text-red-300/80">{entry.suggestion}</p>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  onClick={handleBuildErrorAutoFix}
+                  disabled={isAutoRepairing || repairAttempts >= MAX_AUTO_REPAIRS}
+                  className="mt-3 inline-flex items-center gap-1 rounded-lg bg-red-500/85 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <span className="material-icons-round text-sm">build</span>
+                  Auto-fix
+                </button>
+              </div>
+            )}
           </footer>
         </aside>
 
@@ -4727,16 +5069,17 @@ export default function Generator() {
 
 
           <div className="flex-1 p-8 pt-0 overflow-hidden flex flex-col items-center">
-            <div
-              ref={previewStageRef}
-              data-preview-stage="true"
-              className={`relative flex h-full w-full flex-col overflow-hidden rounded-2xl border border-[#2b3242] bg-[#131823] shadow-2xl transition-all duration-300 ${(showPreviewFrame && previewMode === 'mobile')
-              ? 'max-w-[390px] max-h-[844px] my-auto !h-auto aspect-[390/844] border-8 border-slate-800 rounded-[3rem] shadow-xl'
-              : (showPreviewFrame && previewMode === 'tablet')
-                ? 'max-w-[834px] max-h-[1112px] my-auto !h-auto aspect-[834/1112] border-[10px] border-slate-800 rounded-[2.2rem] shadow-xl'
-                : ''
-              }`}
-            >
+            <div className={`flex w-full flex-col gap-4 ${showDatabaseSetupPanel ? 'h-full overflow-y-auto pr-1' : 'h-full overflow-hidden'}`}>
+              <div
+                ref={previewStageRef}
+                data-preview-stage="true"
+                className={`relative flex min-h-[320px] w-full flex-1 flex-col overflow-hidden rounded-2xl border border-[#2b3242] bg-[#131823] shadow-2xl transition-all duration-300 ${(showPreviewFrame && previewMode === 'mobile')
+                ? 'max-w-[390px] max-h-[844px] my-auto !h-auto aspect-[390/844] border-8 border-slate-800 rounded-[3rem] shadow-xl'
+                : (showPreviewFrame && previewMode === 'tablet')
+                  ? 'max-w-[834px] max-h-[1112px] my-auto !h-auto aspect-[834/1112] border-[10px] border-slate-800 rounded-[2.2rem] shadow-xl'
+                  : ''
+                }`}
+              >
               {activeSurfaceMode === 'analytics' ? (
                 <div className="flex h-full flex-col items-center justify-center px-6 text-center">
                   <span className="material-icons-round mb-4 text-5xl text-slate-400">query_stats</span>
@@ -4852,6 +5195,73 @@ export default function Generator() {
                 </div>
               )}
 
+              {showPreviewFrame && autoRepairState !== 'idle' && (
+                <div className="pointer-events-none absolute left-1/2 top-4 z-40 -translate-x-1/2">
+                  <div
+                    className={`pointer-events-auto w-[min(92vw,720px)] rounded-xl border px-3 py-2 shadow-xl backdrop-blur ${
+                      autoRepairState === 'detecting'
+                        ? 'border-amber-400/35 bg-amber-500/12 text-amber-100'
+                        : autoRepairState === 'fixing'
+                          ? 'border-blue-400/35 bg-blue-500/12 text-blue-100'
+                          : autoRepairState === 'fixed'
+                            ? 'border-emerald-400/40 bg-emerald-500/12 text-emerald-100'
+                            : 'border-red-400/35 bg-red-500/12 text-red-100'
+                    }`}
+                  >
+                    {autoRepairState === 'detecting' && (
+                      <p className="text-sm font-semibold">⚡ Error detected, analyzing...</p>
+                    )}
+                    {autoRepairState === 'fixing' && (
+                      <div>
+                        <p className="text-sm font-semibold">
+                          🔧 Auto-fixing: {autoRepairErrorType ? autoRepairErrorType.replace(/-/g, ' ') : 'runtime error'}...
+                        </p>
+                        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/15">
+                          <div className="h-full w-1/2 animate-pulse rounded-full bg-blue-300" />
+                        </div>
+                      </div>
+                    )}
+                    {autoRepairState === 'fixed' && (
+                      <p className="text-sm font-semibold">✓ Auto-fixed successfully</p>
+                    )}
+                    {autoRepairState === 'failed' && (
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold">Could not auto-fix. Click to try manual repair.</p>
+                          {lastRuntimeError?.message && (
+                            <p className="mt-1 line-clamp-2 max-w-[520px] text-xs text-red-200/90">
+                              {lastRuntimeError.message}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => void handleCopyLastRuntimeError()}
+                            className="rounded-lg border border-red-300/35 px-2.5 py-1 text-xs font-semibold text-red-100 transition-colors hover:bg-red-500/20"
+                          >
+                            Copy Error
+                          </button>
+                          <button
+                            onClick={handleAutoRepairRetry}
+                            disabled={isAutoRepairing || repairAttempts >= MAX_AUTO_REPAIRS}
+                            className="rounded-lg border border-red-300/35 px-2.5 py-1 text-xs font-semibold text-red-100 transition-colors hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            Try Again
+                          </button>
+                          <button
+                            onClick={() => void handleFixIssue({ source: 'manual' })}
+                            disabled={isAutoRepairing}
+                            className="rounded-lg bg-red-500/85 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            Manual Fix
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {showPreviewFrame && isVisualMode && selectedVisualOverlayRect && (
                 <>
                   <div
@@ -4940,6 +5350,52 @@ export default function Generator() {
                   </div>
                   <div>{hasFiles ? `Files: ${Object.keys(files).length}` : 'Ready'}</div>
                 </div>
+              )}
+              </div>
+              {showDatabaseSetupPanel && (
+                <section className="w-full rounded-2xl border border-[#2b3242] bg-[#0f1522] shadow-xl">
+                  <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#2b3242] px-4 py-3">
+                    <div>
+                      <h3 className="text-sm font-semibold text-white">Database Setup</h3>
+                      <p className="mt-1 text-xs text-slate-400">
+                        Run this SQL in your Supabase project to set up the database
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => void handleCopySupabaseSchema()}
+                        className="inline-flex h-8 items-center rounded-lg border border-slate-600 px-3 text-xs font-semibold text-slate-200 transition-colors hover:border-slate-500 hover:bg-white/5"
+                      >
+                        {databaseSchemaCopied ? 'Copied' : 'Copy SQL'}
+                      </button>
+                      <a
+                        href={supabaseSqlEditorUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex h-8 items-center rounded-lg bg-[#5e43dd] px-3 text-xs font-semibold text-white transition-colors hover:bg-[#6a4af6]"
+                      >
+                        Run in Supabase
+                      </a>
+                    </div>
+                  </div>
+                  {generatedDatabaseTables.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 px-4 pt-3">
+                      {generatedDatabaseTables.map((table) => (
+                        <span
+                          key={table}
+                          className="rounded-md border border-slate-700 bg-slate-800/70 px-2 py-0.5 text-[11px] font-medium text-slate-200"
+                        >
+                          {table}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="px-4 pb-4 pt-3">
+                    <pre className="max-h-64 overflow-auto rounded-xl border border-slate-700 bg-[#0a0f1a] p-3 text-xs leading-5 text-slate-200">
+                      <code>{generatedSupabaseSchema}</code>
+                    </pre>
+                  </div>
+                </section>
               )}
             </div>
           </div>

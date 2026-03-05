@@ -1,3 +1,19 @@
+import { CARD_COMPONENTS } from '../components/cards.js';
+import { DASHBOARD_COMPONENTS } from '../components/dashboard-widgets.js';
+import { DATA_COMPONENTS } from '../components/data-display.js';
+import { ECOMMERCE_COMPONENTS } from '../components/ecommerce.js';
+import { FEEDBACK_COMPONENTS } from '../components/feedback.js';
+import { FEATURE_COMPONENTS } from '../components/features.js';
+import { FORM_COMPONENTS } from '../components/forms.js';
+import { HERO_COMPONENTS } from '../components/heroes.js';
+import { LAYOUT_COMPONENTS } from '../components/layout.js';
+import { MARKETING_COMPONENTS } from '../components/marketing.js';
+import { MEDIA_COMPONENTS } from '../components/media.js';
+import { NAVIGATION_COMPONENTS } from '../components/navigation.js';
+import { PRICING_COMPONENTS } from '../components/pricing.js';
+import { SOCIAL_PROOF_COMPONENTS } from '../components/social-proof.js';
+import type { ComponentLibraryEntry } from '../components/shared.js';
+
 export const SECTION_TEMPLATES = {
   HeroWithGradient: `import { Button } from "@/components/ui/button";
 
@@ -1392,3 +1408,29 @@ export default function NotFoundPage() {
 } as const;
 
 export type SectionTemplateKey = keyof typeof SECTION_TEMPLATES;
+
+const COMPONENT_LIBRARY_GROUPS: ComponentLibraryEntry[][] = [
+  NAVIGATION_COMPONENTS,
+  HERO_COMPONENTS,
+  FEATURE_COMPONENTS,
+  SOCIAL_PROOF_COMPONENTS,
+  PRICING_COMPONENTS,
+  FORM_COMPONENTS,
+  CARD_COMPONENTS,
+  DATA_COMPONENTS,
+  LAYOUT_COMPONENTS,
+  MEDIA_COMPONENTS,
+  FEEDBACK_COMPONENTS,
+  ECOMMERCE_COMPONENTS,
+  DASHBOARD_COMPONENTS,
+  MARKETING_COMPONENTS,
+];
+
+export const AVAILABLE_COMPONENT_LIST: ComponentLibraryEntry[] = COMPONENT_LIBRARY_GROUPS.flat();
+
+export const AVAILABLE_COMPONENTS: Record<string, ComponentLibraryEntry> = AVAILABLE_COMPONENT_LIST.reduce<
+  Record<string, ComponentLibraryEntry>
+>((acc, component) => {
+  acc[component.name] = component;
+  return acc;
+}, {});

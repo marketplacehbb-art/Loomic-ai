@@ -17,6 +17,15 @@ interface CodePreviewProps {
         category?: string;
         fingerprint?: string;
         routePath?: string;
+        buildError?: {
+            type: 'build-error';
+            errors: Array<{
+                file: string;
+                line: number;
+                message: string;
+                suggestion: string;
+            }>;
+        };
         timestamp: number;
     }) => void;
 }

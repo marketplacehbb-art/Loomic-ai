@@ -5,10 +5,26 @@ import { qualityScorer, type QualityScore } from './processor-evolution/quality-
 import { styleDNAInjector, type StyleDNA } from './elite-features/style-dna-injector.js';
 import { dependencyIntelligence, type DependencyAnalysis } from './elite-features/dependency-intelligence.js';
 import { DESIGN_REFERENCE, MICRO_INTERACTIONS, STACK_CONSTRAINT } from '../prompts/designReferences.js';
-import { hydratePrompt, inferIndustryFromPrompt, type HydratedContext, type HydrationIndustry } from '../api/hydration.js';
+import {
+  hydratePrompt,
+  inferDatabaseTablesFromPrompt,
+  inferIndustryFromPrompt,
+  type HydratedContext,
+  type HydrationIndustry,
+} from '../api/hydration.js';
 import { INDUSTRY_PROFILES, getIndustryFonts } from '../prompts/industryProfiles.js';
 import { INDUSTRY_IMAGES } from '../prompts/imageLibrary.js';
-import { SECTION_TEMPLATES, type SectionTemplateKey } from '../templates/sections/index.js';
+import { AVAILABLE_COMPONENT_LIST, SECTION_TEMPLATES, type SectionTemplateKey } from '../templates/sections/index.js';
+import type { ComponentLibraryEntry } from '../templates/components/shared.js';
+import { getAppTypeBlueprintByName } from '../templates/appTypes/index.js';
+import {
+  buildEditTypePrompt,
+  buildExistingProjectContextBlock,
+  buildProjectContextSnapshotPrompt,
+  type EditHistoryEntry,
+  type EditInstructionType,
+  type ProjectContextSnapshot,
+} from '../api/edit-system.js';
 
 type SupabaseIntegrationContext = {
   connected?: boolean;
@@ -50,6 +66,10 @@ export interface GenerateInput {
     };
     editInstruction?: string;
   };
+  projectContext?: ProjectContextSnapshot | null;
+  editType?: EditInstructionType;
+  recentEdits?: EditHistoryEntry[];
+  editInstruction?: string;
   screenshotBase64?: string;
   screenshotMimeType?: string;
 }
@@ -91,6 +111,35 @@ interface HydrationNodeOutput {
   hydratedContext: HydratedContext;
 }
 
+interface TableDefinition {
+  name: string;
+  columns: string[];
+}
+
+interface SchemaNodeOutput {
+  sql: string;
+  tables: TableDefinition[];
+  databaseTables: string[];
+}
+
+interface ComplexAppNodeOutput {
+  enabled: boolean;
+  appType: string | null;
+  needsAuth: boolean;
+  needsDatabase: boolean;
+  needsApi: boolean;
+  databaseTables: string[];
+  steps: {
+    schemaSql: string;
+    databaseTypes: string;
+    supabaseHooks: string;
+    authSystem: string;
+    apiLayer: string;
+    uiComponents: string;
+  } | null;
+  orchestrationPromptBlock: string;
+}
+
 interface ASTRewriteNodeOutput {
   code: string;
   rewriteResult: RewriteResult | null;
@@ -112,6 +161,8 @@ export interface GenerateResult {
     qualityScore?: QualityScore | null;
     selectedContextPaths: string[];
     hydratedContext?: HydratedContext | null;
+    supabaseSchema?: string;
+    databaseTables?: string[];
   };
 }
 
@@ -159,8 +210,15 @@ const buildGenerationPrompt = (
     const inferredIndustry = inferIndustryFromPrompt(`${basePrompt} ${hydrated.intent || ''}`);
     const industryVisualDNA = INDUSTRY_PROFILES[inferredIndustry]?.visualDNA || INDUSTRY_PROFILES.saas.visualDNA;
     const industryFonts = getIndustryFonts(inferredIndustry);
+    const databaseTables = Array.isArray(hydrated.databaseTables) && hydrated.databaseTables.length > 0
+      ? hydrated.databaseTables.join(', ')
+      : 'none';
+    const appTypeName = hydrated.appType || 'none';
+    const mustHaveComponents = Array.isArray(hydrated.mustHaveComponents) && hydrated.mustHaveComponents.length > 0
+      ? hydrated.mustHaveComponents.join(', ')
+      : 'none';
     parts.push(
-      `HYDRATION_CONTEXT:\n- intent: ${hydrated.intent}\n- components: ${componentHints}\n- keyContent: ${keyContentHints}\n- needsSupabase: ${hydrated.needsSupabase ? 'yes' : 'no'}\n- colorScheme: ${hydrated.colorScheme}\n- complexity: ${hydrated.complexity}`
+      `HYDRATION_CONTEXT:\n- intent: ${hydrated.intent}\n- appType: ${appTypeName}\n- components: ${componentHints}\n- mustHaveComponents: ${mustHaveComponents}\n- keyContent: ${keyContentHints}\n- needsSupabase: ${hydrated.needsSupabase ? 'yes' : 'no'}\n- needsDatabase: ${hydrated.needsDatabase ? 'yes' : 'no'}\n- needsAuth: ${hydrated.needsAuth ? 'yes' : 'no'}\n- needsApi: ${hydrated.needsApi ? 'yes' : 'no'}\n- authType: ${hydrated.authType}\n- databaseTables: ${databaseTables}\n- colorScheme: ${hydrated.colorScheme}\n- complexity: ${hydrated.complexity}`
     );
     parts.push(
       `INDUSTRY_VISUAL_DNA:\n- industry: ${inferredIndustry}\n- heroSection: ${industryVisualDNA.heroSection}\n- heroHeading: ${industryVisualDNA.heroHeading}\n- heroSubtext: ${industryVisualDNA.heroSubtext}\n- primaryButton: ${industryVisualDNA.primaryButton}\n- secondaryButton: ${industryVisualDNA.secondaryButton}\n- sectionBg: ${industryVisualDNA.sectionBg.join(' | ')}\n- cardStyle: ${industryVisualDNA.cardStyle}\n- accentColor: ${industryVisualDNA.accentColor}\n- badge: ${industryVisualDNA.badge}`
@@ -185,6 +243,33 @@ const buildGenerationPrompt = (
   }
 
   return parts.filter(Boolean).join('\n\n');
+};
+
+const buildEditContextBlocks = (input: GenerateInput): {
+  promptBlock: string;
+  systemBlock: string;
+} => {
+  if (input.generationMode !== 'edit') {
+    return { promptBlock: '', systemBlock: '' };
+  }
+
+  const instruction = String(input.editInstruction || input.prompt || '').trim();
+  const context = input.projectContext || null;
+  const recentEdits = Array.isArray(input.recentEdits) ? input.recentEdits : [];
+  const editType = input.editType || null;
+  const contextBlock = buildExistingProjectContextBlock({
+    projectContext: context,
+    instruction,
+    editType,
+    recentEdits,
+  });
+  const snapshotBlock = buildProjectContextSnapshotPrompt(context);
+  const editTypeBlock = editType ? buildEditTypePrompt(editType) : '';
+
+  return {
+    promptBlock: snapshotBlock,
+    systemBlock: [contextBlock, editTypeBlock].filter(Boolean).join('\n\n'),
+  };
 };
 
 const COMPLETENESS_RULES = `COMPLETENESS RULES:
@@ -392,6 +477,81 @@ VERIFICATION - before outputting check:
 - All text has mobile size defined first
 - No horizontal overflow on mobile (avoid fixed widths)
 - All images are responsive`;
+
+const FORBIDDEN_PATTERNS_RULES = `FORBIDDEN PATTERNS - never generate these:
+- Plain gray placeholder boxes for images
+- Lorem ipsum or any placeholder text
+- Empty sections with just a title
+- Default browser button styles
+- Tables without styling
+- Forms without proper spacing
+- Text without proper line-height
+- Cards without hover states
+- Pages with only 1-2 sections
+- Hardcoded data arrays instead of Supabase hooks
+- console.log statements
+- TODO comments in generated code
+- Any inline styles (style={{...}})
+- className strings longer than 10 classes (extract to component)`;
+
+const REQUIRED_VISUAL_PATTERNS_RULES = `REQUIRED PATTERNS - always include:
+Images: use real Unsplash URLs based on industry:
+- restaurants: https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&q=80
+- food items: https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&q=80
+- technology: https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&q=80
+- people/team: https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&q=80
+- office: https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&q=80
+- fitness: https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&q=80
+- wedding: https://images.unsplash.com/photo-1519741497674-611481863552?w=800&q=80
+- Use object-cover w-full h-full on all images.
+
+Gradients:
+- Hero backgrounds must use gradients (never solid-only).
+- Cards must use subtle gradient hover overlays.
+- Primary CTA buttons must use gradient styling.
+
+Animations:
+- Page load: animate-fade-in on main sections.
+- Counters: count up from 0 on scroll into view.
+- Cards: hover:-translate-y-1 transition-all duration-300.
+- Images: hover:scale-105 transition-transform duration-500.
+
+Typography scale:
+- Display: text-6xl md:text-8xl font-black tracking-tighter
+- H1: text-4xl md:text-6xl font-bold tracking-tight
+- H2: text-3xl md:text-4xl font-bold
+- Body: text-base leading-relaxed text-slate-600
+- Caption: text-sm text-slate-400
+
+Spacing scale:
+- Sections: py-24 md:py-32
+- Container: max-w-7xl mx-auto px-4 md:px-8
+- Between elements: space-y-6 or gap-6 minimum`;
+
+const TAILWIND_ANIMATION_RULES = `TAILWIND ANIMATION CONFIG - always include in generated tailwind.config.js:
+module.exports = {
+  theme: {
+    extend: {
+      animation: {
+        'fade-in': 'fadeIn 0.6s ease-out',
+        'slide-up': 'slideUp 0.5s ease-out',
+        'count-up': 'countUp 1s ease-out',
+      },
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0', transform: 'translateY(10px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        slideUp: {
+          '0%': { opacity: '0', transform: 'translateY(30px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+      },
+    },
+  },
+}
+
+Apply animate-fade-in on every major section.`;
 
 const EDIT_MODE_RULES = `EDIT MODE RULES:
 - You are making TARGETED changes to existing code
@@ -681,6 +841,614 @@ Rules:
 - Output complete multi-file structure as always`;
 };
 
+const normalizeTableNames = (value: unknown): string[] => {
+  if (!Array.isArray(value)) return [];
+  const deduped = new Set<string>();
+  value.forEach((entry) => {
+    const normalized = String(entry || '')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9_]/g, '')
+      .slice(0, 48);
+    if (normalized) deduped.add(normalized);
+  });
+  return [...deduped].slice(0, 5);
+};
+
+const stripSqlCodeFence = (value: string): string => {
+  const text = String(value || '').trim();
+  if (!text) return '';
+  const fenced = text.match(/```(?:sql|postgresql)?\s*([\s\S]*?)```/i);
+  if (fenced?.[1]) return fenced[1].trim();
+  return text;
+};
+
+const parseTableDefinitionsFromSql = (sql: string): TableDefinition[] => {
+  const tableDefinitions: TableDefinition[] = [];
+  const createTableRegex = /create\s+table\s+(?:if\s+not\s+exists\s+)?("?[\w.]+"?)\s*\(([\s\S]*?)\);/gi;
+  let match: RegExpExecArray | null = null;
+
+  while ((match = createTableRegex.exec(sql)) !== null) {
+    const rawName = String(match[1] || '').replace(/"/g, '').trim();
+    const tableName = rawName.includes('.') ? rawName.split('.').pop() || rawName : rawName;
+    const body = String(match[2] || '');
+    const columns = body
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line && !/^constraint\b/i.test(line) && !/^primary\s+key\b/i.test(line) && !/^foreign\s+key\b/i.test(line))
+      .map((line) => line.replace(/,$/, '').split(/\s+/)[0])
+      .map((column) => String(column || '').replace(/"/g, '').trim())
+      .filter((column) => /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(column));
+    if (!tableName) continue;
+    tableDefinitions.push({
+      name: tableName,
+      columns: [...new Set(columns)],
+    });
+  }
+
+  return tableDefinitions;
+};
+
+const buildDeterministicSchemaFallback = (tables: string[]): string => {
+  const safeTables = normalizeTableNames(tables).slice(0, 5);
+  if (safeTables.length === 0) return '';
+
+  const statements: string[] = [
+    '-- Deterministic fallback schema',
+    'create extension if not exists "pgcrypto";',
+  ];
+
+  safeTables.forEach((table) => {
+    statements.push(
+      `create table if not exists public.${table} (`,
+      '  id uuid primary key default gen_random_uuid(),',
+      '  name text not null,',
+      '  status text default \'active\',',
+      '  metadata jsonb default \'{}\'::jsonb,',
+      '  created_at timestamptz not null default now()',
+      ');',
+      `alter table public.${table} enable row level security;`,
+      `create policy if not exists "${table}_select_authenticated" on public.${table} for select to authenticated using (true);`,
+      `create policy if not exists "${table}_insert_authenticated" on public.${table} for insert to authenticated with check (true);`,
+      `create policy if not exists "${table}_update_authenticated" on public.${table} for update to authenticated using (true) with check (true);`,
+      `create policy if not exists "${table}_delete_authenticated" on public.${table} for delete to authenticated using (true);`,
+      `insert into public.${table} (name, status, metadata) values`,
+      `  ('Sample ${table} 1', 'active', '{"seed":1}'::jsonb),`,
+      `  ('Sample ${table} 2', 'active', '{"seed":2}'::jsonb),`,
+      `  ('Sample ${table} 3', 'active', '{"seed":3}'::jsonb)`,
+      'on conflict do nothing;',
+      ''
+    );
+  });
+
+  return statements.join('\n').trim();
+};
+
+type SqlColumnDefinition = {
+  name: string;
+  sqlType: string;
+  nullable: boolean;
+  tsType: string;
+};
+
+const AUTH_CONTEXT_TEMPLATE = [
+  "src/contexts/AuthContext.tsx:",
+  "import { createContext, useContext, useEffect, useState } from 'react'",
+  "import { User } from '@supabase/supabase-js'",
+  "import { supabase } from '../lib/supabase'",
+  "",
+  "interface AuthContextType {",
+  "  user: User | null",
+  "  loading: boolean",
+  "  signIn: (email: string, password: string) => Promise<void>",
+  "  signUp: (email: string, password: string, name: string) => Promise<void>",
+  "  signOut: () => Promise<void>",
+  "}",
+  "",
+  "const AuthContext = createContext<AuthContextType>({} as AuthContextType)",
+  "",
+  "export function AuthProvider({ children }: { children: React.ReactNode }) {",
+  "  const [user, setUser] = useState<User | null>(null)",
+  "  const [loading, setLoading] = useState(true)",
+  "",
+  "  useEffect(() => {",
+  "    supabase.auth.getSession().then(({ data: { session } }) => {",
+  "      setUser(session?.user ?? null)",
+  "      setLoading(false)",
+  "    })",
+  "",
+  "    const { data: { subscription } } = supabase.auth.onAuthStateChange(",
+  "      (_event, session) => setUser(session?.user ?? null)",
+  "    )",
+  "    return () => subscription.unsubscribe()",
+  "  }, [])",
+  "",
+  "  const signIn = async (email: string, password: string) => {",
+  "    const { error } = await supabase.auth.signInWithPassword({ email, password })",
+  "    if (error) throw error",
+  "  }",
+  "",
+  "  const signUp = async (email: string, password: string, name: string) => {",
+  "    const { error } = await supabase.auth.signUp({",
+  "      email, password,",
+  "      options: { data: { full_name: name } }",
+  "    })",
+  "    if (error) throw error",
+  "  }",
+  "",
+  "  const signOut = async () => {",
+  "    await supabase.auth.signOut()",
+  "  }",
+  "",
+  "  return (",
+  "    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>",
+  "      {children}",
+  "    </AuthContext.Provider>",
+  "  )",
+  "}",
+  "",
+  "export const useAuth = () => useContext(AuthContext)",
+].join('\n');
+
+const PROTECTED_ROUTE_TEMPLATE = [
+  "src/components/ProtectedRoute.tsx:",
+  "import { Navigate } from 'react-router-dom'",
+  "import { useAuth } from '../contexts/AuthContext'",
+  "",
+  "export function ProtectedRoute({ children }: { children: React.ReactNode }) {",
+  "  const { user, loading } = useAuth()",
+  "",
+  "  if (loading) return (",
+  "    <div className=\"min-h-screen flex items-center justify-center bg-slate-900\">",
+  "      <div className=\"animate-spin h-8 w-8 border-2 border-purple-500 border-t-transparent rounded-full\" />",
+  "    </div>",
+  "  )",
+  "",
+  "  return user ? <>{children}</> : <Navigate to=\"/login\" replace />",
+  "}",
+  "",
+  "Wrap protected routes in App.tsx:",
+  "<Route path=\"/dashboard\" element={",
+  "  <ProtectedRoute><Dashboard /></ProtectedRoute>",
+  "} />",
+].join('\n');
+
+const API_LAYER_TEMPLATE = [
+  "src/lib/api.ts:",
+  "import { supabase } from './supabase'",
+  "",
+  "export async function apiCall<T>(",
+  "  table: string,",
+  "  operation: 'select' | 'insert' | 'update' | 'delete',",
+  "  options?: {",
+  "    select?: string",
+  "    match?: Record<string, unknown>",
+  "    data?: Record<string, unknown>",
+  "    order?: { column: string; ascending?: boolean }",
+  "    limit?: number",
+  "  }",
+  "): Promise<T[]> {",
+  "  let query = supabase.from(table)",
+  "",
+  "  try {",
+  "    switch (operation) {",
+  "      case 'select': {",
+  "        let q = (query as any).select(options?.select || '*')",
+  "        if (options?.match) {",
+  "          Object.entries(options.match).forEach(([k, v]) => {",
+  "            q = q.eq(k, v)",
+  "          })",
+  "        }",
+  "        if (options?.order) q = q.order(options.order.column, { ascending: options.order.ascending ?? true })",
+  "        if (options?.limit) q = q.limit(options.limit)",
+  "        const { data, error } = await q",
+  "        if (error) throw error",
+  "        return data || []",
+  "      }",
+  "      case 'insert': {",
+  "        const { data, error } = await (query as any).insert(options?.data).select()",
+  "        if (error) throw error",
+  "        return data || []",
+  "      }",
+  "      case 'update': {",
+  "        let q = (query as any).update(options?.data)",
+  "        if (options?.match) {",
+  "          Object.entries(options.match).forEach(([k, v]) => {",
+  "            q = q.eq(k, v)",
+  "          })",
+  "        }",
+  "        const { data, error } = await q.select()",
+  "        if (error) throw error",
+  "        return data || []",
+  "      }",
+  "      case 'delete': {",
+  "        let q = (query as any).delete()",
+  "        if (options?.match) {",
+  "          Object.entries(options.match).forEach(([k, v]) => {",
+  "            q = q.eq(k, v)",
+  "          })",
+  "        }",
+  "        const { error } = await q",
+  "        if (error) throw error",
+  "        return []",
+  "      }",
+  "    }",
+  "  } catch (error) {",
+  "    console.error(`API Error [${operation} ${table}]:`, error)",
+  "    throw error",
+  "  }",
+  "}",
+].join('\n');
+
+const TOAST_SYSTEM_TEMPLATE = [
+  "Toast notification system - always required:",
+  "- Generate src/components/ui/Toast.tsx",
+  "- Generate src/hooks/useToast.ts",
+  "- useToast must expose success(message), error(message), info(message), warning(message)",
+  "- Auto-dismiss after 4 seconds",
+  "- Support stacked toasts",
+  "- Use toast in ALL async operations",
+  "",
+  "Usage pattern:",
+  "try {",
+  "  await addItem(formData)",
+  "  toast.success('Item added successfully!')",
+  "} catch (error) {",
+  "  toast.error('Failed to add item. Please try again.')",
+  "}",
+].join('\n');
+
+const VALIDATION_TEMPLATE = [
+  "Form validation system - always required:",
+  "- Generate src/lib/validation.ts",
+  "",
+  "export const validators = {",
+  "  required: (value: string) => value.trim() ? null : 'This field is required',",
+  "  email: (value: string) =>",
+  "    /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(value) ? null : 'Invalid email address',",
+  "  minLength: (min: number) => (value: string) =>",
+  "    value.length >= min ? null : `Must be at least ${min} characters`,",
+  "  maxLength: (max: number) => (value: string) =>",
+  "    value.length <= max ? null : `Must be less than ${max} characters`,",
+  "  phone: (value: string) =>",
+  "    /^\\+?[\\d\\s-()]{8,}$/.test(value) ? null : 'Invalid phone number',",
+  "  url: (value: string) => {",
+  "    try { new URL(value); return null }",
+  "    catch { return 'Invalid URL' }",
+  "  }",
+  "}",
+  "",
+  "export function validate(value: string, rules: Array<(v: string) => string | null>) {",
+  "  for (const rule of rules) {",
+  "    const error = rule(value)",
+  "    if (error) return error",
+  "  }",
+  "  return null",
+  "}",
+  "",
+  "Use inline errors below inputs:",
+  "{errors.email && (",
+  "  <p className=\"text-red-400 text-sm mt-1\">{errors.email}</p>",
+  ")}",
+].join('\n');
+
+const toPascalCaseIdentifier = (value: string): string => {
+  const pascal = String(value || '')
+    .split(/[^a-zA-Z0-9]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join('');
+  if (!pascal) return 'Record';
+  return /^[A-Za-z_$]/.test(pascal) ? pascal : `T${pascal}`;
+};
+
+const singularizeTableName = (tableName: string): string => {
+  const lower = String(tableName || '').toLowerCase();
+  if (lower.endsWith('ies')) return `${lower.slice(0, -3)}y`;
+  if (lower.endsWith('ses')) return lower.slice(0, -2);
+  if (lower.endsWith('s') && lower.length > 3) return lower.slice(0, -1);
+  return lower;
+};
+
+const inferTsTypeFromColumn = (columnName: string, sqlType: string): string => {
+  const col = String(columnName || '').toLowerCase();
+  const type = String(sqlType || '').toLowerCase();
+
+  if (/\b(uuid|text|varchar|char|citext|date|time|timestamp|timestamptz)\b/.test(type)) return 'string';
+  if (/\b(bool|boolean)\b/.test(type) || /^is_/.test(col) || /^has_/.test(col)) return 'boolean';
+  if (/\b(int|numeric|decimal|float|double|real|serial)\b/.test(type)) return 'number';
+  if (/\b(json|jsonb)\b/.test(type) || /(metadata|payload|config|data)$/.test(col)) return 'Record<string, unknown>';
+  if (/\[\]$/.test(type) || /\barray\b/.test(type)) return 'unknown[]';
+
+  if (/(count|total|amount|price|cost|qty|quantity|tokens|latency)/.test(col)) return 'number';
+  if (/(email|phone|url|name|title|description|status|slug)/.test(col)) return 'string';
+  if (/(created_at|updated_at|deleted_at|starts_at|ends_at|due_date)/.test(col)) return 'string';
+
+  return 'unknown';
+};
+
+const parseSchemaColumnDefinitions = (sql: string): Record<string, SqlColumnDefinition[]> => {
+  const definitions: Record<string, SqlColumnDefinition[]> = {};
+  const createTableRegex = /create\s+table\s+(?:if\s+not\s+exists\s+)?("?[\w.]+"?)\s*\(([\s\S]*?)\);/gi;
+  let match: RegExpExecArray | null = null;
+
+  while ((match = createTableRegex.exec(sql)) !== null) {
+    const rawName = String(match[1] || '').replace(/"/g, '').trim();
+    const tableName = rawName.includes('.') ? rawName.split('.').pop() || rawName : rawName;
+    const body = String(match[2] || '');
+    const columns: SqlColumnDefinition[] = [];
+
+    body
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) =>
+        Boolean(line) &&
+        !/^constraint\b/i.test(line) &&
+        !/^primary\s+key\b/i.test(line) &&
+        !/^foreign\s+key\b/i.test(line) &&
+        !/^unique\b/i.test(line)
+      )
+      .forEach((line) => {
+        const normalized = line.replace(/,$/, '');
+        const parts = normalized.split(/\s+/);
+        if (parts.length < 2) return;
+        const columnName = String(parts[0] || '').replace(/"/g, '').trim();
+        if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(columnName)) return;
+        const sqlType = String(parts[1] || '').trim();
+        const nullable = !/\bnot\s+null\b/i.test(normalized);
+        columns.push({
+          name: columnName,
+          sqlType,
+          nullable,
+          tsType: inferTsTypeFromColumn(columnName, sqlType),
+        });
+      });
+
+    if (columns.length > 0) {
+      definitions[tableName] = columns;
+    }
+  }
+
+  return definitions;
+};
+
+const buildDatabaseTypesFromSchema = (schemaSql: string, tables: TableDefinition[]): string => {
+  const columnMap = parseSchemaColumnDefinitions(schemaSql);
+  const tableNames = normalizeTableNames(
+    tables.map((table) => table.name).length > 0
+      ? tables.map((table) => table.name)
+      : Object.keys(columnMap)
+  );
+
+  const interfaces = tableNames.map((tableName) => {
+    const interfaceName = toPascalCaseIdentifier(singularizeTableName(tableName));
+    const columns = columnMap[tableName] || [
+      { name: 'id', sqlType: 'uuid', nullable: false, tsType: 'string' },
+      { name: 'created_at', sqlType: 'timestamptz', nullable: false, tsType: 'string' },
+    ];
+    const fields = columns.map((column) => {
+      const optional = column.nullable && column.name !== 'id' ? '?' : '';
+      return `  ${column.name}${optional}: ${column.tsType};`;
+    });
+    return `export interface ${interfaceName} {\n${fields.join('\n')}\n}`;
+  });
+
+  const tableRegistry = tableNames
+    .map((tableName) => {
+      const typeName = toPascalCaseIdentifier(singularizeTableName(tableName));
+      return `  ${tableName}: ${typeName};`;
+    })
+    .join('\n');
+
+  return [
+    "src/lib/database.types.ts:",
+    interfaces.join('\n\n'),
+    '',
+    'export interface DatabaseTables {',
+    tableRegistry || '  [key: string]: unknown;',
+    '}',
+  ].join('\n');
+};
+
+const buildSupabaseClientAndHooksBlueprint = (databaseTables: string[], databaseTypes: string): string => {
+  const hookSnippets = normalizeTableNames(databaseTables).slice(0, 5).map((tableName) => {
+    const typeName = toPascalCaseIdentifier(singularizeTableName(tableName));
+    const hookName = `use${toPascalCaseIdentifier(tableName)}`;
+    return [
+      `src/hooks/${hookName}.ts:`,
+      "import { useEffect, useState } from 'react'",
+      "import { supabase } from '../lib/supabase'",
+      `import type { ${typeName} } from '../lib/database.types'`,
+      '',
+      `export function ${hookName}() {`,
+      `  const [items, setItems] = useState<${typeName}[]>([])`,
+      '  const [loading, setLoading] = useState(true)',
+      '  const [error, setError] = useState<Error | null>(null)',
+      '',
+      '  useEffect(() => {',
+      '    supabase.from(\'' + tableName + '\').select(\'*\')',
+      '      .then(({ data, error }) => {',
+      '        if (error) { setError(error as Error); return }',
+      `        setItems((data || []) as ${typeName}[])`,
+      '      })',
+      '      .finally(() => setLoading(false))',
+      '  }, [])',
+      '',
+      '  return { items, loading, error, setItems }',
+      '}',
+    ].join('\n');
+  });
+
+  return [
+    "src/lib/supabase.ts:",
+    "import { createClient } from '@supabase/supabase-js'",
+    "const supabaseUrl = import.meta.env.VITE_SUPABASE_URL",
+    "const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY",
+    "export const supabase = createClient(supabaseUrl, supabaseKey)",
+    '',
+    databaseTypes,
+    '',
+    hookSnippets.join('\n\n'),
+  ].join('\n');
+};
+
+const buildComplexUiIntegrationRules = (appType: string | null, databaseTables: string[], needsAuth: boolean): string => {
+  const normalizedTables = normalizeTableNames(databaseTables);
+  const dataHooks = normalizedTables.map((tableName) => `use${toPascalCaseIdentifier(tableName)}()`).join(', ');
+  return [
+    `UI integration for app type: ${appType || 'custom'}`,
+    '- UI components must consume data from generated hooks, never hardcoded arrays.',
+    '- All async actions must use toast.success / toast.error feedback.',
+    '- All forms must use validation.ts validators and inline error messages.',
+    needsAuth
+      ? '- Protected pages must be wrapped with <ProtectedRoute> and AuthProvider at app root.'
+      : '- Auth is optional, but API/data calls still need loading/error/empty states.',
+    `- Required data hooks in UI: ${dataHooks || 'use generated table hooks'}.`,
+    '- Every list view must include loading spinner, empty state text, and error fallback card.',
+  ].join('\n');
+};
+
+const buildComplexAppPromptBlock = (output: ComplexAppNodeOutput): string => {
+  if (!output.enabled || !output.steps) return '';
+  return [
+    'COMPLEX APP ORCHESTRATION (STRICT ORDER):',
+    `- appType: ${output.appType || 'custom'}`,
+    `- needsAuth: ${output.needsAuth ? 'true' : 'false'}`,
+    `- needsDatabase: ${output.needsDatabase ? 'true' : 'false'}`,
+    `- needsApi: ${output.needsApi ? 'true' : 'false'}`,
+    '',
+    'STEP 1 - Database schema SQL:',
+    output.steps.schemaSql,
+    '',
+    'STEP 2 - TypeScript types generated from schema:',
+    output.steps.databaseTypes,
+    '',
+    'STEP 3 - Supabase client + hooks generated from types:',
+    output.steps.supabaseHooks,
+    '',
+    'STEP 4 - Auth context + protected routes:',
+    output.steps.authSystem,
+    '',
+    'STEP 5 - API layer:',
+    output.steps.apiLayer,
+    '',
+    'STEP 6 - UI components integration:',
+    output.steps.uiComponents,
+    '',
+    'You must generate files in this exact dependency order and wire each next step to previous outputs.',
+  ].join('\n');
+};
+
+const buildFullStackSystemPromptBlock = (hydratedContext: HydratedContext | null | undefined): string => {
+  const tableList = Array.isArray(hydratedContext?.databaseTables) && hydratedContext?.databaseTables.length > 0
+    ? hydratedContext.databaseTables.join(', ')
+    : inferDatabaseTablesFromPrompt(String(hydratedContext?.intent || '')).join(', ');
+  const authType = hydratedContext?.authType || 'none';
+  const needsDatabase = Boolean(hydratedContext?.needsDatabase);
+  const needsAuth = Boolean(hydratedContext?.needsAuth);
+  const needsApi = Boolean(hydratedContext?.needsApi);
+
+  const authRequiredBlock = needsAuth
+    ? `AUTH SYSTEM TEMPLATE - mandatory when needsAuth=true:
+${AUTH_CONTEXT_TEMPLATE}
+
+${PROTECTED_ROUTE_TEMPLATE}`
+    : 'AUTH SYSTEM: needsAuth=false (auth files optional unless requested by prompt).';
+
+  const apiRequiredBlock = needsApi || needsDatabase
+    ? `API LAYER TEMPLATE - mandatory when needsApi=true or needsDatabase=true:
+${API_LAYER_TEMPLATE}`
+    : 'API LAYER: needsApi=false (generate only if explicitly required by prompt).';
+
+  return `FULL-STACK RULES - this app uses Supabase for backend:
+- needsDatabase: ${needsDatabase ? 'true' : 'false'}
+- needsAuth: ${needsAuth ? 'true' : 'false'}
+- needsApi: ${needsApi ? 'true' : 'false'}
+- authType: ${authType}
+- databaseTables: ${tableList}
+
+REQUIRED FILES to generate:
+src/lib/supabase.ts:
+  import { createClient } from '@supabase/supabase-js'
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+  const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+  export const supabase = createClient(supabaseUrl, supabaseKey)
+
+src/lib/database.types.ts:
+  Generate TypeScript interfaces for every table listed above.
+
+src/hooks/use{TableName}.ts (one per table):
+  Create hooks for fetch + create + update + delete with Supabase.
+  Do not hardcode arrays; use Supabase queries only.
+  Always include loading, empty, and error states.
+
+REALTIME requirement:
+  For dashboard/live screens, subscribe with supabase.channel(...postgres_changes...).
+
+${authRequiredBlock}
+
+${apiRequiredBlock}
+
+TOAST SYSTEM - mandatory for async UX:
+${TOAST_SYSTEM_TEMPLATE}
+
+FORM VALIDATION SYSTEM - mandatory for every form:
+${VALIDATION_TEMPLATE}
+
+Implementation enforcement:
+- Use toast.success/toast.error in ALL async create/update/delete/auth handlers.
+- Use validators + validate(...) on ALL forms before submit.
+- Show inline validation errors below each field.
+- Protected pages must use <ProtectedRoute> when auth is required.
+- Keep Auth + DB + API wired together with shared types and hooks.
+
+Environment + docs requirement:
+  Always generate .env.example containing:
+  VITE_SUPABASE_URL=https://your-project.supabase.co
+  VITE_SUPABASE_ANON_KEY=your-anon-key-here
+
+  README.md must include:
+  ## Setup
+  1. Create a Supabase project at supabase.com
+  2. Copy your project URL and anon key
+  3. Create .env from .env.example and fill in values
+  4. Run the SQL schema in Supabase SQL Editor
+  5. npm install && npm run dev`;
+};
+
+const buildAppTypeSystemPromptBlock = (hydratedContext: HydratedContext | null | undefined): string => {
+  const appTypeBlueprint = getAppTypeBlueprintByName(hydratedContext?.appType || '');
+  if (!appTypeBlueprint) return '';
+
+  const requiredComponents = appTypeBlueprint.mustHaveComponents.join(', ');
+  const requiredFeatures = appTypeBlueprint.features.join(', ');
+  const requiredPages = appTypeBlueprint.pages.join(', ');
+  const visualStyleRule = appTypeBlueprint.visualStyle
+    ? `Visual style: ${appTypeBlueprint.visualStyle}`
+    : '';
+  const specialInstructionsRule = appTypeBlueprint.specialInstructions
+    ? `Special instructions: ${appTypeBlueprint.specialInstructions}`
+    : '';
+  const gameDevelopmentRules = appTypeBlueprint.name === 'game'
+    ? `GAME DEVELOPMENT RULES:
+- Use useRef for game state, never useState for rapidly changing values
+- Use requestAnimationFrame for smooth game loops
+- Implement keyboard controls with useEffect cleanup
+- Always handle game states: 'idle' | 'playing' | 'paused' | 'gameover'
+- Score must persist to localStorage
+- Mobile: add touch/swipe controls alongside keyboard`
+    : '';
+
+  return `APP TYPE: ${appTypeBlueprint.name}
+You MUST generate ALL of these components: ${requiredComponents}
+You MUST implement ALL of these features: ${requiredFeatures}
+Required pages: ${requiredPages}
+${visualStyleRule}
+${specialInstructionsRule}
+${gameDevelopmentRules}
+This must be a COMPLETE, FUNCTIONAL application - not a prototype.`;
+};
+
 const mapIndustryToContentDomain = (industry: HydrationIndustry): ContentDomain => {
   if (industry === 'restaurant') return 'food';
   if (industry === 'ecommerce') return 'ecommerce';
@@ -910,6 +1678,134 @@ const appendSectionTemplateReferencesToPrompt = (
   return `${prompt}\n\nUse these exact component patterns as reference for your implementation:\n\n${referenceBlock}`;
 };
 
+const tokenizeComponentKeywords = (value: string): string[] => {
+  const tokens = String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter((token) => token.length >= 3);
+  return Array.from(new Set(tokens));
+};
+
+const APP_TYPE_CATEGORY_BOOSTS: Record<string, string[]> = {
+  restaurant: ['form', 'card', 'layout'],
+  'saas-dashboard': ['dashboard', 'data-display', 'navigation'],
+  ecommerce: ['ecommerce', 'card', 'form', 'pricing'],
+  'todo-app': ['dashboard', 'data-display', 'layout'],
+  blog: ['card', 'layout', 'social-proof'],
+  booking: ['form', 'layout', 'data-display'],
+  'mobile-app': ['navigation', 'layout', 'media', 'feedback'],
+  game: ['layout', 'feedback', 'data-display'],
+  'ai-tool': ['form', 'data-display', 'feedback'],
+  social: ['social-proof', 'media', 'dashboard', 'feedback'],
+  marketplace: ['ecommerce', 'form', 'dashboard', 'media'],
+  'saas-tool': ['form', 'data-display', 'feedback'],
+};
+
+const scoreComponentReference = (
+  component: ComponentLibraryEntry,
+  tokens: string[],
+  boostedCategories: Set<string>,
+  mustHaveComponents: Set<string>,
+  supabaseLikely: boolean
+): number => {
+  let score = 0;
+  const normalizedName = component.name.toLowerCase();
+  const normalizedDescription = component.description.toLowerCase();
+  const normalizedTags = component.tags.map((tag) => tag.toLowerCase());
+
+  if (mustHaveComponents.has(normalizedName)) {
+    score += 40;
+  }
+
+  for (const token of tokens) {
+    if (normalizedName.includes(token)) score += 10;
+    if (normalizedDescription.includes(token)) score += 3;
+    if (normalizedTags.some((tag) => tag.includes(token))) score += 6;
+  }
+
+  if (boostedCategories.has(component.category)) {
+    score += 12;
+  }
+
+  if (component.supabaseRequired && supabaseLikely) {
+    score += 4;
+  } else if (component.supabaseRequired && !supabaseLikely) {
+    score -= 2;
+  }
+
+  return score;
+};
+
+const selectComponentLibraryReferences = (
+  prompt: string,
+  hydratedContext: HydratedContext | null | undefined
+): ComponentLibraryEntry[] => {
+  const componentHints = Array.isArray(hydratedContext?.componentList) ? hydratedContext.componentList : [];
+  const keyContent = Array.isArray(hydratedContext?.keyContent) ? hydratedContext.keyContent : [];
+  const mustHaveComponents = new Set(
+    (Array.isArray(hydratedContext?.mustHaveComponents) ? hydratedContext.mustHaveComponents : [])
+      .map((value) => String(value || '').toLowerCase().trim())
+      .filter(Boolean)
+  );
+  const mergedKeywordSource = [
+    prompt,
+    hydratedContext?.intent || '',
+    componentHints.join(' '),
+    keyContent.join(' '),
+    hydratedContext?.appType || '',
+  ].join(' ');
+  const tokens = tokenizeComponentKeywords(mergedKeywordSource);
+  const appType = String(hydratedContext?.appType || '').toLowerCase();
+  const boostedCategories = new Set(APP_TYPE_CATEGORY_BOOSTS[appType] || []);
+  const supabaseLikely = Boolean(
+    hydratedContext?.needsSupabase
+      || hydratedContext?.needsDatabase
+      || hydratedContext?.needsAuth
+      || hydratedContext?.needsApi
+  );
+
+  const scored = AVAILABLE_COMPONENT_LIST.map((component) => ({
+    component,
+    score: scoreComponentReference(component, tokens, boostedCategories, mustHaveComponents, supabaseLikely),
+  }));
+
+  const filtered = scored
+    .filter((entry) => entry.score > 0)
+    .sort((a, b) => b.score - a.score || a.component.name.localeCompare(b.component.name));
+
+  if (!filtered.length) {
+    return AVAILABLE_COMPONENT_LIST.slice(0, 5);
+  }
+
+  return filtered.slice(0, 5).map((entry) => entry.component);
+};
+
+const appendComponentLibraryReferencesToPrompt = (
+  prompt: string,
+  references: ComponentLibraryEntry[]
+): string => {
+  if (!references.length) return prompt;
+
+  const referenceBlock = references
+    .map((component, index) => {
+      return [
+        `COMPONENT ${index + 1}: ${component.name}`,
+        `Category: ${component.category}`,
+        `Description: ${component.description}`,
+        `Tags: ${component.tags.join(', ') || 'none'}`,
+        `DefaultProps: ${JSON.stringify(component.defaultProps)}`,
+        `SupabaseRequired: ${component.supabaseRequired ? 'yes' : 'no'}`,
+        'Structure Reference:',
+        component.structure,
+      ].join('\n');
+    })
+    .join('\n\n');
+
+  return `${prompt}\n\nCOMPONENT_LIBRARY_REFERENCES:\n- Use these patterns for structure, styling, and composition.\n- Pick the most relevant ones and adapt to the product context.\n- Keep generated code production-ready and fully wired.\n\n${referenceBlock}`;
+};
+
 const ensureStackConstraintInSystemPrompt = (
   baseSystemPrompt: string | undefined,
   hydratedContext: HydratedContext | null | undefined,
@@ -958,11 +1854,23 @@ const ensureStackConstraintInSystemPrompt = (
   const includesIndexHtmlFontInjection = withStack.includes('INDEX_HTML_FONT_INJECTION:');
   const includesEditModeRules = withStack.includes('EDIT MODE RULES:');
   const includesVisualEditBlock = withStack.includes('VISUAL EDIT MODE:');
+  const includesForbiddenPatterns = withStack.includes('FORBIDDEN PATTERNS - never generate these:');
+  const includesRequiredPatterns = withStack.includes('REQUIRED PATTERNS - always include:');
+  const includesTailwindAnimationRules = withStack.includes('TAILWIND ANIMATION CONFIG - always include in generated tailwind.config.js:');
+  const includesAppTypeBlock = withStack.includes('APP TYPE:');
+  const includesFullStackBlock = withStack.includes('FULL-STACK RULES - this app uses Supabase for backend:');
   const includesSupabaseBlock = withStack.includes('SUPABASE INTEGRATION - this project uses Supabase:');
   const includesGitHubBlock = withStack.includes('GITHUB INTEGRATION - this project is synced with GitHub:');
   const includesScreenshotBlock = withStack.includes('You are rebuilding a UI from a screenshot.');
   const editModeBlock = generationMode === 'edit' ? EDIT_MODE_RULES : '';
   const visualEditBlock = requestMode === 'visual-edit' ? buildVisualEditModeRules(visualEditContext) : '';
+  const appTypeBlock = buildAppTypeSystemPromptBlock(hydratedContext);
+  const fullStackRequired = Boolean(
+    hydratedContext?.needsDatabase ||
+    hydratedContext?.needsAuth ||
+    hydratedContext?.needsApi
+  );
+  const fullStackBlock = fullStackRequired ? buildFullStackSystemPromptBlock(hydratedContext) : '';
   const supabaseBlock = buildSupabaseSystemPromptBlock(supabaseIntegration);
   const githubBlock = buildGitHubSystemPromptBlock(githubIntegration);
   const screenshotBlock = buildScreenshotSystemPromptBlock(screenshotMode);
@@ -982,6 +1890,11 @@ const ensureStackConstraintInSystemPrompt = (
       includesIndexHtmlFontInjection &&
       (includesEditModeRules || !editModeBlock) &&
       (includesVisualEditBlock || !visualEditBlock) &&
+      includesForbiddenPatterns &&
+      includesRequiredPatterns &&
+      includesTailwindAnimationRules &&
+      (includesAppTypeBlock || !appTypeBlock) &&
+      (includesFullStackBlock || !fullStackBlock) &&
       (includesSupabaseBlock || !supabaseBlock) &&
       (includesGitHubBlock || !githubBlock) &&
       (includesScreenshotBlock || !screenshotBlock)
@@ -996,8 +1909,13 @@ const ensureStackConstraintInSystemPrompt = (
     ROUTING_RULES,
     INTERACTIVITY_RULES,
     MOBILE_FIRST_RULES,
+    FORBIDDEN_PATTERNS_RULES,
+    REQUIRED_VISUAL_PATTERNS_RULES,
+    TAILWIND_ANIMATION_RULES,
     editModeBlock,
     visualEditBlock,
+    appTypeBlock,
+    fullStackBlock,
     colorSchemeRule,
     typographyRules,
     indexHtmlFontInjectionRule,
@@ -1089,6 +2007,159 @@ const createHydrationNode = (): Node<GenerateInput, HydrationNodeOutput> => ({
   },
 });
 
+const createSchemaNode = (): Node<GenerateInput, SchemaNodeOutput> => ({
+  name: 'SchemaNode',
+  deps: [],
+  run: async (_resolvedDeps, input) => {
+    const hydratedContext = input.hydratedContext || await hydratePrompt(input.prompt, input.currentFiles || {});
+    const needsDatabase = Boolean(hydratedContext?.needsDatabase);
+    const databaseTables = normalizeTableNames(
+      hydratedContext?.databaseTables && hydratedContext.databaseTables.length > 0
+        ? hydratedContext.databaseTables
+        : inferDatabaseTablesFromPrompt(input.prompt)
+    );
+
+    if (!needsDatabase || databaseTables.length === 0) {
+      return {
+        sql: '',
+        tables: [],
+        databaseTables,
+      };
+    }
+
+    const systemPrompt = [
+      'Generate PostgreSQL/Supabase SQL only.',
+      'Return ONLY valid SQL, no explanations, no markdown.',
+      'Requirements:',
+      '- Create all requested tables with id uuid primary key default gen_random_uuid().',
+      '- Include created_at timestamptz default now() on every table.',
+      '- Add relevant columns and sensible types.',
+      '- Enable RLS on every table.',
+      '- Add policies for authenticated select/insert/update/delete.',
+      '- Add seed inserts with 3-5 rows per table.',
+    ].join('\n');
+
+    const schemaPrompt = `Generate PostgreSQL/Supabase SQL for these tables: ${databaseTables.join(', ')}.
+Include id (uuid), created_at, relevant columns, RLS policies, and seed data (3-5 rows per table).
+Return ONLY valid SQL.`;
+
+    try {
+      const response = await llmManager.generate({
+        provider: input.provider,
+        generationMode: 'new',
+        prompt: schemaPrompt,
+        systemPrompt,
+        temperature: 0.1,
+        maxTokens: 2400,
+        stream: false,
+        signal: input.signal,
+      });
+
+      const rawSql = typeof response === 'string'
+        ? response
+        : String((response as any)?.content || '');
+      const sql = stripSqlCodeFence(rawSql);
+      if (!sql) {
+        const fallbackSql = buildDeterministicSchemaFallback(databaseTables);
+        return {
+          sql: fallbackSql,
+          tables: parseTableDefinitionsFromSql(fallbackSql),
+          databaseTables,
+        };
+      }
+
+      const tables = parseTableDefinitionsFromSql(sql);
+      return {
+        sql,
+        tables,
+        databaseTables,
+      };
+    } catch {
+      const fallbackSql = buildDeterministicSchemaFallback(databaseTables);
+      return {
+        sql: fallbackSql,
+        tables: parseTableDefinitionsFromSql(fallbackSql),
+        databaseTables,
+      };
+    }
+  },
+});
+
+const createComplexAppNode = (): Node<GenerateInput, ComplexAppNodeOutput> => ({
+  name: 'ComplexAppNode',
+  deps: ['HydrationNode', 'SchemaNode'],
+  run: async (resolvedDeps, input) => {
+    const hydrationOutput = asRecord(resolvedDeps.HydrationNode) as unknown as HydrationNodeOutput;
+    const schemaOutput = asRecord(resolvedDeps.SchemaNode) as unknown as SchemaNodeOutput;
+    const hydratedContext = hydrationOutput?.hydratedContext || input.hydratedContext || null;
+
+    const appType = hydratedContext?.appType || null;
+    const needsAuth = Boolean(hydratedContext?.needsAuth);
+    const needsDatabase = Boolean(hydratedContext?.needsDatabase);
+    const needsApi = Boolean(hydratedContext?.needsApi);
+    const databaseTables = normalizeTableNames(
+      schemaOutput?.databaseTables && schemaOutput.databaseTables.length > 0
+        ? schemaOutput.databaseTables
+        : (hydratedContext?.databaseTables || inferDatabaseTablesFromPrompt(input.prompt))
+    );
+    const isComplexApp = Boolean(appType && needsAuth && needsDatabase);
+
+    if (!isComplexApp) {
+      return {
+        enabled: false,
+        appType,
+        needsAuth,
+        needsDatabase,
+        needsApi,
+        databaseTables,
+        steps: null,
+        orchestrationPromptBlock: '',
+      };
+    }
+
+    // Step 1: schema SQL.
+    const schemaSql = String(schemaOutput?.sql || '').trim() || buildDeterministicSchemaFallback(databaseTables);
+    const resolvedTables = schemaOutput?.tables && schemaOutput.tables.length > 0
+      ? schemaOutput.tables
+      : parseTableDefinitionsFromSql(schemaSql);
+
+    // Step 2: types generated from schema SQL.
+    const databaseTypes = buildDatabaseTypesFromSchema(schemaSql, resolvedTables);
+
+    // Step 3: supabase client + hooks generated from types.
+    const supabaseHooks = buildSupabaseClientAndHooksBlueprint(databaseTables, databaseTypes);
+
+    // Step 4: auth context + protected routes generated using prior type/hook context.
+    const authSystem = `${AUTH_CONTEXT_TEMPLATE}\n\n${PROTECTED_ROUTE_TEMPLATE}`;
+
+    // Step 5: API layer scaffold generated to operate on the same tables/types.
+    const apiLayer = API_LAYER_TEMPLATE;
+
+    // Step 6: UI integration rules that wire auth + hooks + API + toasts + validation.
+    const uiComponents = buildComplexUiIntegrationRules(appType, databaseTables, needsAuth);
+
+    const output: ComplexAppNodeOutput = {
+      enabled: true,
+      appType,
+      needsAuth,
+      needsDatabase,
+      needsApi,
+      databaseTables,
+      steps: {
+        schemaSql,
+        databaseTypes,
+        supabaseHooks,
+        authSystem,
+        apiLayer,
+        uiComponents,
+      },
+      orchestrationPromptBlock: '',
+    };
+    output.orchestrationPromptBlock = buildComplexAppPromptBlock(output);
+    return output;
+  },
+});
+
 const createStyleDNANode = (): Node<GenerateInput, StyleDNANodeOutput> => ({
   name: 'StyleDNANode',
   deps: [],
@@ -1112,11 +2183,18 @@ const createStyleDNANode = (): Node<GenerateInput, StyleDNANodeOutput> => ({
 
 const createDependencyIntelligenceNode = (): Node<GenerateInput, DependencyIntelligenceNodeOutput> => ({
   name: 'DependencyIntelligenceNode',
-  deps: [],
-  run: async (_resolvedDeps, input) => {
-    const routingRequired = needsRoutingProject(input.prompt, input.hydratedContext || null, input.currentFiles);
+  deps: ['HydrationNode'],
+  run: async (resolvedDeps, input) => {
+    const hydrationOutput = asRecord(resolvedDeps.HydrationNode) as unknown as HydrationNodeOutput;
+    const resolvedHydrationContext = hydrationOutput?.hydratedContext || input.hydratedContext || null;
+    const routingRequired = needsRoutingProject(input.prompt, resolvedHydrationContext, input.currentFiles);
     const supabaseConnected = isSupabaseConnected(input.supabaseIntegration);
-    const supabaseHintedByHydration = Boolean(input.hydratedContext?.needsSupabase);
+    const supabaseHintedByHydration = Boolean(
+      resolvedHydrationContext?.needsSupabase ||
+      resolvedHydrationContext?.needsDatabase ||
+      resolvedHydrationContext?.needsAuth ||
+      resolvedHydrationContext?.needsApi
+    );
     const supabaseDependencyRequired = supabaseConnected || supabaseHintedByHydration;
     const fromPromptSet = new Set<string>(inferDepsFromPrompt(input.prompt));
     if (routingRequired) {
@@ -1196,13 +2274,14 @@ const createDependencyIntelligenceNode = (): Node<GenerateInput, DependencyIntel
 
 const createGenerationNode = (): Node<GenerateInput, GenerationNodeOutput> => ({
   name: 'GenerationNode',
-  deps: ['ContextNode', 'TokenBudgetNode', 'StyleDNANode', 'DependencyIntelligenceNode'],
+  deps: ['ContextNode', 'TokenBudgetNode', 'HydrationNode', 'ComplexAppNode', 'StyleDNANode', 'DependencyIntelligenceNode'],
   run: async (resolvedDeps, input) => {
     const contextOutput = asRecord(resolvedDeps.ContextNode) as unknown as ContextNodeOutput;
     const tokenBudgetOutput = asRecord(resolvedDeps.TokenBudgetNode) as unknown as TokenBudgetNodeOutput;
     const styleOutput = asRecord(resolvedDeps.StyleDNANode) as unknown as StyleDNANodeOutput;
     const depOutput = asRecord(resolvedDeps.DependencyIntelligenceNode) as unknown as DependencyIntelligenceNodeOutput;
     const hydrationOutput = asRecord(resolvedDeps.HydrationNode) as unknown as HydrationNodeOutput;
+    const complexAppOutput = asRecord(resolvedDeps.ComplexAppNode) as unknown as ComplexAppNodeOutput;
 
     const resolvedHydrationContext =
       hydrationOutput?.hydratedContext || input.hydratedContext || null;
@@ -1216,16 +2295,31 @@ const createGenerationNode = (): Node<GenerateInput, GenerationNodeOutput> => ({
         ? { hydratedContext: resolvedHydrationContext }
         : null
     );
+    const editContextBlocks = buildEditContextBlocks(input);
+    const promptWithEditContext = editContextBlocks.promptBlock
+      ? `${effectivePromptBase}\n\n${editContextBlocks.promptBlock}`
+      : effectivePromptBase;
+    const promptWithComplexContext = complexAppOutput?.enabled && complexAppOutput.orchestrationPromptBlock
+      ? `${promptWithEditContext}\n\n${complexAppOutput.orchestrationPromptBlock}`
+      : promptWithEditContext;
     const selectedTemplateReferences = personalizeTemplateReferences(
       selectSectionTemplateReferences(resolvedHydrationContext),
       input.prompt,
       resolvedHydrationContext
     );
-    const effectivePrompt = appendSectionTemplateReferencesToPrompt(
-      effectivePromptBase,
+    const promptWithSectionTemplates = appendSectionTemplateReferencesToPrompt(
+      promptWithComplexContext,
       selectedTemplateReferences
     );
-    const effectiveSystemPrompt = ensureStackConstraintInSystemPrompt(
+    const selectedComponentReferences = selectComponentLibraryReferences(
+      input.prompt,
+      resolvedHydrationContext
+    );
+    const effectivePrompt = appendComponentLibraryReferencesToPrompt(
+      promptWithSectionTemplates,
+      selectedComponentReferences
+    );
+    let effectiveSystemPrompt = ensureStackConstraintInSystemPrompt(
       input.systemPrompt,
       resolvedHydrationContext,
       input.prompt,
@@ -1236,6 +2330,9 @@ const createGenerationNode = (): Node<GenerateInput, GenerationNodeOutput> => ({
       input.githubIntegration,
       Boolean(input.screenshotBase64)
     );
+    if (editContextBlocks.systemBlock) {
+      effectiveSystemPrompt = `${effectiveSystemPrompt}\n\n${editContextBlocks.systemBlock}`;
+    }
     const promptWithDesignReference = injectDesignReferenceIntoPrompt(effectivePrompt);
 
     const response = await llmManager.generate({
@@ -1276,10 +2373,11 @@ const createGenerationNode = (): Node<GenerateInput, GenerationNodeOutput> => ({
 
 const createFastGenerationNode = (): Node<GenerateInput, GenerationNodeOutput> => ({
   name: 'GenerationNode',
-  deps: ['TokenBudgetNode', 'HydrationNode'],
+  deps: ['TokenBudgetNode', 'HydrationNode', 'ComplexAppNode'],
   run: async (resolvedDeps, input) => {
     const tokenBudgetOutput = asRecord(resolvedDeps.TokenBudgetNode) as unknown as TokenBudgetNodeOutput;
     const hydrationOutput = asRecord(resolvedDeps.HydrationNode) as unknown as HydrationNodeOutput;
+    const complexAppOutput = asRecord(resolvedDeps.ComplexAppNode) as unknown as ComplexAppNodeOutput;
     const effectivePrompt = buildGenerationPrompt(
       input.prompt,
       null,
@@ -1289,8 +2387,15 @@ const createFastGenerationNode = (): Node<GenerateInput, GenerationNodeOutput> =
         ? hydrationOutput
         : (input.hydratedContext ? { hydratedContext: input.hydratedContext } : null)
     );
+    const editContextBlocks = buildEditContextBlocks(input);
+    const promptWithEditContext = editContextBlocks.promptBlock
+      ? `${effectivePrompt}\n\n${editContextBlocks.promptBlock}`
+      : effectivePrompt;
+    const promptWithComplexContext = complexAppOutput?.enabled && complexAppOutput.orchestrationPromptBlock
+      ? `${promptWithEditContext}\n\n${complexAppOutput.orchestrationPromptBlock}`
+      : promptWithEditContext;
     const resolvedHydrationContext = hydrationOutput?.hydratedContext || input.hydratedContext || null;
-    const effectiveSystemPrompt = ensureStackConstraintInSystemPrompt(
+    let effectiveSystemPrompt = ensureStackConstraintInSystemPrompt(
       input.systemPrompt,
       resolvedHydrationContext,
       input.prompt,
@@ -1301,7 +2406,10 @@ const createFastGenerationNode = (): Node<GenerateInput, GenerationNodeOutput> =
       input.githubIntegration,
       Boolean(input.screenshotBase64)
     );
-    const promptWithDesignReference = injectDesignReferenceIntoPrompt(effectivePrompt);
+    if (editContextBlocks.systemBlock) {
+      effectiveSystemPrompt = `${effectiveSystemPrompt}\n\n${editContextBlocks.systemBlock}`;
+    }
+    const promptWithDesignReference = injectDesignReferenceIntoPrompt(promptWithComplexContext);
 
     const response = await llmManager.generate({
       provider: input.provider,
@@ -1395,6 +2503,9 @@ export function createDefaultNodes(): Node[] {
   return [
     createContextNode(),
     createTokenBudgetNode(),
+    createHydrationNode(),
+    createSchemaNode(),
+    createComplexAppNode(),
     createStyleDNANode(),
     createDependencyIntelligenceNode(),
     createGenerationNode(),
@@ -1407,6 +2518,8 @@ export function createFastPathNodes(): Node[] {
   return [
     createTokenBudgetNode(),
     createHydrationNode(),
+    createSchemaNode(),
+    createComplexAppNode(),
     createFastGenerationNode(),
     createASTRewriteNode(),
   ];
@@ -1475,6 +2588,7 @@ export async function runNodeGraph(nodes: Node[], input: GenerateInput): Promise
   const styleOutput = asRecord(nodeOutputs.StyleDNANode) as unknown as StyleDNANodeOutput;
   const depOutput = asRecord(nodeOutputs.DependencyIntelligenceNode) as unknown as DependencyIntelligenceNodeOutput;
   const hydrationOutput = asRecord(nodeOutputs.HydrationNode) as unknown as HydrationNodeOutput;
+  const schemaOutput = asRecord(nodeOutputs.SchemaNode) as unknown as SchemaNodeOutput;
 
   const finalCode =
     String(qualityOutput?.code || '') ||
@@ -1484,6 +2598,12 @@ export async function runNodeGraph(nodes: Node[], input: GenerateInput): Promise
   if (!finalCode || !finalCode.trim()) {
     throw new Error('NodeGraph produced empty generation output.');
   }
+
+  const resolvedDatabaseTables = normalizeTableNames(
+    schemaOutput?.databaseTables && schemaOutput.databaseTables.length > 0
+      ? schemaOutput.databaseTables
+      : (schemaOutput?.tables || []).map((table) => table.name)
+  );
 
   return {
     code: finalCode,
@@ -1496,6 +2616,8 @@ export async function runNodeGraph(nodes: Node[], input: GenerateInput): Promise
       qualityScore: qualityOutput?.qualityScore || null,
       selectedContextPaths: contextOutput?.selectedPaths || [],
       hydratedContext: hydrationOutput?.hydratedContext || input.hydratedContext || null,
+      supabaseSchema: String(schemaOutput?.sql || '').trim() || undefined,
+      databaseTables: resolvedDatabaseTables.length > 0 ? resolvedDatabaseTables : undefined,
     },
   };
 }

@@ -12,6 +12,9 @@ export interface PreviewRuntimeIssuePayload {
   message?: string;
   stack?: string;
   source?: string;
+  filename?: string;
+  line?: number;
+  col?: number;
   category?: string;
   fingerprint?: string;
   routePath?: string;

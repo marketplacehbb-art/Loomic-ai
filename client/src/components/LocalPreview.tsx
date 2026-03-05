@@ -1,5 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { buildVisualEditSelectionScript, bundleCode } from '../lib/bundler';
+import {
+  buildVisualEditSelectionScript,
+  bundleCode,
+  type StructuredBuildErrorInfo,
+} from '../lib/bundler';
 import { getDefaultImportMap, getEsmUrlForDependency } from '../config/dependencies';
 
 interface LocalPreviewProps {
@@ -20,6 +24,7 @@ interface LocalPreviewProps {
     category?: string;
     fingerprint?: string;
     routePath?: string;
+    buildError?: StructuredBuildErrorInfo;
     timestamp: number;
   }) => void;
 }
@@ -417,6 +422,9 @@ const LocalPreview: React.FC<LocalPreviewProps> = ({
                   renderBundleErrorOverlay(message);
                   const stack = typeof rawIssue?.stack === 'string' ? rawIssue.stack : '';
                   const source = typeof rawIssue?.source === 'string' ? rawIssue.source : 'runtime';
+                  const filename = typeof rawIssue?.filename === 'string' ? rawIssue.filename : '';
+                  const line = Number.isFinite(rawIssue?.line) ? Number(rawIssue.line) : undefined;
+                  const col = Number.isFinite(rawIssue?.col) ? Number(rawIssue.col) : undefined;
                   const routePath = getCurrentPreviewRoutePath();
                   const fingerprint = [message, stack.split('\\n')[0] || '', source, routePath].join(' | ').slice(0, 600);
 
@@ -432,12 +440,27 @@ const LocalPreview: React.FC<LocalPreviewProps> = ({
                       message,
                       stack: stack || undefined,
                       source,
+                      filename: filename || undefined,
+                      line,
+                      col,
                       category: deriveIssueCategory(message),
                       fingerprint,
                       routePath,
                       timestamp: Date.now(),
                     },
                   }, PARENT_ORIGIN);
+
+                  window.parent.postMessage({
+                    type: 'RUNTIME_ERROR',
+                    error: {
+                      message,
+                      filename: filename || undefined,
+                      line,
+                      col,
+                      stack: stack || undefined,
+                      source,
+                    },
+                  }, '*');
                 }
 
                 function clearAllSelectedNodes() {
@@ -1048,6 +1071,22 @@ const LocalPreview: React.FC<LocalPreviewProps> = ({
                   });
                 });
 
+                const originalConsoleError = console.error;
+                console.error = (...args) => {
+                  try {
+                    const msg = args.map((arg) => normalizeIssueMessage(arg)).join(' ');
+                    if (msg && (msg.includes('Error') || msg.includes('Warning'))) {
+                      window.parent.postMessage({
+                        type: 'CONSOLE_ERROR',
+                        message: msg,
+                      }, '*');
+                    }
+                  } catch {
+                    // no-op
+                  }
+                  originalConsoleError.apply(console, args);
+                };
+
                 // Block zoom interactions inside preview iframe.
                 document.addEventListener('wheel', (event) => {
                   if (event.ctrlKey || event.metaKey) {
@@ -1375,12 +1414,28 @@ const LocalPreview: React.FC<LocalPreviewProps> = ({
         }
       } catch (err: any) {
         setError(err.message);
+        const structuredBuildError = (err && err.type === 'build-error' && Array.isArray(err.errors))
+          ? {
+            type: 'build-error' as const,
+            errors: err.errors
+              .filter((entry: any) => entry && typeof entry.message === 'string')
+              .map((entry: any) => ({
+                file: typeof entry.file === 'string' ? entry.file : 'src/App.tsx',
+                line: Number.isFinite(entry.line) ? Number(entry.line) : 1,
+                message: String(entry.message || 'Build error'),
+                suggestion: typeof entry.suggestion === 'string'
+                  ? entry.suggestion
+                  : 'Inspect file and apply a minimal compile fix.',
+              })),
+          }
+          : undefined;
         onPreviewIssueRef.current?.({
           type: 'bundler',
           message: err?.message || 'Bundling error',
           stack: err?.stack,
           source: 'local-preview.bundler',
           category: 'bundler',
+          buildError: structuredBuildError,
           timestamp: Date.now(),
         });
       } finally {

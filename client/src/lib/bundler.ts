@@ -16,6 +16,30 @@ interface BuildDiagnostic {
     lineText?: string;
 }
 
+export interface StructuredBuildErrorItem {
+    file: string;
+    line: number;
+    message: string;
+    suggestion: string;
+}
+
+export interface StructuredBuildErrorInfo {
+    type: 'build-error';
+    errors: StructuredBuildErrorItem[];
+}
+
+export class BundlerBuildError extends Error {
+    type: 'build-error';
+    errors: StructuredBuildErrorItem[];
+
+    constructor(message: string, errors: StructuredBuildErrorItem[]) {
+        super(message);
+        this.name = 'BundlerBuildError';
+        this.type = 'build-error';
+        this.errors = errors;
+    }
+}
+
 interface MissingExportIssue {
     targetPath: string;
     importName: string;
@@ -534,6 +558,68 @@ const parseBuildDiagnostic = (error: any): BuildDiagnostic | null => {
     };
 };
 
+const parseAllBuildDiagnostics = (error: any): BuildDiagnostic[] => {
+    const diagnostics = Array.isArray(error?.errors) ? error.errors : [];
+    const normalized = diagnostics
+        .map((entry: any): BuildDiagnostic | null => {
+            if (!entry) return null;
+            const location = entry.location || {};
+            return {
+                message: String(entry.text || error?.message || 'Bundling failed'),
+                file: typeof location.file === 'string' ? location.file : undefined,
+                line: Number.isFinite(location.line) ? location.line : undefined,
+                column: Number.isFinite(location.column) ? location.column : undefined,
+                lineText: typeof location.lineText === 'string' ? location.lineText : undefined,
+            };
+        })
+        .filter((entry: BuildDiagnostic | null): entry is BuildDiagnostic => Boolean(entry));
+    if (normalized.length > 0) return normalized;
+    const single = parseBuildDiagnostic(error);
+    return single ? [single] : [];
+};
+
+const buildSuggestionForDiagnostic = (diagnostic: BuildDiagnostic): string => {
+    const corpus = `${diagnostic.message}\n${diagnostic.lineText || ''}`.toLowerCase();
+    if (/cannot find module|module not found|failed to resolve/.test(corpus)) {
+        return 'Check import path and ensure the module/dependency exists.';
+    }
+    if (/no matching export|does not provide an export/.test(corpus)) {
+        return 'Fix named/default import to match exported symbols.';
+    }
+    if (/expected|unexpected token|unterminated|string literal|jsx/.test(corpus)) {
+        return 'Fix syntax near the reported line.';
+    }
+    if (/is not exported|has no exported member/.test(corpus)) {
+        return 'Export the referenced symbol or update the import.';
+    }
+    if (/cannot find name|is not defined/.test(corpus)) {
+        return 'Add the missing import or define the symbol.';
+    }
+    return 'Inspect the file/line and apply the minimal compile fix.';
+};
+
+export const toStructuredBuildError = (error: any): StructuredBuildErrorInfo => {
+    const diagnostics = parseAllBuildDiagnostics(error);
+    const errors = diagnostics.map((diagnostic) => ({
+        file: normalizePath(String((diagnostic.file || 'src/App.tsx')).replace(/^virtual:/, '')) || 'src/App.tsx',
+        line: Number.isFinite(diagnostic.line) ? Number(diagnostic.line) : 1,
+        message: diagnostic.message,
+        suggestion: buildSuggestionForDiagnostic(diagnostic),
+    }));
+
+    return {
+        type: 'build-error',
+        errors: errors.length > 0
+            ? errors
+            : [{
+                file: 'src/App.tsx',
+                line: 1,
+                message: String(error?.message || 'Bundling failed'),
+                suggestion: 'Inspect bundler output and fix syntax/import issues.',
+            }],
+    };
+};
+
 const formatBuildError = (error: any): string => {
     const diagnostic = parseBuildDiagnostic(error);
     if (!diagnostic) return String(error?.message || 'Error occurred during bundling');
@@ -1009,6 +1095,7 @@ export const bundleCode = async (rawCode: string, options: BundleOptions = {}): 
             warnings: err?.warnings,
             errors: err?.errors,
         });
-        throw new Error(formatBuildError(err));
+        const structured = toStructuredBuildError(err);
+        throw new BundlerBuildError(formatBuildError(err), structured.errors);
     }
 };

@@ -1,4 +1,9 @@
 import { getGroqApiKey } from '../utils/env-security.js';
+import {
+  detectAppTypeFromPrompt,
+  getAppTypeBlueprintByName,
+  type AppTypeName,
+} from '../templates/appTypes/index.js';
 
 export type FileMap = Record<string, string>;
 
@@ -8,6 +13,13 @@ export interface HydratedContext {
   componentList: string[];
   keyContent: string[];
   needsSupabase: boolean;
+  needsDatabase: boolean;
+  needsAuth: boolean;
+  needsApi: boolean;
+  databaseTables: string[];
+  authType: 'none' | 'email' | 'social';
+  appType: AppTypeName | null;
+  mustHaveComponents: string[];
   colorScheme: string;
   complexity: 'simple' | 'moderate' | 'complex';
 }
@@ -36,6 +48,10 @@ const MAX_COMPONENTS = 16;
 const REPAIR_OR_FIX_SIGNAL_REGEX = /\b(repair|fix|bugfix|hotfix|debug|resolve error|fehler beheben|issue fix)\b/i;
 const EXPLICIT_COMPLEX_SIGNAL_REGEX = /\b(authentication|database|multi[-\s]?page app|real[-\s]?time features?|file uploads?)\b/i;
 const SUPABASE_INTENT_REGEX = /\b(login|register|auth|user|database|save data|store|real[-\s]?time|backend)\b/i;
+const DATABASE_INTENT_REGEX = /\b(save|store|list|manage|track|orders?|products?|users?|data|records?|inventory|bookings?|messages?|dashboard with real data|admin panel|crm|todo)\b/i;
+const AUTH_INTENT_REGEX = /\b(login|register|sign[\s-]?up|sign[\s-]?in|account|profile|user|protected|private|members?\s*only|dashboard)\b/i;
+const API_INTENT_REGEX = /\b(api|endpoint|backend|server|fetch|axios|webhook|integration|sync|connect)\b/i;
+const SOCIAL_AUTH_REGEX = /\b(google|github|facebook|apple|social login|oauth|sso)\b/i;
 
 const COMPONENT_KEYWORDS: Array<{ regex: RegExp; components: string[] }> = [
   { regex: /\b(hero|landing|headline)\b/i, components: ['HeroSection'] },
@@ -141,7 +157,103 @@ function inferComplexity(prompt: string, files: FileMap): HydratedContext['compl
 }
 
 function detectNeedsSupabase(prompt: string): boolean {
-  return SUPABASE_INTENT_REGEX.test(String(prompt || ''));
+  const normalized = String(prompt || '');
+  return (
+    SUPABASE_INTENT_REGEX.test(normalized) ||
+    inferNeedsDatabase(normalized) ||
+    inferNeedsAuth(normalized) ||
+    inferNeedsApi(normalized)
+  );
+}
+
+function normalizeTableName(value: string): string {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 48);
+}
+
+function uniqueTableNames(values: string[]): string[] {
+  const deduped = new Set<string>();
+  values.forEach((value) => {
+    const normalized = normalizeTableName(value);
+    if (normalized) deduped.add(normalized);
+  });
+  return [...deduped];
+}
+
+function inferNeedsDatabase(prompt: string): boolean {
+  return DATABASE_INTENT_REGEX.test(String(prompt || ''));
+}
+
+function inferNeedsAuth(prompt: string): boolean {
+  return AUTH_INTENT_REGEX.test(String(prompt || ''));
+}
+
+function inferNeedsApi(prompt: string): boolean {
+  return API_INTENT_REGEX.test(String(prompt || ''));
+}
+
+function inferAuthType(prompt: string, needsAuth: boolean): HydratedContext['authType'] {
+  if (!needsAuth) return 'none';
+  if (SOCIAL_AUTH_REGEX.test(String(prompt || ''))) return 'social';
+  return 'email';
+}
+
+export function inferDatabaseTablesFromPrompt(prompt: string): string[] {
+  const appTypeBlueprint = detectAppTypeFromPrompt(prompt);
+  if (appTypeBlueprint) {
+    return uniqueTableNames(appTypeBlueprint.tables).slice(0, 5);
+  }
+
+  const lower = String(prompt || '').toLowerCase();
+
+  const keywordMaps: Array<{ regex: RegExp; tables: string[] }> = [
+    { regex: /\b(restaurant|cafe|pizza|food|menu)\b/i, tables: ['menu_items', 'orders', 'reservations'] },
+    { regex: /\b(todo|task|checklist)\b/i, tables: ['todos', 'categories'] },
+    { regex: /\b(ecommerce|e-commerce|shop|store|product|cart)\b/i, tables: ['products', 'orders', 'cart_items', 'customers'] },
+    { regex: /\b(booking|appointment|reservation|calendar)\b/i, tables: ['bookings', 'customers', 'services'] },
+    { regex: /\b(mobile app|pwa|native app feel|mobile first)\b/i, tables: ['users', 'posts', 'follows', 'notifications'] },
+    { regex: /\b(game|quiz|puzzle|snake|tetris|memory game|word game|clicker)\b/i, tables: ['scores', 'leaderboard'] },
+    { regex: /\b(ai tool|chatbot|summarizer|translator|writing assistant|text generator|image analyzer)\b/i, tables: ['generations', 'history', 'presets'] },
+    { regex: /\b(social|community|forum|feed|twitter clone|reddit clone|social network)\b/i, tables: ['posts', 'comments', 'likes', 'follows', 'notifications'] },
+    { regex: /\b(marketplace|listings|airbnb clone|fiverr clone|etsy clone|buy and sell)\b/i, tables: ['listings', 'bookings', 'messages', 'reviews', 'users'] },
+    { regex: /\b(link shortener|qr code|invoice generator|password generator|color picker|converter|calculator|timer|pomodoro|habit tracker)\b/i, tables: ['items', 'history'] },
+    { regex: /\b(chat|message|inbox|conversation)\b/i, tables: ['users', 'conversations', 'messages'] },
+    { regex: /\b(crm|sales|lead|pipeline)\b/i, tables: ['customers', 'deals', 'activities', 'tasks'] },
+    { regex: /\b(admin|dashboard|analytics)\b/i, tables: ['users', 'events', 'metrics'] },
+    { regex: /\b(inventory|warehouse|stock)\b/i, tables: ['products', 'inventory_movements', 'suppliers'] },
+    { regex: /\b(blog|article|post|content)\b/i, tables: ['posts', 'categories', 'comments'] },
+  ];
+
+  const selected = new Set<string>();
+  keywordMaps.forEach(({ regex, tables }) => {
+    if (!regex.test(lower)) return;
+    tables.forEach((table) => selected.add(table));
+  });
+
+  if (/\b(order|checkout|purchase)\b/.test(lower)) selected.add('orders');
+  if (/\b(product|catalog|item)\b/.test(lower)) selected.add('products');
+  if (/\b(user|account|member|profile|auth)\b/.test(lower)) selected.add('users');
+  if (/\b(book|booking|reservation)\b/.test(lower)) selected.add('bookings');
+  if (/\b(message|chat|inbox)\b/.test(lower)) selected.add('messages');
+  if (/\b(task|todo)\b/.test(lower)) selected.add('todos');
+
+  const normalized = uniqueTableNames([...selected]);
+  if (normalized.length >= 2) return normalized.slice(0, 5);
+  if (normalized.length === 1) return uniqueTableNames([normalized[0], 'users']).slice(0, 5);
+  return ['items', 'records'];
+}
+
+function normalizeComponentNames(values: string[]): string[] {
+  const deduped = new Set<string>();
+  values.forEach((value) => {
+    const normalized = String(value || '').trim();
+    if (normalized) deduped.add(normalized);
+  });
+  return [...deduped].slice(0, MAX_COMPONENTS);
 }
 
 function inferKeyContent(prompt: string, componentList: string[]): string[] {
@@ -175,9 +287,28 @@ function inferKeyContent(prompt: string, componentList: string[]): string[] {
 
 function buildFallbackContext(prompt: string, files: FileMap): HydratedContext {
   const summary = summarizeFiles(files);
-  const componentList = inferComponents(prompt);
-  const needsSupabase = detectNeedsSupabase(prompt);
+  const appTypeBlueprint = detectAppTypeFromPrompt(prompt);
+  const mustHaveComponents = appTypeBlueprint?.mustHaveComponents || [];
+  const componentList = normalizeComponentNames([
+    ...inferComponents(prompt),
+    ...mustHaveComponents,
+  ]);
+  const needsDatabase = inferNeedsDatabase(prompt) || Boolean(appTypeBlueprint);
+  const appTypeNeedsAuth = Boolean(
+    appTypeBlueprint?.pages.some((page) => page.toLowerCase().includes('/login')) ||
+    appTypeBlueprint?.features.some((feature) => /\bauth\b/i.test(feature))
+  );
+  const needsAuth = inferNeedsAuth(prompt) || appTypeNeedsAuth;
+  const needsApi = inferNeedsApi(prompt) || Boolean(appTypeBlueprint);
+  const authType = inferAuthType(prompt, needsAuth);
+  const databaseTables = needsDatabase
+    ? uniqueTableNames(appTypeBlueprint?.tables || inferDatabaseTablesFromPrompt(prompt)).slice(0, 5)
+    : [];
+  const needsSupabase = detectNeedsSupabase(prompt) || needsDatabase || needsAuth || needsApi || Boolean(appTypeBlueprint);
   const keyContent = inferKeyContent(prompt, componentList);
+  if (appTypeBlueprint && !keyContent.includes(appTypeBlueprint.name)) {
+    keyContent.push(appTypeBlueprint.name);
+  }
   if (needsSupabase && !keyContent.includes('supabase')) {
     keyContent.push('supabase');
   }
@@ -193,6 +324,13 @@ function buildFallbackContext(prompt: string, files: FileMap): HydratedContext {
     componentList,
     keyContent,
     needsSupabase,
+    needsDatabase,
+    needsAuth,
+    needsApi,
+    databaseTables,
+    authType,
+    appType: appTypeBlueprint?.name || null,
+    mustHaveComponents: normalizeComponentNames(mustHaveComponents),
     colorScheme: inferColorScheme(prompt),
     complexity: inferComplexity(prompt, files),
   };
@@ -210,6 +348,17 @@ function sanitizeHydratedContext(raw: any, fallback: HydratedContext): HydratedC
     .map((value: unknown) => String(value || '').trim())
     .filter(Boolean)
     .slice(0, MAX_COMPONENTS);
+  const rawMustHaveComponents = Array.isArray(raw?.mustHaveComponents)
+    ? raw.mustHaveComponents
+    : fallback.mustHaveComponents;
+  const appTypeCandidate = typeof raw?.appType === 'string' ? raw.appType : fallback.appType;
+  const appTypeBlueprint = getAppTypeBlueprintByName(appTypeCandidate);
+  const appType: AppTypeName | null = appTypeBlueprint?.name || fallback.appType || null;
+  const mustHaveComponents = appTypeBlueprint
+    ? normalizeComponentNames(appTypeBlueprint.mustHaveComponents)
+    : normalizeComponentNames(
+      rawMustHaveComponents.map((value: unknown) => String(value || '').trim())
+    );
   const rawKeyContent = Array.isArray(raw?.keyContent) ? raw.keyContent : fallback.keyContent;
   const keyContent = rawKeyContent
     .map((value: unknown) => String(value || '').trim().toLowerCase())
@@ -220,9 +369,48 @@ function sanitizeHydratedContext(raw: any, fallback: HydratedContext): HydratedC
       ? raw.needsSupabase
       : fallback.needsSupabase
   );
+  const needsDatabase = Boolean(
+    typeof raw?.needsDatabase === 'boolean'
+      ? raw.needsDatabase
+      : fallback.needsDatabase
+  ) || Boolean(appTypeBlueprint);
+  const appTypeNeedsAuth = Boolean(
+    appTypeBlueprint?.pages.some((page) => page.toLowerCase().includes('/login')) ||
+    appTypeBlueprint?.features.some((feature) => /\bauth\b/i.test(feature))
+  );
+  const needsAuth = Boolean(
+    typeof raw?.needsAuth === 'boolean'
+      ? raw.needsAuth
+      : fallback.needsAuth
+  ) || appTypeNeedsAuth;
+  const needsApi = Boolean(
+    typeof raw?.needsApi === 'boolean'
+      ? raw.needsApi
+      : fallback.needsApi
+  ) || Boolean(appTypeBlueprint);
+  const rawDatabaseTables = appTypeBlueprint
+    ? appTypeBlueprint.tables
+    : Array.isArray(raw?.databaseTables)
+    ? raw.databaseTables
+    : fallback.databaseTables;
+  const databaseTables = uniqueTableNames(
+    rawDatabaseTables.map((value: unknown) => String(value || ''))
+  ).slice(0, 5);
+  const authTypeRaw = String(raw?.authType || fallback.authType || 'none').toLowerCase();
+  const authType: HydratedContext['authType'] =
+    !needsAuth
+      ? 'none'
+      : (authTypeRaw === 'social' || authTypeRaw === 'email' ? authTypeRaw : fallback.authType || 'email');
+  if (appTypeBlueprint && !keyContent.includes(appTypeBlueprint.name)) {
+    keyContent.push(appTypeBlueprint.name);
+  }
   if (needsSupabase && !keyContent.includes('supabase')) {
     keyContent.push('supabase');
   }
+  const resolvedComponentList = normalizeComponentNames([
+    ...(componentList.length > 0 ? componentList : fallback.componentList),
+    ...mustHaveComponents,
+  ]);
   const colorScheme = normalizeColorScheme(
     typeof raw?.colorScheme === 'string' ? raw.colorScheme : fallback.colorScheme,
     fallback.colorScheme
@@ -236,9 +424,20 @@ function sanitizeHydratedContext(raw: any, fallback: HydratedContext): HydratedC
   return {
     intent,
     targetFiles,
-    componentList: componentList.length > 0 ? componentList : fallback.componentList,
+    componentList: resolvedComponentList.length > 0
+      ? resolvedComponentList
+      : normalizeComponentNames([...fallback.componentList, ...fallback.mustHaveComponents]),
     keyContent: keyContent.length > 0 ? keyContent : fallback.keyContent,
-    needsSupabase,
+    needsSupabase: needsSupabase || needsDatabase || needsAuth || needsApi || Boolean(appTypeBlueprint),
+    needsDatabase,
+    needsAuth,
+    needsApi,
+    databaseTables: needsDatabase
+      ? (databaseTables.length > 0 ? databaseTables : fallback.databaseTables)
+      : [],
+    authType,
+    appType,
+    mustHaveComponents,
     colorScheme,
     complexity,
   };
@@ -285,6 +484,13 @@ async function callFastHydrationLLM(prompt: string, files: FileMap, signal: Abor
     '  "componentList": ["string"],',
     '  "keyContent": ["string"],',
     '  "needsSupabase": "boolean",',
+    '  "needsDatabase": "boolean",',
+    '  "needsAuth": "boolean",',
+    '  "needsApi": "boolean",',
+    '  "databaseTables": ["string"],',
+    '  "authType": "none|email|social",',
+    '  "appType": "restaurant|saas-dashboard|ecommerce|todo-app|blog|booking|mobile-app|game|ai-tool|social|marketplace|saas-tool|null",',
+    '  "mustHaveComponents": ["string"],',
     '  "colorScheme": "string",',
     '  "complexity": "simple|moderate|complex"',
     '}',
@@ -293,6 +499,31 @@ async function callFastHydrationLLM(prompt: string, files: FileMap, signal: Abor
     '- Keep intent concise and implementation-oriented.',
     '- Keep componentList specific but short.',
     '- keyContent should contain important functional tags from prompt.',
+    '- needsDatabase=true if prompt mentions: save, store, list, manage, track, orders, products, users, data, records, inventory, bookings, messages, dashboard with real data, admin panel, CRM, todo.',
+    '- needsAuth=true if prompt mentions: login, register, sign up, sign in, account, profile, user, protected, private, members only, dashboard.',
+    '- needsApi=true if prompt mentions backend/API calls, endpoints, integrations, sync, webhook, fetch to server.',
+    '- databaseTables must contain 2-5 realistic table names when needsDatabase=true.',
+    '- For restaurant apps use tables similar to: menu_items, orders, reservations.',
+    '- For todo apps use tables similar to: todos, categories.',
+    '- For ecommerce apps use tables similar to: products, orders, cart_items, customers.',
+    '- Detect appType from prompt triggers:',
+    '  restaurant: restaurant, pizza, cafe, food, menu, bistro',
+    '  saas-dashboard: dashboard, analytics, admin panel, crm, management',
+    '  ecommerce: shop, store, ecommerce, products, buy, sell',
+    '  todo-app: todo, task, project manager, kanban, tracker',
+    '  blog: blog, articles, cms, content, posts, writing',
+    '  booking: booking, appointment, schedule, calendar, clinic, salon',
+    '  mobile-app: mobile app, pwa, app like instagram, mobile first, native app feel',
+    '  game: game, quiz, puzzle, snake, tetris, memory game, word game, clicker',
+    '  ai-tool: ai tool, chatbot, text generator, image analyzer, summarizer, translator, writing assistant',
+    '  social: social, community, forum, feed, posts, twitter clone, reddit clone, social network',
+    '  marketplace: marketplace, buy and sell, listings, airbnb clone, fiverr clone, etsy clone',
+    '  saas-tool: link shortener, qr code, invoice generator, password generator, color picker, converter, calculator, timer, pomodoro, habit tracker',
+    '- Priority order for tie/overlap: specific types (game/social) > generic types (saas-dashboard/landing-like prompts).',
+    '- If appType is detected, appType must be set and databaseTables must match that app blueprint exactly.',
+    '- If appType is detected, mustHaveComponents must match that app blueprint.',
+    '- If appType is detected, set needsDatabase=true and needsApi=true.',
+    '- authType=none when needsAuth=false; otherwise authType=email unless prompt clearly asks social login/OAuth/SSO.',
     '- If prompt includes login/register/auth/user/database/save data/store/real-time/backend, add "supabase" to keyContent and set needsSupabase=true.',
     '- needsSupabase must be true only when backend/data/auth intent is explicit; otherwise false.',
     '- Infer industry internally from prompt keywords. Supported industries: wedding, photography, fitness, medical, realestate, music, education, legal, nonprofit, startup, dashboard, restaurant, portfolio, ecommerce, saas.',
@@ -320,7 +551,7 @@ async function callFastHydrationLLM(prompt: string, files: FileMap, signal: Abor
       body: JSON.stringify({
         model: 'llama3-8b-8192',
         temperature: 0,
-        max_tokens: 220,
+        max_tokens: 360,
         response_format: { type: 'json_object' },
         messages: [
           { role: 'system', content: systemPrompt },

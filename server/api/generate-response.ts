@@ -30,8 +30,18 @@ export function buildGenerateSuccessResponse(input: {
   routedPipelinePath: 'fast' | 'deep';
   hydratedContextForResponse?: unknown;
   finalRateLimit?: unknown;
+  supabaseSchema?: string;
+  databaseTables?: string[];
   pipeline: Record<string, unknown>;
 }): Record<string, unknown> {
+  const normalizedSupabaseSchema = String(input.supabaseSchema || '').trim();
+  const normalizedDatabaseTables = Array.isArray(input.databaseTables)
+    ? input.databaseTables
+      .map((value) => String(value || '').trim())
+      .filter(Boolean)
+      .slice(0, 8)
+    : [];
+
   return {
     success: input.isSuccess,
     code: input.codeToProcess,
@@ -59,6 +69,8 @@ export function buildGenerateSuccessResponse(input: {
     metadata: input.hydratedContextForResponse
       ? { hydratedContext: input.hydratedContextForResponse }
       : undefined,
+    supabaseSchema: normalizedSupabaseSchema || undefined,
+    databaseTables: normalizedDatabaseTables.length > 0 ? normalizedDatabaseTables : undefined,
     rateLimit: input.finalRateLimit,
     pipeline: input.pipeline,
   };
