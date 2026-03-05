@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { ProjectPublication, PublishAccess } from '../lib/api';
+import DeployModal, { type DeployProgressStep } from './DeployModal';
 
 interface PublishModalProps {
   open: boolean;
@@ -16,6 +17,11 @@ interface PublishModalProps {
     siteTitle?: string;
     siteDescription?: string;
   }) => Promise<void>;
+  onDeployVercel: () => Promise<{
+    url: string;
+    deploymentId: string;
+    lastDeployedAt?: string | null;
+  }>;
   onUnpublish: () => Promise<void>;
 }
 
@@ -36,12 +42,19 @@ const PublishModal: React.FC<PublishModalProps> = ({
   onClose,
   onRefresh,
   onPublish,
+  onDeployVercel,
   onUnpublish,
 }) => {
   const [slug, setSlug] = useState('');
   const [access, setAccess] = useState<PublishAccess>('public');
   const [siteTitle, setSiteTitle] = useState('');
   const [siteDescription, setSiteDescription] = useState('');
+  const [deploying, setDeploying] = useState(false);
+  const [deployStep, setDeployStep] = useState<DeployProgressStep>('idle');
+  const [deployError, setDeployError] = useState<string | null>(null);
+  const [deploymentUrl, setDeploymentUrl] = useState<string>('');
+  const [lastDeployAt, setLastDeployAt] = useState<string | null>(null);
+  const buildingStepTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -49,7 +62,17 @@ const PublishModal: React.FC<PublishModalProps> = ({
     setAccess(publication?.access || 'public');
     setSiteTitle(publication?.siteTitle || '');
     setSiteDescription(publication?.siteDescription || '');
+    setDeploymentUrl(publication?.vercelUrl || '');
+    setLastDeployAt(publication?.lastDeployedAt || null);
+    setDeployStep(publication?.vercelUrl ? 'live' : 'idle');
+    setDeployError(null);
   }, [open, publication]);
+
+  useEffect(() => () => {
+    if (buildingStepTimerRef.current) {
+      window.clearTimeout(buildingStepTimerRef.current);
+    }
+  }, []);
 
   const normalizedSlug = useMemo(
     () =>
@@ -73,7 +96,45 @@ const PublishModal: React.FC<PublishModalProps> = ({
 
   const isPublished = publication?.status === 'published';
   const currentStatus = publication?.status || 'draft';
-  const canSubmit = Boolean(projectId && normalizedSlug && !loading && !submitting);
+  const canSubmit = Boolean(projectId && normalizedSlug && !loading && !submitting && !deploying);
+
+  const handleDeployVercel = async () => {
+    if (!projectId || deploying || loading || submitting) return;
+
+    setDeploying(true);
+    setDeployError(null);
+    setDeployStep('preparing');
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      setDeployStep('uploading');
+
+      buildingStepTimerRef.current = window.setTimeout(() => {
+        setDeployStep((prev) => (prev === 'uploading' ? 'building' : prev));
+      }, 900);
+
+      const result = await onDeployVercel();
+      if (buildingStepTimerRef.current) {
+        window.clearTimeout(buildingStepTimerRef.current);
+        buildingStepTimerRef.current = null;
+      }
+
+      setDeployStep('live');
+      setDeploymentUrl(result.url);
+      if (result.lastDeployedAt) {
+        setLastDeployAt(result.lastDeployedAt);
+      }
+      await Promise.resolve(onRefresh());
+    } catch (error: any) {
+      if (buildingStepTimerRef.current) {
+        window.clearTimeout(buildingStepTimerRef.current);
+        buildingStepTimerRef.current = null;
+      }
+      setDeployStep('error');
+      setDeployError(error?.message || 'Vercel deployment failed.');
+    } finally {
+      setDeploying(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/65 p-4 backdrop-blur-sm">
@@ -127,6 +188,16 @@ const PublishModal: React.FC<PublishModalProps> = ({
         </div>
 
         <div className="space-y-3">
+          <DeployModal
+            projectId={projectId}
+            busy={deploying}
+            step={deployStep}
+            deploymentUrl={deploymentUrl || publication?.vercelUrl || null}
+            lastDeployAt={lastDeployAt || publication?.lastDeployedAt || null}
+            error={deployError}
+            onDeploy={() => void handleDeployVercel()}
+          />
+
           <div>
             <label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Slug</label>
             <div className="mt-1 flex items-center rounded-xl border border-white/10 bg-black/20 px-3">
@@ -205,7 +276,7 @@ const PublishModal: React.FC<PublishModalProps> = ({
               })
             }
             disabled={!canSubmit}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-40"
+            className="rounded-lg border border-white/20 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:bg-white/10 disabled:opacity-40"
           >
             {submitting ? 'Publishing...' : isPublished ? 'Update' : 'Publish'}
           </button>

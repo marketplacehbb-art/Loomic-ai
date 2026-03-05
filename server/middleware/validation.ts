@@ -66,6 +66,7 @@ const supabaseIntegrationSchema = z.object({
     connected: z.boolean().optional(),
     environment: z.enum(['test', 'live']).nullable().optional(),
     projectRef: z.string().nullable().optional(),
+    projectUrl: z.string().nullable().optional(),
     hasTestConnection: z.boolean().optional(),
     hasLiveConnection: z.boolean().optional(),
 }).partial();
@@ -82,6 +83,8 @@ export const generateSchema = z.object({
     generationMode: z.enum(['new', 'edit']).nullable().optional(),
     templateId: z.string().max(100).nullable().optional(),
     image: z.string().nullable().optional(),
+    screenshotBase64: z.string().nullable().optional(),
+    screenshotMimeType: z.string().nullable().optional(),
     // zod v4 requires explicit key + value schema for records
     files: z.record(z.string(), z.string()).nullable().optional(),
     systemPrompt: z.string().nullable().optional(),

@@ -10,6 +10,22 @@ import { INDUSTRY_PROFILES, getIndustryFonts } from '../prompts/industryProfiles
 import { INDUSTRY_IMAGES } from '../prompts/imageLibrary.js';
 import { SECTION_TEMPLATES, type SectionTemplateKey } from '../templates/sections/index.js';
 
+type SupabaseIntegrationContext = {
+  connected?: boolean;
+  environment?: 'test' | 'live' | null;
+  projectRef?: string | null;
+  projectUrl?: string | null;
+  hasTestConnection?: boolean;
+  hasLiveConnection?: boolean;
+} | null | undefined;
+
+type GitHubIntegrationContext = {
+  connected?: boolean;
+  username?: string | null;
+  repoUrl?: string | null;
+  lastSync?: string | null;
+} | null | undefined;
+
 export interface GenerateInput {
   provider: LLMRequest['provider'];
   generationMode: 'new' | 'edit';
@@ -23,6 +39,10 @@ export interface GenerateInput {
   featureFlags?: Partial<FeatureFlags>;
   signal?: AbortSignal;
   hydratedContext?: HydratedContext | null;
+  supabaseIntegration?: SupabaseIntegrationContext;
+  githubIntegration?: GitHubIntegrationContext;
+  screenshotBase64?: string;
+  screenshotMimeType?: string;
 }
 
 export interface Node<TInput = GenerateInput, TOutput = unknown> {
@@ -124,11 +144,14 @@ const buildGenerationPrompt = (
     const componentHints = Array.isArray(hydrated.componentList) && hydrated.componentList.length > 0
       ? hydrated.componentList.join(', ')
       : 'none';
+    const keyContentHints = Array.isArray(hydrated.keyContent) && hydrated.keyContent.length > 0
+      ? hydrated.keyContent.join(', ')
+      : 'none';
     const inferredIndustry = inferIndustryFromPrompt(`${basePrompt} ${hydrated.intent || ''}`);
     const industryVisualDNA = INDUSTRY_PROFILES[inferredIndustry]?.visualDNA || INDUSTRY_PROFILES.saas.visualDNA;
     const industryFonts = getIndustryFonts(inferredIndustry);
     parts.push(
-      `HYDRATION_CONTEXT:\n- intent: ${hydrated.intent}\n- components: ${componentHints}\n- colorScheme: ${hydrated.colorScheme}\n- complexity: ${hydrated.complexity}`
+      `HYDRATION_CONTEXT:\n- intent: ${hydrated.intent}\n- components: ${componentHints}\n- keyContent: ${keyContentHints}\n- needsSupabase: ${hydrated.needsSupabase ? 'yes' : 'no'}\n- colorScheme: ${hydrated.colorScheme}\n- complexity: ${hydrated.complexity}`
     );
     parts.push(
       `INDUSTRY_VISUAL_DNA:\n- industry: ${inferredIndustry}\n- heroSection: ${industryVisualDNA.heroSection}\n- heroHeading: ${industryVisualDNA.heroHeading}\n- heroSubtext: ${industryVisualDNA.heroSubtext}\n- primaryButton: ${industryVisualDNA.primaryButton}\n- secondaryButton: ${industryVisualDNA.secondaryButton}\n- sectionBg: ${industryVisualDNA.sectionBg.join(' | ')}\n- cardStyle: ${industryVisualDNA.cardStyle}\n- accentColor: ${industryVisualDNA.accentColor}\n- badge: ${industryVisualDNA.badge}`
@@ -507,6 +530,8 @@ const detectIndustry = (prompt: string, hydratedContext: HydratedContext | null 
 
 const ROUTER_DEP_NAME = 'react-router-dom';
 const ROUTER_DEP_VERSION = '^6.28.0';
+const SUPABASE_DEP_NAME = '@supabase/supabase-js';
+const SUPABASE_DEP_VERSION = '^2.95.3';
 const ROUTING_MULTI_PAGE_INDUSTRIES = new Set<HydrationIndustry>([
   'ecommerce',
   'portfolio',
@@ -539,9 +564,89 @@ const needsRoutingProject = (
   return false;
 };
 
+const isSupabaseConnected = (integration: SupabaseIntegrationContext): boolean =>
+  Boolean(integration && typeof integration === 'object' && integration.connected);
+
+const buildSupabaseSystemPromptBlock = (integration: SupabaseIntegrationContext): string => {
+  if (!isSupabaseConnected(integration)) return '';
+  const projectUrl =
+    integration && typeof integration === 'object' && typeof integration.projectUrl === 'string' && integration.projectUrl.trim().length > 0
+      ? integration.projectUrl.trim()
+      : 'configured via VITE_SUPABASE_URL';
+
+  return `SUPABASE INTEGRATION - this project uses Supabase:
+Project URL: ${projectUrl}
+
+When generating code that needs data/auth:
+- Import supabase client: import { supabase } from '../lib/supabase'
+- Always generate src/lib/supabase.ts:
+  import { createClient } from '@supabase/supabase-js'
+  export const supabase = createClient(
+    import.meta.env.VITE_SUPABASE_URL,
+    import.meta.env.VITE_SUPABASE_ANON_KEY
+  )
+
+Auth patterns to use:
+- Sign up: await supabase.auth.signUp({ email, password })
+- Sign in: await supabase.auth.signInWithPassword({ email, password })
+- Sign out: await supabase.auth.signOut()
+- Get user: supabase.auth.getUser()
+- Auth state: supabase.auth.onAuthStateChange(...)
+
+Database patterns:
+- Fetch: const { data } = await supabase.from('table').select('*')
+- Insert: await supabase.from('table').insert({ ... })
+- Update: await supabase.from('table').update({ ... }).eq('id', id)
+- Delete: await supabase.from('table').delete().eq('id', id)
+- Realtime: supabase.channel('table').on('postgres_changes', ...).subscribe()
+
+Always add @supabase/supabase-js to dependencies.
+Always generate .env.example with VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.`;
+};
+
+const buildGitHubSystemPromptBlock = (integration: GitHubIntegrationContext): string => {
+  const connected = Boolean(integration && typeof integration === 'object' && integration.connected);
+  if (!connected) return '';
+
+  const username =
+    integration && typeof integration === 'object' && typeof integration.username === 'string'
+      ? integration.username.trim()
+      : '';
+  const repoUrl =
+    integration && typeof integration === 'object' && typeof integration.repoUrl === 'string'
+      ? integration.repoUrl.trim()
+      : '';
+
+  return `GITHUB INTEGRATION - this project is synced with GitHub:
+- connected: yes
+- owner: ${username || 'current GitHub user'}
+- repository: ${repoUrl || 'set during push'}
+
+Always generate a complete README.md with:
+- Project title and description
+- Tech stack used
+- Installation: npm install
+- Development: npm run dev
+- Build: npm run build`;
+};
+
+const buildScreenshotSystemPromptBlock = (enabled: boolean): string => {
+  if (!enabled) return '';
+  return `You are rebuilding a UI from a screenshot.
+Rules:
+- Match the layout exactly (grid, flex, positioning)
+- Match colors as closely as possible with Tailwind classes
+- Match typography sizes and weights
+- Preserve all visible text content from the screenshot
+- Use shadcn/ui components where appropriate
+- Make it fully responsive
+- Output complete multi-file structure as always`;
+};
+
 const mapIndustryToContentDomain = (industry: HydrationIndustry): ContentDomain => {
   if (industry === 'restaurant') return 'food';
   if (industry === 'ecommerce') return 'ecommerce';
+  if (industry === 'dashboard') return 'dashboard';
   if (industry === 'fitness' || industry === 'wedding' || industry === 'photography') return 'beauty';
   if (industry === 'startup') return 'dashboard';
   if (industry === 'education') return 'blog';
@@ -770,7 +875,10 @@ const appendSectionTemplateReferencesToPrompt = (
 const ensureStackConstraintInSystemPrompt = (
   baseSystemPrompt: string | undefined,
   hydratedContext: HydratedContext | null | undefined,
-  prompt: string
+  prompt: string,
+  supabaseIntegration?: SupabaseIntegrationContext,
+  githubIntegration?: GitHubIntegrationContext,
+  screenshotMode: boolean = false
 ): string => {
   const normalized = String(baseSystemPrompt || '').trim();
   const withStack = normalized.includes('You generate EXCLUSIVELY:')
@@ -807,6 +915,12 @@ const ensureStackConstraintInSystemPrompt = (
   const includesMobileFirstRules = withStack.includes('MOBILE-FIRST RULES - strictly enforced:');
   const includesTypographyRules = withStack.includes('TYPOGRAPHY RULES:');
   const includesIndexHtmlFontInjection = withStack.includes('INDEX_HTML_FONT_INJECTION:');
+  const includesSupabaseBlock = withStack.includes('SUPABASE INTEGRATION - this project uses Supabase:');
+  const includesGitHubBlock = withStack.includes('GITHUB INTEGRATION - this project is synced with GitHub:');
+  const includesScreenshotBlock = withStack.includes('You are rebuilding a UI from a screenshot.');
+  const supabaseBlock = buildSupabaseSystemPromptBlock(supabaseIntegration);
+  const githubBlock = buildGitHubSystemPromptBlock(githubIntegration);
+  const screenshotBlock = buildScreenshotSystemPromptBlock(screenshotMode);
   const withoutChecklist = withStack.replace(
     new RegExp(`${escapeRegExp(finalChecklistHeader)}[\\s\\S]*$`, 'm'),
     ''
@@ -817,15 +931,33 @@ const ensureStackConstraintInSystemPrompt = (
     includesColorScheme &&
     includesFileStructure &&
     includesRoutingRules &&
-    includesInteractivityRules &&
-    includesMobileFirstRules &&
-    includesTypographyRules &&
-    includesIndexHtmlFontInjection
+      includesInteractivityRules &&
+      includesMobileFirstRules &&
+      includesTypographyRules &&
+      includesIndexHtmlFontInjection &&
+      (includesSupabaseBlock || !supabaseBlock) &&
+      (includesGitHubBlock || !githubBlock) &&
+      (includesScreenshotBlock || !screenshotBlock)
   ) {
     return `${withoutChecklist}\n\n${finalChecklist}`;
   }
 
-  return `${withoutChecklist}\n\n${COMPLETENESS_RULES}\n\n${FILE_STRUCTURE_RULES}\n\n${ROUTING_RULES}\n\n${INTERACTIVITY_RULES}\n\n${MOBILE_FIRST_RULES}\n\n${colorSchemeRule}\n\n${typographyRules}\n\n${indexHtmlFontInjectionRule}\n\n${finalChecklist}`;
+  const blocks = [
+    withoutChecklist,
+    COMPLETENESS_RULES,
+    FILE_STRUCTURE_RULES,
+    ROUTING_RULES,
+    INTERACTIVITY_RULES,
+    MOBILE_FIRST_RULES,
+    colorSchemeRule,
+    typographyRules,
+    indexHtmlFontInjectionRule,
+    supabaseBlock,
+    githubBlock,
+    screenshotBlock,
+    finalChecklist,
+  ].filter(Boolean);
+  return blocks.join('\n\n');
 };
 
 const injectDesignReferenceIntoPrompt = (userPrompt: string): string => {
@@ -934,10 +1066,17 @@ const createDependencyIntelligenceNode = (): Node<GenerateInput, DependencyIntel
   deps: [],
   run: async (_resolvedDeps, input) => {
     const routingRequired = needsRoutingProject(input.prompt, input.hydratedContext || null, input.currentFiles);
+    const supabaseConnected = isSupabaseConnected(input.supabaseIntegration);
+    const supabaseHintedByHydration = Boolean(input.hydratedContext?.needsSupabase);
+    const supabaseDependencyRequired = supabaseConnected || supabaseHintedByHydration;
     const fromPromptSet = new Set<string>(inferDepsFromPrompt(input.prompt));
     if (routingRequired) {
       fromPromptSet.add(ROUTER_DEP_NAME);
       fromPromptSet.add(`${ROUTER_DEP_NAME}@${ROUTER_DEP_VERSION}`);
+    }
+    if (supabaseDependencyRequired) {
+      fromPromptSet.add(SUPABASE_DEP_NAME);
+      fromPromptSet.add(`${SUPABASE_DEP_NAME}@${SUPABASE_DEP_VERSION}`);
     }
     const fromPrompt = [...fromPromptSet];
     const sourceFiles = input.currentFiles || {};
@@ -970,12 +1109,33 @@ const createDependencyIntelligenceNode = (): Node<GenerateInput, DependencyIntel
         });
       }
     }
+    if (supabaseDependencyRequired) {
+      const hasSupabaseDep = analysis.dependencies.some((dep) => dep.name === SUPABASE_DEP_NAME);
+      if (!hasSupabaseDep) {
+        analysis.dependencies.push({
+          name: SUPABASE_DEP_NAME,
+          version: SUPABASE_DEP_VERSION,
+          reason: supabaseConnected
+            ? 'Project has an active Supabase integration'
+            : 'Hydration detected Supabase-related auth/data intent',
+          category: 'data',
+        });
+        analysis.recommendations.push({
+          action: 'add',
+          dependency: `${SUPABASE_DEP_NAME}@${SUPABASE_DEP_VERSION}`,
+          reason: 'Auto-added for Supabase client generation patterns',
+        });
+      }
+    }
     const merged = new Set<string>([
       ...fromPrompt,
       ...analysis.dependencies.map((dep) => dep.name),
     ]);
     if (routingRequired) {
       merged.add(`${ROUTER_DEP_NAME}@${ROUTER_DEP_VERSION}`);
+    }
+    if (supabaseDependencyRequired) {
+      merged.add(`${SUPABASE_DEP_NAME}@${SUPABASE_DEP_VERSION}`);
     }
 
     return {
@@ -1019,7 +1179,10 @@ const createGenerationNode = (): Node<GenerateInput, GenerationNodeOutput> => ({
     const effectiveSystemPrompt = ensureStackConstraintInSystemPrompt(
       input.systemPrompt,
       resolvedHydrationContext,
-      input.prompt
+      input.prompt,
+      input.supabaseIntegration,
+      input.githubIntegration,
+      Boolean(input.screenshotBase64)
     );
     const promptWithDesignReference = injectDesignReferenceIntoPrompt(effectivePrompt);
 
@@ -1033,6 +1196,8 @@ const createGenerationNode = (): Node<GenerateInput, GenerationNodeOutput> => ({
       stream: false,
       currentFiles: contextOutput?.selectedFiles || input.currentFiles,
       image: input.image,
+      screenshotBase64: input.screenshotBase64,
+      screenshotMimeType: input.screenshotMimeType,
       knowledgeBase: input.knowledgeBase,
       featureFlags: input.featureFlags,
       signal: input.signal,
@@ -1076,7 +1241,10 @@ const createFastGenerationNode = (): Node<GenerateInput, GenerationNodeOutput> =
     const effectiveSystemPrompt = ensureStackConstraintInSystemPrompt(
       input.systemPrompt,
       resolvedHydrationContext,
-      input.prompt
+      input.prompt,
+      input.supabaseIntegration,
+      input.githubIntegration,
+      Boolean(input.screenshotBase64)
     );
     const promptWithDesignReference = injectDesignReferenceIntoPrompt(effectivePrompt);
 
@@ -1090,6 +1258,8 @@ const createFastGenerationNode = (): Node<GenerateInput, GenerationNodeOutput> =
       stream: false,
       currentFiles: input.currentFiles,
       image: input.image,
+      screenshotBase64: input.screenshotBase64,
+      screenshotMimeType: input.screenshotMimeType,
       knowledgeBase: input.knowledgeBase,
       featureFlags: input.featureFlags,
       signal: input.signal,

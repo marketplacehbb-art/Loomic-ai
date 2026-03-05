@@ -17,6 +17,7 @@ type SupabaseIntegrationPromptContext = {
   connected?: boolean;
   environment?: 'test' | 'live' | null;
   projectRef?: string | null;
+  projectUrl?: string | null;
   hasTestConnection?: boolean;
   hasLiveConnection?: boolean;
 } | null | undefined;
@@ -111,6 +112,10 @@ export function buildSupabaseIntegrationPrompt(
     integration && typeof integration === 'object' && typeof integration.projectRef === 'string' && integration.projectRef.trim().length > 0
       ? integration.projectRef.trim()
       : null;
+  const projectUrl =
+    integration && typeof integration === 'object' && typeof integration.projectUrl === 'string' && integration.projectUrl.trim().length > 0
+      ? integration.projectUrl.trim()
+      : null;
   const hasTestConnection = Boolean(integration && typeof integration === 'object' && integration.hasTestConnection);
   const hasLiveConnection = Boolean(integration && typeof integration === 'object' && integration.hasLiveConnection);
 
@@ -121,6 +126,7 @@ export function buildSupabaseIntegrationPrompt(
     `- has_test_connection: ${hasTestConnection ? 'yes' : 'no'}`,
     `- has_live_connection: ${hasLiveConnection ? 'yes' : 'no'}`,
     `- project_ref: ${projectRef || 'none'}`,
+    `- project_url: ${projectUrl || 'none'}`,
   ];
 
   if (connected && environment) {

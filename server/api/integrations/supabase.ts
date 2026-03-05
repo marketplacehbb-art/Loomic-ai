@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
 import { supabaseAdmin } from '../../lib/supabase.js';
 import type { AuthenticatedRequest } from '../../middleware/auth.js';
+import { llmManager } from '../llm/manager.js';
 
 const router = Router();
 
@@ -41,6 +42,8 @@ interface SupabaseIntegrationRecord {
   access_token?: string | null;
   refresh_token?: string | null;
   metadata?: Record<string, any> | null;
+  project_url?: string | null;
+  anon_key?: string | null;
   updated_at?: string;
 }
 
@@ -105,6 +108,84 @@ const getConnectionKey = (userId: string, projectId: string, environment: Integr
 const getProjectScopeKey = (userId: string, projectId: string) => `${userId}:${projectId}`;
 const getProjectScopeErrorKey = (userId: string, projectId: string, environment?: IntegrationEnvironment) =>
   `${getProjectScopeKey(userId, projectId)}:${environment || '*'}`;
+
+const normalizeSupabaseProjectUrl = (value: string): string | null => {
+  const raw = String(value || '').trim();
+  if (!raw) return null;
+  try {
+    const parsed = new URL(raw);
+    if (!/^https?:$/.test(parsed.protocol)) return null;
+    const normalizedHost = parsed.hostname.toLowerCase();
+    if (!normalizedHost.endsWith('.supabase.co')) return null;
+    return `${parsed.protocol}//${normalizedHost}`;
+  } catch {
+    return null;
+  }
+};
+
+const extractProjectRefFromUrl = (projectUrl: string): string | null => {
+  const normalized = normalizeSupabaseProjectUrl(projectUrl);
+  if (!normalized) return null;
+  try {
+    const parsed = new URL(normalized);
+    const first = parsed.hostname.split('.')[0] || '';
+    return first.trim() || null;
+  } catch {
+    return null;
+  }
+};
+
+const validateSupabaseCredentials = async (
+  projectUrl: string,
+  anonKey: string
+): Promise<{ valid: boolean; error?: string }> => {
+  const normalizedUrl = normalizeSupabaseProjectUrl(projectUrl);
+  const normalizedKey = String(anonKey || '').trim();
+  if (!normalizedUrl) return { valid: false, error: 'Invalid Supabase project URL' };
+  if (!normalizedKey) return { valid: false, error: 'Missing Supabase anon key' };
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+  try {
+    const response = await fetch(`${normalizedUrl}/auth/v1/settings`, {
+      method: 'GET',
+      headers: {
+        apikey: normalizedKey,
+        Authorization: `Bearer ${normalizedKey}`,
+      },
+      signal: controller.signal,
+    });
+    if (!response.ok) {
+      return { valid: false, error: `Supabase validation failed (${response.status})` };
+    }
+    return { valid: true };
+  } catch (error: any) {
+    return { valid: false, error: error?.message || 'Supabase validation request failed' };
+  } finally {
+    clearTimeout(timeout);
+  }
+};
+
+const parseJsonObject = (value: string): Record<string, any> | null => {
+  const raw = String(value || '').trim();
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch {
+    const first = raw.indexOf('{');
+    const last = raw.lastIndexOf('}');
+    if (first >= 0 && last > first) {
+      try {
+        const parsed = JSON.parse(raw.slice(first, last + 1));
+        return parsed && typeof parsed === 'object' ? parsed : null;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
+};
 
 const base64UrlEncode = (buffer: Buffer): string =>
   buffer
@@ -606,10 +687,12 @@ const persistConnection = async (record: SupabaseIntegrationRecord): Promise<'db
     connected_at: record.connected_at ?? null,
     disconnected_at: record.disconnected_at ?? null,
     project_ref: record.project_ref ?? null,
+    project_url: record.project_url ?? null,
     scopes: record.scopes ?? [],
     token_expires_at: record.token_expires_at ?? null,
     access_token: encryptStoredToken(record.access_token),
     refresh_token: encryptStoredToken(record.refresh_token),
+    anon_key: encryptStoredToken(record.anon_key),
     metadata: record.metadata ?? {},
     updated_at: nowIso(),
   };
@@ -643,6 +726,7 @@ const clearConnection = async (userId: string, projectId: string, environment: I
       disconnected_at: nowIso(),
       access_token: null,
       refresh_token: null,
+      anon_key: null,
       token_expires_at: null,
       updated_at: nowIso(),
     })
@@ -661,13 +745,31 @@ const clearConnection = async (userId: string, projectId: string, environment: I
   return 'db';
 };
 
+const resolveProjectUrlFromRecord = (record: SupabaseIntegrationRecord | null): string | null => {
+  const direct = typeof record?.project_url === 'string' ? normalizeSupabaseProjectUrl(record.project_url) : null;
+  if (direct) return direct;
+
+  const metadataProjectUrl =
+    record?.metadata && typeof record.metadata === 'object' && typeof (record.metadata as any).projectUrl === 'string'
+      ? normalizeSupabaseProjectUrl((record.metadata as any).projectUrl)
+      : null;
+  if (metadataProjectUrl) return metadataProjectUrl;
+
+  const fromRef = typeof record?.project_ref === 'string' && record.project_ref.trim().length > 0
+    ? normalizeSupabaseProjectUrl(`https://${record.project_ref.trim()}.supabase.co`)
+    : null;
+  return fromRef;
+};
+
 const mapRecordToStatus = (record: SupabaseIntegrationRecord | null, mode: 'db' | 'memory', environment: IntegrationEnvironment) => {
   const connected = Boolean(record && record.status === 'connected');
+  const projectUrl = connected ? resolveProjectUrlFromRecord(record) : null;
   return {
     environment,
     connected,
     connectedAt: record?.connected_at || null,
     projectRef: record?.project_ref || null,
+    projectUrl,
     scopes: Array.isArray(record?.scopes) ? record?.scopes : [],
     tokenExpiresAt: record?.token_expires_at || null,
     updatedAt: record?.updated_at || null,
@@ -725,7 +827,19 @@ router.get('/status', async (req: Request, res: Response) => {
     }
 
     const status = await getConnectionStatus(userId, projectId);
-    return res.json({ success: true, status });
+    const activeEnvironment: IntegrationEnvironment | null = status.live.connected
+      ? 'live'
+      : status.test.connected
+        ? 'test'
+        : null;
+    const activeStatus = activeEnvironment ? status[activeEnvironment] : null;
+    return res.json({
+      success: true,
+      status,
+      connected: Boolean(activeStatus?.connected),
+      projectUrl: activeStatus?.projectUrl || null,
+      environment: activeEnvironment,
+    });
   } catch (error: any) {
     console.error('[Supabase Integration] status failed:', error);
     return res.status(500).json({ success: false, error: 'Failed to load integration status' });
@@ -930,19 +1044,13 @@ router.post('/connect', async (req: Request, res: Response) => {
     cleanupExpiredPendingStates();
     const authReq = req as AuthenticatedRequest;
     const userId = authReq.authUser?.id;
-    const { projectId, environment, projectRef } = req.body || {};
+    const { projectId, environment, projectRef, projectUrl, anonKey } = req.body || {};
 
     if (!userId) {
       return res.status(401).json({ success: false, error: 'Unauthorized' });
     }
     if (!projectId || typeof projectId !== 'string') {
       return res.status(400).json({ success: false, error: 'Missing projectId' });
-    }
-    if (environment !== 'test' && environment !== 'live') {
-      return res.status(400).json({ success: false, error: 'Invalid environment' });
-    }
-    if (!SUPABASE_OAUTH_CLIENT_ID || !SUPABASE_OAUTH_CLIENT_SECRET) {
-      return res.status(500).json({ success: false, error: 'Supabase OAuth is not configured on server' });
     }
     if (!isProjectOwnershipVerificationAvailable()) {
       return res.status(503).json({ success: false, error: 'Project verification is unavailable on server' });
@@ -951,6 +1059,88 @@ router.post('/connect', async (req: Request, res: Response) => {
     const isOwner = await verifyProjectOwnership(projectId, userId);
     if (!isOwner) {
       return res.status(403).json({ success: false, error: 'Project access denied' });
+    }
+
+    const hasCredentialPayload =
+      typeof projectUrl === 'string' &&
+      projectUrl.trim().length > 0 &&
+      typeof anonKey === 'string' &&
+      anonKey.trim().length > 0;
+
+    if (hasCredentialPayload) {
+      const resolvedEnvironment: IntegrationEnvironment = environment === 'live' ? 'live' : 'test';
+      const normalizedProjectUrl = normalizeSupabaseProjectUrl(projectUrl);
+      const normalizedAnonKey = String(anonKey || '').trim();
+      if (!normalizedProjectUrl) {
+        return res.status(400).json({ success: false, error: 'Invalid Supabase project URL' });
+      }
+      if (!normalizedAnonKey) {
+        return res.status(400).json({ success: false, error: 'Missing Supabase anon key' });
+      }
+
+      const validation = await validateSupabaseCredentials(normalizedProjectUrl, normalizedAnonKey);
+      if (!validation.valid) {
+        setIntegrationError(
+          userId,
+          projectId,
+          validation.error || 'Supabase credential validation failed',
+          resolvedEnvironment,
+          'SUPABASE_CREDENTIAL_VALIDATION_FAILED'
+        );
+        return res.status(400).json({
+          success: false,
+          error: validation.error || 'Supabase credential validation failed',
+        });
+      }
+
+      const projectRefFromUrl = extractProjectRefFromUrl(normalizedProjectUrl);
+      const mode = await persistConnection({
+        user_id: userId,
+        project_id: projectId,
+        provider: 'supabase',
+        environment: resolvedEnvironment,
+        status: 'connected',
+        connected_at: nowIso(),
+        disconnected_at: null,
+        project_ref: projectRefFromUrl,
+        project_url: normalizedProjectUrl,
+        scopes: ['anon_key'],
+        token_expires_at: null,
+        access_token: null,
+        refresh_token: null,
+        anon_key: normalizedAnonKey,
+        metadata: {
+          connectionType: 'credentials',
+          projectUrl: normalizedProjectUrl,
+        },
+        updated_at: nowIso(),
+      });
+
+      clearIntegrationError(userId, projectId, resolvedEnvironment);
+      appendIntegrationAudit(userId, projectId, {
+        timestamp: nowIso(),
+        action: 'connected_credentials',
+        environment: resolvedEnvironment,
+        metadata: {
+          projectRef: projectRefFromUrl || null,
+          mode,
+        },
+      });
+
+      return res.json({
+        success: true,
+        connected: true,
+        projectUrl: normalizedProjectUrl,
+        environment: resolvedEnvironment,
+        mode,
+      });
+    }
+
+    if (environment !== 'test' && environment !== 'live') {
+      return res.status(400).json({ success: false, error: 'Invalid environment' });
+    }
+    if (!SUPABASE_OAUTH_CLIENT_ID || !SUPABASE_OAUTH_CLIENT_SECRET) {
+      return res.status(500).json({ success: false, error: 'Supabase OAuth is not configured on server' });
     }
 
     const nextState = createOAuthState(
@@ -1081,6 +1271,7 @@ router.get('/callback', async (req: Request, res: Response) => {
       connected_at: nowIso(),
       disconnected_at: null,
       project_ref: state.projectRef || null,
+      project_url: state.projectRef ? `https://${state.projectRef}.supabase.co` : null,
       scopes,
       token_expires_at: tokenExpiresAt,
       access_token: accessToken || null,
@@ -1121,9 +1312,6 @@ router.post('/disconnect', async (req: Request, res: Response) => {
     if (!projectId || typeof projectId !== 'string') {
       return res.status(400).json({ success: false, error: 'Missing projectId' });
     }
-    if (environment !== 'test' && environment !== 'live') {
-      return res.status(400).json({ success: false, error: 'Invalid environment' });
-    }
     if (!isProjectOwnershipVerificationAvailable()) {
       return res.status(503).json({ success: false, error: 'Project verification is unavailable on server' });
     }
@@ -1133,18 +1321,29 @@ router.post('/disconnect', async (req: Request, res: Response) => {
       return res.status(403).json({ success: false, error: 'Project access denied' });
     }
 
-    const mode = await clearConnection(userId, projectId, environment);
-    appendIntegrationAudit(userId, projectId, {
-      timestamp: nowIso(),
-      action: 'disconnected',
-      environment,
-      metadata: { mode },
-    });
-    clearIntegrationError(userId, projectId, environment);
+    const environmentsToDisconnect: IntegrationEnvironment[] =
+      environment === 'test' || environment === 'live'
+        ? [environment]
+        : ['test', 'live'];
+    const disconnectedModes = await Promise.all(
+      environmentsToDisconnect.map(async (targetEnv) => {
+        const mode = await clearConnection(userId, projectId, targetEnv);
+        appendIntegrationAudit(userId, projectId, {
+          timestamp: nowIso(),
+          action: 'disconnected',
+          environment: targetEnv,
+          metadata: { mode },
+        });
+        clearIntegrationError(userId, projectId, targetEnv);
+        return mode;
+      })
+    );
+    const mode: 'db' | 'memory' = disconnectedModes.every((value) => value === 'db') ? 'db' : 'memory';
 
     return res.json({
       success: true,
-      environment,
+      connected: false,
+      environment: environment === 'test' || environment === 'live' ? environment : null,
       mode,
     });
   } catch (error: any) {
@@ -1156,6 +1355,99 @@ router.post('/disconnect', async (req: Request, res: Response) => {
     }
     console.error('[Supabase Integration] disconnect failed:', error);
     return res.status(500).json({ success: false, error: 'Failed to disconnect Supabase' });
+  }
+});
+
+router.post('/generate-schema', async (req: Request, res: Response) => {
+  try {
+    const authReq = req as AuthenticatedRequest;
+    const userId = authReq.authUser?.id;
+    const { projectId, description } = req.body || {};
+
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    if (!projectId || typeof projectId !== 'string') {
+      return res.status(400).json({ success: false, error: 'Missing projectId' });
+    }
+    if (!description || typeof description !== 'string' || description.trim().length < 8) {
+      return res.status(400).json({ success: false, error: 'Missing or invalid description' });
+    }
+    if (!isProjectOwnershipVerificationAvailable()) {
+      return res.status(503).json({ success: false, error: 'Project verification is unavailable on server' });
+    }
+
+    const isOwner = await verifyProjectOwnership(projectId, userId);
+    if (!isOwner) {
+      return res.status(403).json({ success: false, error: 'Project access denied' });
+    }
+
+    const systemPrompt = [
+      'You generate PostgreSQL schema for Supabase.',
+      'Return ONLY valid JSON with this shape:',
+      '{',
+      '  "sql": "string with executable SQL statements",',
+      '  "tables": ["table_name"]',
+      '}',
+      'Rules:',
+      '- Include CREATE TABLE IF NOT EXISTS statements.',
+      '- Include created_at/updated_at timestamptz fields when appropriate.',
+      '- Include sensible primary keys and foreign keys where useful.',
+      '- Do not include markdown, backticks, or extra prose.',
+    ].join('\n');
+
+    const prompt = `Create a Supabase PostgreSQL schema for this app:\n${String(description).trim()}`;
+    const llmResponse = await llmManager.generate({
+      provider: 'deepseek',
+      generationMode: 'new',
+      prompt,
+      systemPrompt,
+      temperature: 0.1,
+      maxTokens: 2200,
+      stream: false,
+    });
+
+    const rawContent =
+      typeof llmResponse === 'string'
+        ? llmResponse
+        : ('content' in (llmResponse as any) ? String((llmResponse as any).content || '') : '');
+    const parsed = parseJsonObject(rawContent);
+    const sqlCandidate = typeof parsed?.sql === 'string' ? parsed.sql.trim() : '';
+    const extractedSql = (() => {
+      if (sqlCandidate) return sqlCandidate;
+      const match = rawContent.match(/(?:```sql|```postgresql|```)?\s*([\s\S]*create table[\s\S]*?);?\s*(?:```)?$/i);
+      return match?.[1]?.trim() || '';
+    })();
+    const sql = extractedSql.trim();
+
+    let tables = Array.isArray(parsed?.tables)
+      ? parsed.tables.map((value: unknown) => String(value || '').trim()).filter(Boolean)
+      : [];
+
+    if (tables.length === 0 && sql) {
+      const discovered = new Set<string>();
+      const tableRegex = /create\s+table\s+(?:if\s+not\s+exists\s+)?("?[\w.]+"?)/gi;
+      let match: RegExpExecArray | null = null;
+      while ((match = tableRegex.exec(sql)) !== null) {
+        const rawName = String(match[1] || '').replace(/"/g, '').trim();
+        if (!rawName) continue;
+        discovered.add(rawName.includes('.') ? rawName.split('.').pop() || rawName : rawName);
+      }
+      tables = [...discovered];
+    }
+
+    if (!sql) {
+      return res.status(500).json({ success: false, error: 'Failed to generate SQL schema' });
+    }
+
+    return res.json({
+      success: true,
+      sql,
+      tables,
+    });
+  } catch (error: any) {
+    console.error('[Supabase Integration] generate-schema failed:', error);
+    return res.status(500).json({ success: false, error: 'Failed to generate schema' });
   }
 });
 

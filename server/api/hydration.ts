@@ -6,6 +6,8 @@ export interface HydratedContext {
   intent: string;
   targetFiles: string[];
   componentList: string[];
+  keyContent: string[];
+  needsSupabase: boolean;
   colorScheme: string;
   complexity: 'simple' | 'moderate' | 'complex';
 }
@@ -15,6 +17,7 @@ export type HydrationIndustry =
   | 'saas'
   | 'portfolio'
   | 'ecommerce'
+  | 'dashboard'
   | 'wedding'
   | 'photography'
   | 'fitness'
@@ -32,6 +35,7 @@ const MAX_COMPONENTS = 16;
 
 const REPAIR_OR_FIX_SIGNAL_REGEX = /\b(repair|fix|bugfix|hotfix|debug|resolve error|fehler beheben|issue fix)\b/i;
 const EXPLICIT_COMPLEX_SIGNAL_REGEX = /\b(authentication|database|multi[-\s]?page app|real[-\s]?time features?|file uploads?)\b/i;
+const SUPABASE_INTENT_REGEX = /\b(login|register|auth|user|database|save data|store|real[-\s]?time|backend)\b/i;
 
 const COMPONENT_KEYWORDS: Array<{ regex: RegExp; components: string[] }> = [
   { regex: /\b(hero|landing|headline)\b/i, components: ['HeroSection'] },
@@ -55,6 +59,7 @@ export function inferIndustryFromPrompt(prompt: string): HydrationIndustry {
   if (/\b(fitness|gym|workout|trainer|health)\b/.test(lower)) return 'fitness';
   if (/\b(real estate|property|apartment|house)\b/.test(lower)) return 'realestate';
   if (/\b(music|band|artist|concert|album)\b/.test(lower)) return 'music';
+  if (/\b(dashboard|analytics|admin panel)\b/.test(lower)) return 'dashboard';
   if (/\b(education|course|learning|tutorial)\b/.test(lower)) return 'education';
   if (/\b(legal|lawyer|attorney|law firm)\b/.test(lower)) return 'legal';
   if (/\b(nonprofit|charity|donation)\b/.test(lower)) return 'nonprofit';
@@ -135,8 +140,47 @@ function inferComplexity(prompt: string, files: FileMap): HydratedContext['compl
   return 'simple';
 }
 
+function detectNeedsSupabase(prompt: string): boolean {
+  return SUPABASE_INTENT_REGEX.test(String(prompt || ''));
+}
+
+function inferKeyContent(prompt: string, componentList: string[]): string[] {
+  const items = new Set<string>();
+  const normalized = String(prompt || '').toLowerCase();
+  if (/\b(nav|navbar|navigation|menu)\b/.test(normalized)) items.add('navigation');
+  if (/\b(hero|landing)\b/.test(normalized)) items.add('hero');
+  if (/\b(feature|benefit)\b/.test(normalized)) items.add('features');
+  if (/\b(pricing|plan|tier)\b/.test(normalized)) items.add('pricing');
+  if (/\b(testimonial|review)\b/.test(normalized)) items.add('testimonials');
+  if (/\b(faq|question)\b/.test(normalized)) items.add('faq');
+  if (/\b(contact|form)\b/.test(normalized)) items.add('contact');
+  if (detectNeedsSupabase(prompt)) items.add('supabase');
+
+  componentList.forEach((component) => {
+    const lower = String(component || '').toLowerCase();
+    if (lower.includes('hero')) items.add('hero');
+    if (lower.includes('nav')) items.add('navigation');
+    if (lower.includes('feature')) items.add('features');
+    if (lower.includes('pricing')) items.add('pricing');
+    if (lower.includes('faq')) items.add('faq');
+    if (lower.includes('footer')) items.add('footer');
+  });
+
+  if (items.size === 0) {
+    items.add('layout');
+  }
+
+  return [...items].slice(0, 12);
+}
+
 function buildFallbackContext(prompt: string, files: FileMap): HydratedContext {
   const summary = summarizeFiles(files);
+  const componentList = inferComponents(prompt);
+  const needsSupabase = detectNeedsSupabase(prompt);
+  const keyContent = inferKeyContent(prompt, componentList);
+  if (needsSupabase && !keyContent.includes('supabase')) {
+    keyContent.push('supabase');
+  }
   const targetFiles = summary.count === 0
     ? []
     : summary.paths
@@ -146,7 +190,9 @@ function buildFallbackContext(prompt: string, files: FileMap): HydratedContext {
   return {
     intent: truncate(prompt || 'Generate a complete implementation for the request.', 140) || 'Generate implementation for the request.',
     targetFiles,
-    componentList: inferComponents(prompt),
+    componentList,
+    keyContent,
+    needsSupabase,
     colorScheme: inferColorScheme(prompt),
     complexity: inferComplexity(prompt, files),
   };
@@ -164,6 +210,19 @@ function sanitizeHydratedContext(raw: any, fallback: HydratedContext): HydratedC
     .map((value: unknown) => String(value || '').trim())
     .filter(Boolean)
     .slice(0, MAX_COMPONENTS);
+  const rawKeyContent = Array.isArray(raw?.keyContent) ? raw.keyContent : fallback.keyContent;
+  const keyContent = rawKeyContent
+    .map((value: unknown) => String(value || '').trim().toLowerCase())
+    .filter(Boolean)
+    .slice(0, 12);
+  const needsSupabase = Boolean(
+    typeof raw?.needsSupabase === 'boolean'
+      ? raw.needsSupabase
+      : fallback.needsSupabase
+  );
+  if (needsSupabase && !keyContent.includes('supabase')) {
+    keyContent.push('supabase');
+  }
   const colorScheme = normalizeColorScheme(
     typeof raw?.colorScheme === 'string' ? raw.colorScheme : fallback.colorScheme,
     fallback.colorScheme
@@ -178,6 +237,8 @@ function sanitizeHydratedContext(raw: any, fallback: HydratedContext): HydratedC
     intent,
     targetFiles,
     componentList: componentList.length > 0 ? componentList : fallback.componentList,
+    keyContent: keyContent.length > 0 ? keyContent : fallback.keyContent,
+    needsSupabase,
     colorScheme,
     complexity,
   };
@@ -222,6 +283,8 @@ async function callFastHydrationLLM(prompt: string, files: FileMap, signal: Abor
     '  "intent": "string (one sentence)",',
     '  "targetFiles": ["string"],',
     '  "componentList": ["string"],',
+    '  "keyContent": ["string"],',
+    '  "needsSupabase": "boolean",',
     '  "colorScheme": "string",',
     '  "complexity": "simple|moderate|complex"',
     '}',
@@ -229,7 +292,10 @@ async function callFastHydrationLLM(prompt: string, files: FileMap, signal: Abor
     '- targetFiles must be empty array for new projects (when existing_file_count is 0).',
     '- Keep intent concise and implementation-oriented.',
     '- Keep componentList specific but short.',
-    '- Infer industry internally from prompt keywords. Supported industries: wedding, photography, fitness, medical, realestate, music, education, legal, nonprofit, startup, restaurant, portfolio, ecommerce, saas.',
+    '- keyContent should contain important functional tags from prompt.',
+    '- If prompt includes login/register/auth/user/database/save data/store/real-time/backend, add "supabase" to keyContent and set needsSupabase=true.',
+    '- needsSupabase must be true only when backend/data/auth intent is explicit; otherwise false.',
+    '- Infer industry internally from prompt keywords. Supported industries: wedding, photography, fitness, medical, realestate, music, education, legal, nonprofit, startup, dashboard, restaurant, portfolio, ecommerce, saas.',
     '- If industry is unclear, default to saas visual profile.',
     '- colorScheme must be exactly one of: dark, light, colorful.',
     '- Use colorScheme=dark when prompt mentions dark/black/night.',

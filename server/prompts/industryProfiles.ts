@@ -127,6 +127,21 @@ export const INDUSTRY_PROFILES: Record<HydrationIndustry, IndustryProfile> = {
       badge: 'bg-gradient-to-r from-purple-900/50 to-pink-900/50 text-purple-300 border border-purple-700/50',
     },
   },
+  dashboard: {
+    colorPalette: ['from-slate-950', 'via-indigo-950', 'to-slate-950', 'text-indigo-300'],
+    fonts: { heading: 'Inter', body: 'Inter' },
+    visualDNA: {
+      heroSection: 'bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-950',
+      heroHeading: 'text-6xl font-bold text-white tracking-tight',
+      heroSubtext: 'text-xl text-indigo-200/70',
+      primaryButton: 'bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-3 rounded-xl font-semibold',
+      secondaryButton: 'border border-slate-700 text-slate-300 hover:border-indigo-500 px-8 py-3 rounded-xl',
+      sectionBg: ['bg-slate-950', 'bg-slate-900', 'bg-indigo-950/20'],
+      cardStyle: 'bg-slate-800/60 border border-slate-700 rounded-2xl hover:border-indigo-500/60 transition-all',
+      accentColor: 'text-indigo-300',
+      badge: 'bg-indigo-900/50 text-indigo-200 border border-indigo-700/50',
+    },
+  },
   photography: {
     colorPalette: ['bg-zinc-950', 'bg-zinc-900', 'text-zinc-200', 'text-sky-300'],
     fonts: { heading: 'Space Grotesk', body: 'Inter' },

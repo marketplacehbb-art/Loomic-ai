@@ -25,6 +25,8 @@ export interface LLMRequest {
   maxTokens?: number;
   currentFiles?: Record<string, string>;
   image?: string; // Base64 encoded image
+  screenshotBase64?: string;
+  screenshotMimeType?: string;
   knowledgeBase?: Array<{ path: string, content: string }>; // Context files
   featureFlags?: Partial<FeatureFlags>; // Optional feature flags override
   signal?: AbortSignal;
@@ -144,6 +146,9 @@ export class LLMManager {
       return this.callDeepSeek(provider, request);
     }
     if (providerName === 'gemini') {
+      if (request.screenshotBase64) {
+        return this.callGeminiVision(request);
+      }
       return this.callGemini(provider, request);
     }
     if (providerName === 'groq') {
@@ -153,6 +158,108 @@ export class LLMManager {
       return this.callOpenAI(provider, request, 'nvidia');
     }
     return this.callOpenAI(provider, request, 'openai');
+  }
+
+  private resolveScreenshotInput(request: LLMRequest): { base64: string; mimeType: string } | null {
+    const explicitBase64 = String(request.screenshotBase64 || '').trim();
+    const explicitMimeType = String(request.screenshotMimeType || '').trim();
+    if (explicitBase64) {
+      return {
+        base64: explicitBase64,
+        mimeType: /^image\/[a-zA-Z0-9.+-]+$/.test(explicitMimeType) ? explicitMimeType : 'image/png',
+      };
+    }
+
+    const imageDataUrl = String(request.image || '').trim();
+    const match = imageDataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+    if (!match) return null;
+    return {
+      mimeType: match[1] || 'image/png',
+      base64: match[2] || '',
+    };
+  }
+
+  private async callGeminiVision(
+    request: LLMRequest
+  ): Promise<{ content: string; rateLimit?: any }> {
+    const geminiKey = getGeminiApiKey();
+    if (!geminiKey) {
+      const error: any = new Error('Gemini API key is missing for screenshot-to-code generation');
+      error.status = 401;
+      error.code = 'GEMINI_VISION_AUTH_ERROR';
+      throw error;
+    }
+
+    const screenshot = this.resolveScreenshotInput(request);
+    if (!screenshot?.base64) {
+      const error: any = new Error('Screenshot payload missing or invalid');
+      error.status = 400;
+      error.code = 'SCREENSHOT_PAYLOAD_INVALID';
+      throw error;
+    }
+
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(geminiKey)}`;
+    const textInstruction = [
+      request.systemPrompt ? `System:\n${request.systemPrompt}` : '',
+      'Rebuild this UI exactly as a React component using Tailwind CSS and shadcn/ui. Match the layout, colors, spacing, and content as closely as possible. Return only the complete React component code.',
+      request.prompt ? `Additional context:\n${request.prompt}` : '',
+    ].filter(Boolean).join('\n\n');
+
+    const payload = {
+      contents: [{
+        parts: [
+          {
+            inline_data: {
+              mime_type: screenshot.mimeType,
+              data: screenshot.base64,
+            },
+          },
+          {
+            text: textInstruction,
+          },
+        ],
+      }],
+    };
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+      signal: request.signal,
+    });
+
+    const responseText = await response.text();
+    if (!response.ok) {
+      const error: any = new Error(`Gemini Vision API error: ${response.status} - ${responseText}`);
+      error.status = response.status;
+      error.code = response.status === 429 ? 'RATE_LIMIT_EXCEEDED' : 'GEMINI_VISION_ERROR';
+      throw error;
+    }
+
+    let data: any = null;
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      throw new Error('Failed to parse Gemini Vision response');
+    }
+
+    const content = data?.candidates?.[0]?.content?.parts
+      ?.map((part: any) => (typeof part?.text === 'string' ? part.text : ''))
+      .join('\n')
+      .trim();
+    if (!content) {
+      throw new Error('Gemini Vision returned empty content');
+    }
+
+    return {
+      content,
+      rateLimit: {
+        provider: 'gemini',
+        mode: 'vision',
+      },
+    };
   }
 
   private resolveActiveFallbackProvider(primary: ProviderName): ProviderName | null {
@@ -788,6 +895,10 @@ Requirements:
   }
 
   async generate(request: LLMRequest): Promise<{ content: string, rateLimit?: any } | ReadableStream<any>> {
+    if (request.screenshotBase64 && String(request.screenshotBase64).trim()) {
+      return this.callGeminiVision(request);
+    }
+
     const requestedProvider = request.provider;
     const primaryProvider: ProviderName = this.generationPrimaryProvider;
     const effectiveRequest = this.prepareFallbackRequest(request, primaryProvider);

@@ -8,6 +8,7 @@ import { llmManager } from './llm/manager.js';
 import { codeProcessor } from '../utils/code-processor.js';
 import { supabase } from '../lib/supabase.js';
 import { validateRequest, generateSchema } from '../middleware/validation.js';
+import type { AuthenticatedRequest } from '../middleware/auth.js';
 import { getBaseTemplateFiles } from '../ai/project-pipeline/template-base.js';
 import { createFilePlan, filterFilesForLLMContext } from '../ai/project-pipeline/file-planner.js';
 import { assembleProjectFiles, hydrateMissingLocalImports, toProcessedFiles } from '../ai/project-pipeline/project-assembler.js';
@@ -97,6 +98,7 @@ import {
 import { STACK_CONSTRAINT } from '../prompts/designReferences.js';
 import { hydratePrompt, inferIndustryFromPrompt, type HydratedContext } from './hydration.js';
 import { getIndustryFonts } from '../prompts/industryProfiles.js';
+import { getGitHubConnectionStatus } from './git/github-integration.js';
 
 import { inferPromptUnderstandingWithAI, type PromptUnderstandingResult } from './generate-prompt-builder.js';
 import {
@@ -140,6 +142,29 @@ function ensureStackConstraintInSystemPrompt(baseSystemPrompt: string): string {
   }
   if (!normalized) return STACK_CONSTRAINT;
   return `${STACK_CONSTRAINT}\n\n${normalized}`;
+}
+
+function parseImageDataUrl(value: unknown): { mimeType: string; base64: string } | null {
+  const raw = String(value || '').trim();
+  if (!raw) return null;
+  const match = raw.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+  if (!match) return null;
+  const [, mimeType, base64] = match;
+  if (!mimeType || !base64) return null;
+  return { mimeType, base64 };
+}
+
+function buildScreenshotSystemPromptAddon(enabled: boolean): string {
+  if (!enabled) return '';
+  return `You are rebuilding a UI from a screenshot.
+Rules:
+- Match the layout exactly (grid, flex, positioning)
+- Match colors as closely as possible with Tailwind classes
+- Match typography sizes and weights
+- Preserve all visible text content from the screenshot
+- Use shadcn/ui components where appropriate
+- Make it fully responsive
+- Output complete multi-file structure as always`;
 }
 
 type FileMap = Record<string, string>;
@@ -749,6 +774,191 @@ function sanitizeProjectSourceFiles(files: Record<string, string>): Record<strin
   return sanitized;
 }
 
+function toTitleFromSlug(value: string): string {
+  return value
+    .replace(/[_-]+/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+function summarizeIntentText(value: string, maxLength = 180): string {
+  const normalized = String(value || '').trim().replace(/\s+/g, ' ');
+  if (!normalized) {
+    return 'Generated with AI Builder. This project is ready for local development and deployment.';
+  }
+  if (normalized.length <= maxLength) return normalized;
+  return `${normalized.slice(0, Math.max(24, maxLength - 3)).trimEnd()}...`;
+}
+
+function resolveReadmeProjectTitle(
+  files: Record<string, string>,
+  prompt: string,
+  hydratedContext: HydratedContext | null
+): string {
+  const pkgRaw = String(files['package.json'] || '').trim();
+  if (pkgRaw) {
+    try {
+      const parsed = JSON.parse(pkgRaw);
+      const pkgName = typeof parsed?.name === 'string' ? parsed.name.trim() : '';
+      if (pkgName) return toTitleFromSlug(pkgName);
+    } catch {
+      // ignore invalid package.json for README title inference
+    }
+  }
+
+  return extractFallbackProductName(prompt, hydratedContext);
+}
+
+function ensureGitIgnoreEntries(existingContent: string): string {
+  const required = ['node_modules', 'dist', '.env'];
+  const kept = new Set<string>();
+  const lines: string[] = [];
+
+  String(existingContent || '')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .forEach((line) => {
+      if (!kept.has(line)) {
+        kept.add(line);
+        lines.push(line);
+      }
+    });
+
+  required.forEach((entry) => {
+    if (!kept.has(entry)) {
+      lines.push(entry);
+      kept.add(entry);
+    }
+  });
+
+  return `${lines.join('\n')}\n`;
+}
+
+function collectRequiredEnvVars(files: Record<string, string>): string[] {
+  const found = new Set<string>();
+  const patterns = [
+    /import\.meta\.env\.([A-Z0-9_]+)/g,
+    /process\.env\.([A-Z0-9_]+)/g,
+  ];
+
+  for (const content of Object.values(files || {})) {
+    if (typeof content !== 'string' || !content) continue;
+    for (const pattern of patterns) {
+      pattern.lastIndex = 0;
+      let match: RegExpExecArray | null;
+      while ((match = pattern.exec(content)) !== null) {
+        const key = String(match[1] || '').trim();
+        if (!key) continue;
+        found.add(key);
+      }
+    }
+  }
+
+  return [...found].sort((a, b) => a.localeCompare(b));
+}
+
+function buildEnvExample(envVars: string[]): string {
+  const lines = ['# Example environment variables'];
+  envVars.forEach((key) => lines.push(`${key}=`));
+  return `${lines.join('\n')}\n`;
+}
+
+function readmeLooksComplete(content: string): boolean {
+  const normalized = String(content || '').toLowerCase();
+  if (!normalized) return false;
+  const requiredSnippets = ['npm install', 'npm run dev', 'npm run build'];
+  if (!requiredSnippets.every((snippet) => normalized.includes(snippet))) return false;
+  return normalized.length >= 180;
+}
+
+function buildGitHubReadme(input: {
+  title: string;
+  description: string;
+  repoUrl?: string;
+  files: Record<string, string>;
+}): string {
+  let stack = ['React', 'TypeScript', 'Vite'];
+  const pkgRaw = String(input.files['package.json'] || '').trim();
+  if (pkgRaw) {
+    try {
+      const parsed = JSON.parse(pkgRaw);
+      const deps = Object.keys(parsed?.dependencies || {});
+      const devDeps = Object.keys(parsed?.devDependencies || {});
+      const combined = [...deps, ...devDeps]
+        .filter((name) => typeof name === 'string' && name.trim().length > 0)
+        .slice(0, 6);
+      if (combined.length > 0) {
+        stack = combined;
+      }
+    } catch {
+      // ignore and fallback to default stack
+    }
+  }
+
+  const repoLine = input.repoUrl ? `\n\nRepository: ${input.repoUrl}` : '';
+  return `# ${input.title}
+
+${input.description}${repoLine}
+
+## Tech Stack
+
+- ${stack.join('\n- ')}
+
+## Installation
+
+\`\`\`bash
+npm install
+\`\`\`
+
+## Development
+
+\`\`\`bash
+npm run dev
+\`\`\`
+
+## Build
+
+\`\`\`bash
+npm run build
+\`\`\`
+`;
+}
+
+function ensureGitHubConnectedScaffoldFiles(input: {
+  files: Record<string, string>;
+  prompt: string;
+  hydratedContext: HydratedContext | null;
+  supabaseConnected: boolean;
+  repoUrl?: string | null;
+}): Record<string, string> {
+  const next = { ...input.files };
+  next['.gitignore'] = ensureGitIgnoreEntries(String(next['.gitignore'] || ''));
+
+  const envVars = collectRequiredEnvVars(next);
+  if (input.supabaseConnected) {
+    envVars.push('VITE_SUPABASE_URL', 'VITE_SUPABASE_ANON_KEY');
+  }
+  const dedupedEnvVars = [...new Set(envVars)].sort((a, b) => a.localeCompare(b));
+  next['.env.example'] = buildEnvExample(dedupedEnvVars);
+
+  const existingReadme = String(next['README.md'] || '');
+  if (!readmeLooksComplete(existingReadme)) {
+    const title = resolveReadmeProjectTitle(next, input.prompt, input.hydratedContext);
+    const description = summarizeIntentText(input.prompt, 180);
+    next['README.md'] = buildGitHubReadme({
+      title,
+      description,
+      repoUrl: input.repoUrl || undefined,
+      files: next,
+    });
+  }
+
+  return next;
+}
+
 interface PlannedFileContractResult {
   validPaths: string[];
   discardedPaths: string[];
@@ -1261,12 +1471,21 @@ type SupabaseIntegrationContext = {
   connected?: boolean;
   environment?: 'test' | 'live' | null;
   projectRef?: string | null;
+  projectUrl?: string | null;
   hasTestConnection?: boolean;
   hasLiveConnection?: boolean;
 };
 
+type GitHubIntegrationContext = {
+  connected?: boolean;
+  username?: string | null;
+  repoUrl?: string | null;
+  lastSync?: string | null;
+};
+
 type RequestIntegrations = {
   supabase?: SupabaseIntegrationContext | null;
+  github?: GitHubIntegrationContext | null;
 };
 
 interface GenerateRequest {
@@ -1284,6 +1503,8 @@ interface GenerateRequest {
   bundle?: boolean;
   files?: Record<string, string>;
   image?: string; // Base64 encoded image
+  screenshotBase64?: string;
+  screenshotMimeType?: string;
   knowledgeBase?: Array<{ path: string, content: string }>; // Context files
   featureFlags?: Partial<FeatureFlags>;
   userId?: string;
@@ -1505,6 +1726,7 @@ interface GenerateResponse {
         connected: boolean;
         environment: 'test' | 'live' | null;
         projectRef: string | null;
+        projectUrl?: string | null;
         hasTestConnection: boolean;
         hasLiveConnection: boolean;
       };
@@ -1570,6 +1792,8 @@ router.post('/generate', validateRequest(generateSchema), async (req, res) => {
       bundle = true,
       files,
       image,
+      screenshotBase64,
+      screenshotMimeType,
       knowledgeBase,
       userId,
       integrations,
@@ -1599,6 +1823,18 @@ router.post('/generate', validateRequest(generateSchema), async (req, res) => {
     }
 
     let executionProviderHint = llmManager.getExecutionProviderHint(provider);
+    const normalizedScreenshotBase64 = typeof screenshotBase64 === 'string' ? screenshotBase64.trim() : '';
+    const screenshotMimeFromImage = parseImageDataUrl(image)?.mimeType || '';
+    const normalizedScreenshotMimeType = typeof screenshotMimeType === 'string' && /^image\/[a-zA-Z0-9.+-]+$/.test(screenshotMimeType.trim())
+      ? screenshotMimeType.trim()
+      : (screenshotMimeFromImage || 'image/png');
+    const hasScreenshotInput = normalizedScreenshotBase64.length > 0;
+    const screenshotImageDataUrl = hasScreenshotInput
+      ? `data:${normalizedScreenshotMimeType};base64,${normalizedScreenshotBase64}`
+      : '';
+    const effectiveImagePayload = hasScreenshotInput
+      ? (image || screenshotImageDataUrl)
+      : image;
 
     const requestMode = mode === 'repair' ? 'repair' : 'generate';
     const normalizedErrorContext = typeof errorContext === 'string' ? errorContext.trim() : '';
@@ -1649,6 +1885,27 @@ router.post('/generate', validateRequest(generateSchema), async (req, res) => {
     const promptForPlanningBase = `${prompt}${repairContextSuffix}`;
     const promptForPlanning = visualAnchorPrompt ? `${promptForPlanningBase}\n\n${visualAnchorPrompt}` : promptForPlanningBase;
     const supabaseIntegration = integrations?.supabase || null;
+    const authUserId = (() => {
+      const authReq = req as AuthenticatedRequest;
+      const fromAuth = typeof authReq.authUser?.id === 'string' ? authReq.authUser.id.trim() : '';
+      if (fromAuth) return fromAuth;
+      return typeof requestBody.userId === 'string' ? requestBody.userId.trim() : '';
+    })();
+    let githubIntegration: GitHubIntegrationContext | null = integrations?.github || null;
+    if (authUserId && requestBody.projectId) {
+      try {
+        const githubStatus = await getGitHubConnectionStatus(authUserId, requestBody.projectId);
+        githubIntegration = {
+          connected: githubStatus.connected,
+          username: githubStatus.username || null,
+          repoUrl: githubStatus.repoUrl || null,
+          lastSync: githubStatus.lastSync || null,
+        };
+      } catch (githubStatusError: any) {
+        console.warn(`[GitHub Sync] Failed to resolve project GitHub status: ${githubStatusError?.message || 'unknown error'}`);
+      }
+    }
+    const githubConnected = Boolean(githubIntegration?.connected);
     const backendIntentDetected = detectBackendIntent(promptForPlanning);
     const supabaseIntegrationContextPrompt = buildSupabaseIntegrationPrompt(supabaseIntegration, backendIntentDetected);
     const integrationWarnings: string[] = [];
@@ -1815,7 +2072,9 @@ ${contractReadOnlyFiles.map((path) => `  - ${path}`).join('\n')}
         resolvedProjectPlan.finalPlan.brand,
         resolvedProjectPlan.finalPlan.language
       )}\n\n${editQualityContext}${domainPackSuffix}${diversityContext}${integrationContextSuffix}${contractContextSuffix}${sectionPlan.instructionSuffix}${complexRouteSuffix}`;
-    const classifiedPipelinePath = classifyRequest(prompt, contextualFiles);
+    const classifiedPipelinePath = hasScreenshotInput
+      ? 'deep'
+      : classifyRequest(prompt, contextualFiles);
 
     const tokenBudget = createTokenBudget({
       provider: executionProviderHint,
@@ -1838,8 +2097,9 @@ ${contractReadOnlyFiles.map((path) => `  - ${path}`).join('\n')}
       promptForGeneration,
       lowTokenMode ? 5000 : complexRouteProfile.promptLimit
     );
+    const screenshotSystemPromptAddon = buildScreenshotSystemPromptAddon(hasScreenshotInput);
     const generationSystemPrompt = truncateForPrompt(
-      ensureStackConstraintInSystemPrompt(systemPrompt || ''),
+      `${ensureStackConstraintInSystemPrompt(systemPrompt || '')}${screenshotSystemPromptAddon ? `\n\n${screenshotSystemPromptAddon}` : ''}`,
       lowTokenMode ? 7000 : complexRouteProfile.systemLimit
     );
 
@@ -1977,7 +2237,11 @@ ${contractReadOnlyFiles.map((path) => `  - ${path}`).join('\n')}
     const useNodeGraphRouter = !useMultiAgent;
     let hydratedContextForResponse: HydratedContext | null = null;
     let routedPipelinePath: PipelinePath = useNodeGraphRouter ? classifiedPipelinePath : 'deep';
-    if (useNodeGraphRouter && routedPipelinePath === 'fast') {
+    if (hasScreenshotInput) {
+      routedPipelinePath = 'deep';
+      hydratedContextForResponse = null;
+      console.log('[ScreenshotMode] Screenshot provided -> skipping hydration and forcing DEEP pipeline');
+    } else if (useNodeGraphRouter && routedPipelinePath === 'fast') {
       try {
         hydratedContextForResponse = await hydratePrompt(promptForPlanning, contextualFiles);
         if (hydratedContextForResponse.complexity === 'complex') {
@@ -2019,11 +2283,15 @@ ${contractReadOnlyFiles.map((path) => `  - ${path}`).join('\n')}
             temperature: temperature || 0.7,
             maxTokens: tokenBudget.generationMaxTokens,
             currentFiles: scopedContextFiles,
-            image,
+            image: effectiveImagePayload,
+            screenshotBase64: normalizedScreenshotBase64 || undefined,
+            screenshotMimeType: hasScreenshotInput ? normalizedScreenshotMimeType : undefined,
             knowledgeBase,
             featureFlags: effectiveFeatureFlags,
             signal: orchestratorAbortController.signal,
             hydratedContext: hydratedContextForResponse,
+            supabaseIntegration,
+            githubIntegration,
           }),
           orchestratorTimeoutMs,
           () => orchestratorAbortController.abort()
@@ -2106,7 +2374,9 @@ ${contractReadOnlyFiles.map((path) => `  - ${path}`).join('\n')}
               maxTokens: tokenBudget.generationMaxTokens,
               stream: false,
               currentFiles: scopedContextFiles,
-              image,
+              image: effectiveImagePayload,
+              screenshotBase64: normalizedScreenshotBase64 || undefined,
+              screenshotMimeType: hasScreenshotInput ? normalizedScreenshotMimeType : undefined,
               knowledgeBase
             }),
             TIMEOUT_MS
@@ -2209,7 +2479,9 @@ ${contractReadOnlyFiles.map((path) => `  - ${path}`).join('\n')}
             maxTokens: tokenBudget.generationMaxTokens,
             stream: false,
             currentFiles: scopedContextFiles,
-            image,
+            image: effectiveImagePayload,
+            screenshotBase64: normalizedScreenshotBase64 || undefined,
+            screenshotMimeType: hasScreenshotInput ? normalizedScreenshotMimeType : undefined,
             knowledgeBase
           }),
           TIMEOUT_MS
@@ -2234,7 +2506,9 @@ ${contractReadOnlyFiles.map((path) => `  - ${path}`).join('\n')}
           maxTokens: tokenBudget.generationMaxTokens,
           stream: false,
           currentFiles: scopedContextFiles,
-          image,
+          image: effectiveImagePayload,
+          screenshotBase64: normalizedScreenshotBase64 || undefined,
+          screenshotMimeType: hasScreenshotInput ? normalizedScreenshotMimeType : undefined,
           knowledgeBase
         }),
         TIMEOUT_MS
@@ -2575,7 +2849,9 @@ CRITICAL STYLE ENFORCEMENT:
               maxTokens: tokenBudget.generationMaxTokens,
               stream: false,
               currentFiles: scopedContextFiles,
-              image,
+              image: effectiveImagePayload,
+              screenshotBase64: normalizedScreenshotBase64 || undefined,
+              screenshotMimeType: hasScreenshotInput ? normalizedScreenshotMimeType : undefined,
               knowledgeBase
             }),
             TIMEOUT_MS
@@ -3274,6 +3550,18 @@ CRITICAL STYLE ENFORCEMENT:
       );
     }
 
+    if (githubConnected) {
+      sanitizedFileMap = sanitizeProjectSourceFiles(
+        ensureGitHubConnectedScaffoldFiles({
+          files: sanitizedFileMap,
+          prompt,
+          hydratedContext: hydratedContextForResponse,
+          supabaseConnected: Boolean(supabaseIntegration?.connected),
+          repoUrl: githubIntegration?.repoUrl || null,
+        })
+      );
+    }
+
     storeDesignGenome(requestBody.projectId, extractDesignGenomeFromFiles(sanitizedFileMap));
 
     let responseFiles = toProcessedFiles(sanitizedFileMap) as ProcessedFile[];
@@ -3583,9 +3871,16 @@ CRITICAL STYLE ENFORCEMENT:
           connected: Boolean(supabaseIntegration?.connected),
           environment: supabaseIntegration?.environment || null,
           projectRef: supabaseIntegration?.projectRef || null,
+          projectUrl: supabaseIntegration?.projectUrl || null,
           hasTestConnection: Boolean(supabaseIntegration?.hasTestConnection),
           hasLiveConnection: Boolean(supabaseIntegration?.hasLiveConnection),
-        }
+        },
+        github: {
+          connected: githubConnected,
+          username: githubIntegration?.username || null,
+          repoUrl: githubIntegration?.repoUrl || null,
+          lastSync: githubIntegration?.lastSync || null,
+        },
       }
     };
 

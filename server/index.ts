@@ -254,6 +254,7 @@ async function startServer() {
     console.log(`🔑 OpenRouter API Key: ${getOpenRouterApiKey() ? '✓ Configured' : '✗ Missing'}`);
     console.log(`🔑 NVIDIA API Key: ${getNvidiaApiKey() ? '✓ Configured' : '✗ Missing'}`);
     console.log(`🔑 DeepSeek API Key: ${process.env.DEEPSEEK_API_KEY ? '✓ Configured' : '✗ Missing'}`);
+    console.log(`🔑 Vercel Token: ${process.env.VERCEL_TOKEN ? '✓ Configured' : '✗ Missing'}`);
     if (exposedSecrets.length > 0) {
       console.warn(
         `[Security] Client-exposed secret env keys detected: ${exposedSecrets.join(', ')}. ` +

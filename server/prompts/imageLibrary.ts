@@ -59,5 +59,8 @@ export const INDUSTRY_IMAGES: Record<HydrationIndustry, string[]> = {
     'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800&q=80',
     'https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&q=80',
   ],
+  dashboard: [
+    'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80',
+    'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&q=80',
+  ],
 };
-

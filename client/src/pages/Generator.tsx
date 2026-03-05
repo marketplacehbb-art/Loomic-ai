@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { ImageIcon, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { MonacoEditor } from '../components/MonacoEditor';
 import { CodePreview } from '../components/CodePreview';
@@ -9,6 +10,7 @@ import {
   Project,
   type CloudOverviewResponse,
   type CloudState,
+  type GitHubSyncStatusResponse,
   type ProjectPublication,
   type PublishAccess,
   type SupabaseIntegrationEnvironment,
@@ -22,9 +24,10 @@ import PatchDiffPreview from '../components/PatchDiffPreview';
 import { useOperationHistory } from '../hooks/useOperationHistory';
 import { useVisualWorkflow, type VisualPatchDiagnostics } from '../hooks/useVisualWorkflow';
 import VisualEditPanel, { type VisualEditIntent } from '../components/VisualEditPanel';
-import SupabaseConnectModal from '../components/SupabaseConnectModal';
+import SupabaseConnect from '../components/SupabaseConnect';
 import CloudWorkspace from '../components/CloudWorkspace';
 import PublishModal from '../components/PublishModal';
+import GitHubSync from '../components/GitHubSync';
 import GenerationTimeline, {
   TIMELINE_BUNDLING_INDEX,
   TIMELINE_READY_INDEX,
@@ -383,6 +386,7 @@ const buildSupabaseGenerateContext = (
     connected: Boolean(activeEnvironment),
     environment: activeEnvironment,
     projectRef: active?.projectRef || null,
+    projectUrl: active?.projectUrl || null,
     hasTestConnection: testConnected,
     hasLiveConnection: liveConnected,
   };
@@ -475,6 +479,21 @@ const parseJsonPayload = (raw: string, errorPrefix: string): any => {
   } catch {
     throw new Error(`${errorPrefix}: ungueltiges JSON`);
   }
+};
+
+const extractScreenshotPayload = (
+  dataUrl: string | null
+): { screenshotBase64: string; screenshotMimeType: string } | null => {
+  const raw = String(dataUrl || '').trim();
+  if (!raw) return null;
+  const match = raw.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+  if (!match) return null;
+  const [, screenshotMimeType, screenshotBase64] = match;
+  if (!screenshotMimeType || !screenshotBase64) return null;
+  return {
+    screenshotBase64,
+    screenshotMimeType,
+  };
 };
 
 const fetchGenerateWithTimeout = async (accessToken: string, payload: Record<string, unknown>) => {
@@ -682,10 +701,13 @@ export default function Generator() {
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const [showModelSwitcher, setShowModelSwitcher] = useState(false);
   const [showSupabaseModal, setShowSupabaseModal] = useState(false);
+  const [showGitHubSyncModal, setShowGitHubSyncModal] = useState(false);
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [publication, setPublication] = useState<ProjectPublication | null>(null);
   const [publishLoading, setPublishLoading] = useState(false);
   const [publishSubmitting, setPublishSubmitting] = useState(false);
+  const [gitHubSyncStatus, setGitHubSyncStatus] = useState<GitHubSyncStatusResponse | null>(null);
+  const [gitHubSyncLoading, setGitHubSyncLoading] = useState(false);
   const [supabaseStatus, setSupabaseStatus] = useState<Record<SupabaseIntegrationEnvironment, SupabaseIntegrationEnvStatus>>(defaultSupabaseIntegrationStatus);
   const [supabaseStatusLoading, setSupabaseStatusLoading] = useState(false);
   const [cloudState, setCloudState] = useState<CloudState | null>(null);
@@ -977,10 +999,19 @@ export default function Generator() {
       setSupabaseStatusLoading(true);
       const response = await api.getSupabaseIntegrationStatus(projectId);
       if (response.success && response.status) {
-        setSupabaseStatus({
+        const next = {
           test: response.status.test || defaultSupabaseIntegrationStatus.test,
           live: response.status.live || defaultSupabaseIntegrationStatus.live,
-        });
+        };
+        if (response.connected && response.projectUrl) {
+          const targetEnv = response.environment === 'live' ? 'live' : 'test';
+          next[targetEnv] = {
+            ...next[targetEnv],
+            connected: true,
+            projectUrl: response.projectUrl,
+          };
+        }
+        setSupabaseStatus(next);
       } else {
         setSupabaseStatus(defaultSupabaseIntegrationStatus);
       }
@@ -1057,6 +1088,24 @@ export default function Generator() {
     }
   }, []);
 
+  const loadGitHubSyncStatus = useCallback(async (projectId?: string) => {
+    if (!projectId) {
+      setGitHubSyncStatus(null);
+      return;
+    }
+
+    try {
+      setGitHubSyncLoading(true);
+      const response = await api.git.githubStatus(projectId);
+      setGitHubSyncStatus(response);
+    } catch (gitHubError) {
+      console.error('Failed to load GitHub sync status:', gitHubError);
+      setGitHubSyncStatus({ connected: false });
+    } finally {
+      setGitHubSyncLoading(false);
+    }
+  }, []);
+
   const publishProject = useCallback(async (input: {
     slug: string;
     access: PublishAccess;
@@ -1122,6 +1171,37 @@ export default function Generator() {
     }
   }, [currentProject?.id]);
 
+  const deployProjectToVercel = useCallback(async () => {
+    if (!currentProject?.id) {
+      throw new Error('Bitte zuerst ein Projekt laden oder erstellen.');
+    }
+
+    const response = await api.deployToVercel({ projectId: currentProject.id });
+    if (!response.success || !response.url || !response.deploymentId) {
+      throw new Error(response.error || 'Vercel deployment failed.');
+    }
+
+    if (response.publication) {
+      setPublication(response.publication);
+    } else {
+      await loadPublishStatus(currentProject.id);
+    }
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: 'assistant',
+        content: `Vercel live: ${response.url}`,
+      },
+    ]);
+
+    return {
+      url: response.url,
+      deploymentId: response.deploymentId,
+      lastDeployedAt: response.publication?.lastDeployedAt || null,
+    };
+  }, [currentProject?.id, loadPublishStatus]);
+
   const enableCloud = useCallback(async (source: string = 'manual') => {
     if (!currentProject?.id) {
       setError('Bitte zuerst ein Projekt laden oder erstellen.');
@@ -1150,7 +1230,7 @@ export default function Generator() {
     }
   }, [currentProject?.id, loadCloudOverview, loadSupabaseIntegrationStatus]);
 
-  const startSupabaseConnect = useCallback(async (input: { environment: SupabaseIntegrationEnvironment; projectRef?: string }) => {
+  const connectSupabaseCredentials = useCallback(async (input: { projectUrl: string; anonKey: string }) => {
     if (!currentProject?.id) {
       setError('Bitte zuerst ein Projekt laden oder erstellen.');
       return;
@@ -1158,24 +1238,33 @@ export default function Generator() {
 
     try {
       setError(null);
-      const response = await api.createSupabaseConnectLink({
+      const response = await api.connectSupabaseCredentials({
         projectId: currentProject.id,
-        environment: input.environment,
-        projectRef: input.projectRef,
+        projectUrl: input.projectUrl,
+        anonKey: input.anonKey,
       });
-
-      if (!response.success || !response.authorizeUrl) {
-        throw new Error(response.error || 'Supabase OAuth konnte nicht gestartet werden.');
+      if (!response.success || !response.connected) {
+        throw new Error(response.error || 'Supabase konnte nicht verbunden werden.');
       }
 
-      window.location.href = response.authorizeUrl;
+      await Promise.all([
+        loadSupabaseIntegrationStatus(currentProject.id),
+        loadCloudOverview(currentProject.id),
+      ]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: `Supabase verbunden: ${response.projectUrl || input.projectUrl}`,
+        },
+      ]);
     } catch (connectError: any) {
-      console.error('Failed to start Supabase OAuth:', connectError);
-      setError(connectError?.message || 'Supabase OAuth konnte nicht gestartet werden.');
+      console.error('Failed to connect Supabase credentials:', connectError);
+      setError(connectError?.message || 'Supabase konnte nicht verbunden werden.');
     }
-  }, [currentProject?.id]);
+  }, [currentProject?.id, loadCloudOverview, loadSupabaseIntegrationStatus]);
 
-  const disconnectSupabaseConnection = useCallback(async (environment: SupabaseIntegrationEnvironment) => {
+  const disconnectSupabaseConnection = useCallback(async () => {
     if (!currentProject?.id) {
       setError('Bitte zuerst ein Projekt laden oder erstellen.');
       return;
@@ -1183,9 +1272,8 @@ export default function Generator() {
 
     try {
       setError(null);
-      const response = await api.disconnectSupabaseIntegration({
+      const response = await api.disconnectSupabaseCredentials({
         projectId: currentProject.id,
-        environment,
       });
       if (!response.success) {
         throw new Error(response.error || 'Supabase konnte nicht getrennt werden.');
@@ -1197,7 +1285,7 @@ export default function Generator() {
         ...prev,
         {
           role: 'assistant',
-          content: `Supabase (${environment.toUpperCase()}) wurde getrennt.`,
+          content: 'Supabase wurde getrennt.',
         },
       ]);
     } catch (disconnectError: any) {
@@ -1743,7 +1831,8 @@ export default function Generator() {
     void loadCloudState(currentProject?.id);
     void loadCloudOverview(currentProject?.id);
     void loadPublishStatus(currentProject?.id);
-  }, [currentProject?.id, loadCloudOverview, loadCloudState, loadPublishStatus, loadSupabaseIntegrationStatus]);
+    void loadGitHubSyncStatus(currentProject?.id);
+  }, [currentProject?.id, loadCloudOverview, loadCloudState, loadPublishStatus, loadSupabaseIntegrationStatus, loadGitHubSyncStatus]);
 
   useEffect(() => {
     const oauthStatus = searchParams.get('supabase_oauth');
@@ -2014,16 +2103,6 @@ export default function Generator() {
       iframe.contentWindow.postMessage({ type: 'SET_AUTO_INLINE_EDIT', payload: autoInlineEdit }, '*');
     }
   }, [autoInlineEdit, previewRefreshToken, files]);
-
-  // Clear image when switching away from Gemini
-  useEffect(() => {
-    if (provider !== 'gemini') {
-      setAttachedImage(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
-  }, [provider]);
 
   useEffect(() => {
     if (workspaceMode === 'visual') {
@@ -2527,6 +2606,7 @@ export default function Generator() {
     }
 
     try {
+      const screenshotPayload = extractScreenshotPayload(attachedImage);
       const response = await fetchGenerateWithTimeout(
         accessToken,
         {
@@ -2540,7 +2620,9 @@ export default function Generator() {
             ? (isReliableVisualAnchor(selectedEditAnchor || {}) ? selectedEditAnchor : strictVisualAnchors[0])
             : undefined,
 
-          image: attachedImage, // Send image if present
+          image: attachedImage, // legacy field (data URL)
+          screenshotBase64: screenshotPayload?.screenshotBase64,
+          screenshotMimeType: screenshotPayload?.screenshotMimeType,
           knowledgeBase: knowledgeFiles.length > 0 ? knowledgeFiles.map(f => ({ path: f.name, content: f.content })) : undefined,
           userId: user?.id, // Pass User ID for logging
           projectId: generationProjectId, // Pass Project ID for persistence only in edit mode
@@ -2989,6 +3071,10 @@ export default function Generator() {
       : supabaseConnectedCount === 1
         ? (supabaseStatus.live?.connected ? 'Supabase: Live' : 'Supabase: Test')
         : 'Supabase: Disconnected';
+  const gitHubConnected = Boolean(gitHubSyncStatus?.connected);
+  const gitHubConnectionLabel = gitHubConnected
+    ? (gitHubSyncStatus?.repoUrl ? `GitHub connected: ${gitHubSyncStatus.repoUrl}` : 'GitHub connected')
+    : 'GitHub sync';
   const isPublished = publication?.status === 'published';
   const publishButtonLabel = isPublished ? 'Published' : 'Publish';
   const publishButtonTone = isPublished
@@ -3459,7 +3545,7 @@ export default function Generator() {
                   <span className="text-[10px] text-slate-500">Ready to analyze</span>
                 </div>
                 <button onClick={removeImage} className="ml-auto rounded p-1 text-slate-500 transition-colors hover:bg-white/5 hover:text-slate-300">
-                  <span className="material-icons-round text-sm">close</span>
+                  <X className="h-4 w-4" />
                 </button>
               </div>
             )}
@@ -3503,6 +3589,13 @@ export default function Generator() {
                       title="Add context"
                     >
                       <span className="material-icons-round text-[19px]">add</span>
+                    </button>
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-600 text-slate-300 transition-colors hover:border-slate-500 hover:bg-white/5 hover:text-white"
+                      title="Upload screenshot"
+                    >
+                      <ImageIcon className="h-4 w-4" />
                     </button>
 
                     <button
@@ -3877,6 +3970,21 @@ export default function Generator() {
                     <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-emerald-300" />
                   )}
                 </button>
+                <button
+                  onClick={() => setShowGitHubSyncModal(true)}
+                  className={`relative inline-flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${
+                    gitHubConnected
+                      ? 'border-blue-400/30 bg-blue-500/[0.10] text-blue-200 hover:bg-blue-500/[0.16]'
+                      : 'border-[#364056] bg-[#121722] text-slate-300 hover:bg-[#192033]'
+                  }`}
+                  title={gitHubConnectionLabel}
+                  aria-label="GitHub sync"
+                >
+                  <span className="material-icons-round text-[18px]">source</span>
+                  {gitHubConnected && (
+                    <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-blue-300" />
+                  )}
+                </button>
                 <Link
                   to="/dashboard"
                   className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
@@ -4107,16 +4215,29 @@ export default function Generator() {
           }}
         />
       )}
-      <SupabaseConnectModal
+      <SupabaseConnect
         open={showSupabaseModal}
         onClose={() => setShowSupabaseModal(false)}
         projectId={currentProject?.id}
         projectName={currentProject?.name}
-        status={supabaseStatus}
+        connected={Boolean(supabaseStatus.live?.connected || supabaseStatus.test?.connected)}
+        projectUrl={
+          supabaseStatus.live?.projectUrl ||
+          supabaseStatus.test?.projectUrl ||
+          null
+        }
         loading={supabaseStatusLoading}
-        onRefresh={() => void loadSupabaseIntegrationStatus(currentProject?.id)}
-        onConnect={startSupabaseConnect}
+        onConnect={connectSupabaseCredentials}
         onDisconnect={disconnectSupabaseConnection}
+      />
+      <GitHubSync
+        open={showGitHubSyncModal}
+        onClose={() => setShowGitHubSyncModal(false)}
+        projectId={currentProject?.id}
+        projectName={currentProject?.name}
+        status={gitHubSyncStatus}
+        loading={gitHubSyncLoading}
+        onRefresh={() => loadGitHubSyncStatus(currentProject?.id)}
       />
       <PublishModal
         open={showPublishModal}
@@ -4128,6 +4249,7 @@ export default function Generator() {
         submitting={publishSubmitting}
         onRefresh={() => void loadPublishStatus(currentProject?.id)}
         onPublish={publishProject}
+        onDeployVercel={deployProjectToVercel}
         onUnpublish={unpublishProject}
       />
     </div>

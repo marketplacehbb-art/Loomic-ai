@@ -95,6 +95,7 @@ export interface SupabaseIntegrationEnvStatus {
     connected: boolean;
     connectedAt?: string | null;
     projectRef?: string | null;
+    projectUrl?: string | null;
     scopes?: string[];
     tokenExpiresAt?: string | null;
     updatedAt?: string | null;
@@ -105,6 +106,25 @@ export interface SupabaseIntegrationEnvStatus {
 export interface SupabaseIntegrationStatusResponse {
     success: boolean;
     status: Record<SupabaseIntegrationEnvironment, SupabaseIntegrationEnvStatus>;
+    connected?: boolean;
+    projectUrl?: string | null;
+    environment?: SupabaseIntegrationEnvironment | null;
+    error?: string;
+}
+
+export interface SupabaseCredentialConnectResponse {
+    success: boolean;
+    connected?: boolean;
+    projectUrl?: string | null;
+    environment?: SupabaseIntegrationEnvironment;
+    mode?: 'db' | 'memory';
+    error?: string;
+}
+
+export interface SupabaseGenerateSchemaResponse {
+    success: boolean;
+    sql?: string;
+    tables?: string[];
     error?: string;
 }
 
@@ -201,6 +221,7 @@ export interface CloudOverviewResponse {
 
 export type PublishStatus = 'draft' | 'publishing' | 'published' | 'failed';
 export type PublishAccess = 'public' | 'unlisted' | 'private';
+export type VercelDeployStatus = 'building' | 'ready' | 'error';
 
 export interface ProjectPublication {
     projectId: string;
@@ -213,6 +234,10 @@ export interface ProjectPublication {
     releaseVersion?: number;
     publishedAt?: string | null;
     lastError?: string | null;
+    vercelDeploymentId?: string | null;
+    vercelUrl?: string | null;
+    vercelStatus?: VercelDeployStatus | null;
+    lastDeployedAt?: string | null;
     mode?: 'db' | 'memory';
     updatedAt?: string | null;
 }
@@ -220,6 +245,41 @@ export interface ProjectPublication {
 export interface PublishStatusResponse {
     success: boolean;
     publication?: ProjectPublication;
+    error?: string;
+}
+
+export interface VercelDeployResponse {
+    success: boolean;
+    url?: string;
+    deploymentId?: string;
+    publication?: ProjectPublication;
+    error?: string;
+}
+
+export interface VercelDeployStatusResponse {
+    success: boolean;
+    status?: VercelDeployStatus;
+    url?: string;
+    error?: string;
+}
+
+export interface GitHubConnectResponse {
+    connected: boolean;
+    username?: string;
+    error?: string;
+}
+
+export interface GitHubSyncStatusResponse {
+    connected: boolean;
+    repoUrl?: string;
+    lastSync?: string;
+    username?: string;
+    error?: string;
+}
+
+export interface GitHubPushResponse {
+    success: boolean;
+    repoUrl?: string;
     error?: string;
 }
 
@@ -658,6 +718,20 @@ export const api = {
         return response.json();
     },
 
+    async connectSupabaseCredentials(input: {
+        projectId: string;
+        projectUrl: string;
+        anonKey: string;
+        environment?: SupabaseIntegrationEnvironment;
+    }): Promise<SupabaseCredentialConnectResponse> {
+        const response = await fetch(`${API_URL}/api/integrations/supabase/connect`, {
+            method: 'POST',
+            headers: await buildAuthHeaders(true),
+            body: JSON.stringify(input),
+        });
+        return response.json() as Promise<SupabaseCredentialConnectResponse>;
+    },
+
     async disconnectSupabaseIntegration(input: {
         projectId: string;
         environment: SupabaseIntegrationEnvironment;
@@ -668,6 +742,30 @@ export const api = {
             body: JSON.stringify(input),
         });
         return response.json();
+    },
+
+    async disconnectSupabaseCredentials(input: {
+        projectId: string;
+        environment?: SupabaseIntegrationEnvironment;
+    }): Promise<{ success: boolean; connected?: boolean; mode?: 'db' | 'memory'; error?: string; }> {
+        const response = await fetch(`${API_URL}/api/integrations/supabase/disconnect`, {
+            method: 'POST',
+            headers: await buildAuthHeaders(true),
+            body: JSON.stringify(input),
+        });
+        return response.json();
+    },
+
+    async generateSupabaseSchema(input: {
+        projectId: string;
+        description: string;
+    }): Promise<SupabaseGenerateSchemaResponse> {
+        const response = await fetch(`${API_URL}/api/integrations/supabase/generate-schema`, {
+            method: 'POST',
+            headers: await buildAuthHeaders(true),
+            body: JSON.stringify(input),
+        });
+        return response.json() as Promise<SupabaseGenerateSchemaResponse>;
     },
 
     async getSupabaseIntegrationLinks(
@@ -776,6 +874,23 @@ export const api = {
         return response.json() as Promise<PublishStatusResponse>;
     },
 
+    async deployToVercel(input: { projectId: string }): Promise<VercelDeployResponse> {
+        const response = await fetch(`${API_URL}/api/publish/deploy-vercel`, {
+            method: 'POST',
+            headers: await buildAuthHeaders(true),
+            body: JSON.stringify(input),
+        });
+        return response.json() as Promise<VercelDeployResponse>;
+    },
+
+    async getVercelDeployStatus(deploymentId: string): Promise<VercelDeployStatusResponse> {
+        const response = await fetch(`${API_URL}/api/publish/deploy-status/${encodeURIComponent(deploymentId)}`, {
+            method: 'GET',
+            headers: await buildAuthHeaders(false),
+        });
+        return response.json() as Promise<VercelDeployStatusResponse>;
+    },
+
     async runSecurityScan(input: {
         projectId: string;
         environment?: SupabaseIntegrationEnvironment;
@@ -823,6 +938,30 @@ export const api = {
                 throw new Error(body.error || `Git status failed (${response.status})`);
             }
             return response.json();
+        },
+        githubStatus: async (projectId: string): Promise<GitHubSyncStatusResponse> => {
+            const query = new URLSearchParams({ projectId }).toString();
+            const response = await fetch(`${API_URL}/api/git/status?${query}`, {
+                method: 'GET',
+                headers: await buildAuthHeaders(false),
+            });
+            if (!response.ok) {
+                const body = await response.json().catch(() => ({})) as any;
+                throw new Error(body.error || `GitHub status failed (${response.status})`);
+            }
+            return response.json() as Promise<GitHubSyncStatusResponse>;
+        },
+        connect: async (token: string, projectId: string): Promise<GitHubConnectResponse> => {
+            const response = await fetch(`${API_URL}/api/git/connect`, {
+                method: 'POST',
+                headers: await buildAuthHeaders(true),
+                body: JSON.stringify({ token, projectId }),
+            });
+            if (!response.ok) {
+                const body = await response.json().catch(() => ({})) as any;
+                throw new Error(body.error || `GitHub connect failed (${response.status})`);
+            }
+            return response.json() as Promise<GitHubConnectResponse>;
         },
         add: async (files: string | string[], projectId = 'default') => {
             const response = await fetch(`${API_URL}/api/git/add`, {
@@ -895,6 +1034,23 @@ export const api = {
                 throw new Error(body.error || `Git push failed (${response.status})`);
             }
             return response.json();
+        },
+        pushToGitHub: async (input: {
+            projectId: string;
+            repoName: string;
+            createNew: boolean;
+            commitMessage?: string;
+        }): Promise<GitHubPushResponse> => {
+            const response = await fetch(`${API_URL}/api/git/push`, {
+                method: 'POST',
+                headers: await buildAuthHeaders(true),
+                body: JSON.stringify(input),
+            });
+            if (!response.ok) {
+                const body = await response.json().catch(() => ({})) as any;
+                throw new Error(body.error || `GitHub push failed (${response.status})`);
+            }
+            return response.json() as Promise<GitHubPushResponse>;
         }
     }
 };
