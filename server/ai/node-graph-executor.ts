@@ -29,6 +29,7 @@ type GitHubIntegrationContext = {
 export interface GenerateInput {
   provider: LLMRequest['provider'];
   generationMode: 'new' | 'edit';
+  requestMode?: 'generate' | 'repair' | 'visual-edit';
   prompt: string;
   systemPrompt?: string;
   temperature?: number;
@@ -41,6 +42,14 @@ export interface GenerateInput {
   hydratedContext?: HydratedContext | null;
   supabaseIntegration?: SupabaseIntegrationContext;
   githubIntegration?: GitHubIntegrationContext;
+  visualEditContext?: {
+    targetElement?: {
+      tagName?: string;
+      className?: string;
+      textContent?: string;
+    };
+    editInstruction?: string;
+  };
   screenshotBase64?: string;
   screenshotMimeType?: string;
 }
@@ -383,6 +392,35 @@ VERIFICATION - before outputting check:
 - All text has mobile size defined first
 - No horizontal overflow on mobile (avoid fixed widths)
 - All images are responsive`;
+
+const EDIT_MODE_RULES = `EDIT MODE RULES:
+- You are making TARGETED changes to existing code
+- Only modify what the user explicitly asked to change
+- Keep ALL other code exactly as-is
+- Do not reorganize, rename, or refactor anything not mentioned
+- Do not add new sections unless explicitly asked
+- Return the COMPLETE modified file, not just the changed lines
+- If changing a color: find and change ALL instances of that color
+- If adding a section: add it in the logical position in the page`;
+
+const buildVisualEditModeRules = (
+  context: GenerateInput['visualEditContext']
+): string => {
+  const tagName = String(context?.targetElement?.tagName || 'element').trim().toLowerCase();
+  const className = String(context?.targetElement?.className || '').trim();
+  const textContent = String(context?.targetElement?.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 160);
+  const instruction = String(context?.editInstruction || '').replace(/\s+/g, ' ').trim();
+  return `VISUAL EDIT MODE:
+Target element: ${tagName} with className='${className || 'n/a'}'
+containing text='${textContent || 'n/a'}'
+Edit instruction: ${instruction || 'apply the requested change'}
+
+Rules:
+- Find this EXACT element in the code by its className or text content
+- Apply ONLY the requested change to this element
+- Do not change anything else
+- Return the complete modified file`;
+};
 
 type IndustryFonts = {
   heading: string;
@@ -876,6 +914,9 @@ const ensureStackConstraintInSystemPrompt = (
   baseSystemPrompt: string | undefined,
   hydratedContext: HydratedContext | null | undefined,
   prompt: string,
+  generationMode: 'new' | 'edit',
+  requestMode: GenerateInput['requestMode'],
+  visualEditContext: GenerateInput['visualEditContext'],
   supabaseIntegration?: SupabaseIntegrationContext,
   githubIntegration?: GitHubIntegrationContext,
   screenshotMode: boolean = false
@@ -915,9 +956,13 @@ const ensureStackConstraintInSystemPrompt = (
   const includesMobileFirstRules = withStack.includes('MOBILE-FIRST RULES - strictly enforced:');
   const includesTypographyRules = withStack.includes('TYPOGRAPHY RULES:');
   const includesIndexHtmlFontInjection = withStack.includes('INDEX_HTML_FONT_INJECTION:');
+  const includesEditModeRules = withStack.includes('EDIT MODE RULES:');
+  const includesVisualEditBlock = withStack.includes('VISUAL EDIT MODE:');
   const includesSupabaseBlock = withStack.includes('SUPABASE INTEGRATION - this project uses Supabase:');
   const includesGitHubBlock = withStack.includes('GITHUB INTEGRATION - this project is synced with GitHub:');
   const includesScreenshotBlock = withStack.includes('You are rebuilding a UI from a screenshot.');
+  const editModeBlock = generationMode === 'edit' ? EDIT_MODE_RULES : '';
+  const visualEditBlock = requestMode === 'visual-edit' ? buildVisualEditModeRules(visualEditContext) : '';
   const supabaseBlock = buildSupabaseSystemPromptBlock(supabaseIntegration);
   const githubBlock = buildGitHubSystemPromptBlock(githubIntegration);
   const screenshotBlock = buildScreenshotSystemPromptBlock(screenshotMode);
@@ -935,6 +980,8 @@ const ensureStackConstraintInSystemPrompt = (
       includesMobileFirstRules &&
       includesTypographyRules &&
       includesIndexHtmlFontInjection &&
+      (includesEditModeRules || !editModeBlock) &&
+      (includesVisualEditBlock || !visualEditBlock) &&
       (includesSupabaseBlock || !supabaseBlock) &&
       (includesGitHubBlock || !githubBlock) &&
       (includesScreenshotBlock || !screenshotBlock)
@@ -949,6 +996,8 @@ const ensureStackConstraintInSystemPrompt = (
     ROUTING_RULES,
     INTERACTIVITY_RULES,
     MOBILE_FIRST_RULES,
+    editModeBlock,
+    visualEditBlock,
     colorSchemeRule,
     typographyRules,
     indexHtmlFontInjectionRule,
@@ -1180,6 +1229,9 @@ const createGenerationNode = (): Node<GenerateInput, GenerationNodeOutput> => ({
       input.systemPrompt,
       resolvedHydrationContext,
       input.prompt,
+      input.generationMode,
+      input.requestMode,
+      input.visualEditContext,
       input.supabaseIntegration,
       input.githubIntegration,
       Boolean(input.screenshotBase64)
@@ -1242,6 +1294,9 @@ const createFastGenerationNode = (): Node<GenerateInput, GenerationNodeOutput> =
       input.systemPrompt,
       resolvedHydrationContext,
       input.prompt,
+      input.generationMode,
+      input.requestMode,
+      input.visualEditContext,
       input.supabaseIntegration,
       input.githubIntegration,
       Boolean(input.screenshotBase64)

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { bundleCode } from '../lib/bundler';
+import { buildVisualEditSelectionScript, bundleCode } from '../lib/bundler';
 import { getDefaultImportMap, getEsmUrlForDependency } from '../config/dependencies';
 
 interface LocalPreviewProps {
@@ -7,6 +7,7 @@ interface LocalPreviewProps {
   files?: Record<string, string>;
   entryPath?: string;
   dependencies?: Record<string, string>;
+  visualEditEnabled?: boolean;
   previewPath?: string;
   refreshToken?: number;
   previewMode?: 'desktop' | 'tablet' | 'mobile';
@@ -113,6 +114,7 @@ const LocalPreview: React.FC<LocalPreviewProps> = ({
   files = {},
   entryPath = 'src/App.tsx',
   dependencies = {},
+  visualEditEnabled = false,
   previewPath = '/',
   refreshToken = 0,
   previewMode = 'desktop',
@@ -206,18 +208,18 @@ const LocalPreview: React.FC<LocalPreviewProps> = ({
                 
                 /* Inspector Styles */
                 .ai-builder-inspect-active * {
-                  cursor: crosshair !important;
+                  cursor: pointer !important;
                 }
                 .ai-builder-highlight {
-                  outline: 2px solid #3b82f6 !important;
+                  outline: 2px solid #8b5cf6 !important;
                   outline-offset: -2px;
-                  background-color: rgba(59, 130, 246, 0.1) !important;
+                  background-color: rgba(139, 92, 246, 0.1) !important;
                   transition: all 0.1s;
                 }
                 .ai-builder-selected {
-                  outline: 2px solid #10b981 !important;
+                  outline: 2px solid #8b5cf6 !important;
                   outline-offset: -2px;
-                  background-color: rgba(16, 185, 129, 0.14) !important;
+                  background-color: rgba(139, 92, 246, 0.16) !important;
                 }
               </style>
             </head>
@@ -306,6 +308,7 @@ const LocalPreview: React.FC<LocalPreviewProps> = ({
 
                 // --- Inspector Logic ---
                 let isInspectMode = false;
+                let isVisualEditEnabled = ${JSON.stringify(Boolean(visualEditEnabled))};
                 let currentHighlight = null;
                 const selectedNodes = new Map();
                 let activeSelectionKey = '';
@@ -334,6 +337,20 @@ const LocalPreview: React.FC<LocalPreviewProps> = ({
                   errorOverlayElement.style.display = 'block';
                   errorOverlayElement.textContent = normalized;
                 }
+
+                function applyVisualEditMode(enabled) {
+                  isVisualEditEnabled = Boolean(enabled);
+                  window.__AI_BUILDER_VISUAL_EDIT_ENABLED__ = isVisualEditEnabled;
+                  document.body.classList.toggle('ai-builder-inspect-active', Boolean(isInspectMode && isVisualEditEnabled));
+                  if (!isVisualEditEnabled && currentHighlight) {
+                    currentHighlight.classList.remove('ai-builder-highlight');
+                    currentHighlight = null;
+                  }
+                }
+
+                applyVisualEditMode(isVisualEditEnabled);
+                window.__AI_BUILDER_ADVANCED_VISUAL_EDIT__ = true;
+                ${buildVisualEditSelectionScript(window.location.origin)}
 
                 if (typeof window.__BUNDLE_ERROR__ === 'string' && window.__BUNDLE_ERROR__) {
                   renderBundleErrorOverlay(window.__BUNDLE_ERROR__);
@@ -455,6 +472,7 @@ const LocalPreview: React.FC<LocalPreviewProps> = ({
                 }
 
                 function buildVisualTargetInfo(element) {
+                  const rect = element.getBoundingClientRect();
                   const sourceId = element.getAttribute('data-source-id') || element.closest('[data-source-id]')?.getAttribute('data-source-id') || '';
                   const selector = sourceId
                     ? ('[data-source-id="' + sourceId.replace(/"/g, '\\"') + '"]')
@@ -470,12 +488,23 @@ const LocalPreview: React.FC<LocalPreviewProps> = ({
                     className: element.className || '',
                     id: element.id || '',
                     innerText: element.innerText ? element.innerText.substring(0, 120) : '',
+                    textContent: element.textContent ? element.textContent.substring(0, 120) : '',
                     selector,
                     domPath: element.getAttribute('data-ai-node-id') || '',
                     sectionId,
                     routePath: getCurrentPreviewRoutePath(),
                     href: element.getAttribute('href') || (element.closest('a[href]')?.getAttribute('href') || ''),
                     role: element.getAttribute('role') || '',
+                    rect: {
+                      x: rect.x,
+                      y: rect.y,
+                      width: rect.width,
+                      height: rect.height,
+                      top: rect.top,
+                      left: rect.left,
+                      right: rect.right,
+                      bottom: rect.bottom,
+                    },
                   };
                 }
 
@@ -499,6 +528,7 @@ const LocalPreview: React.FC<LocalPreviewProps> = ({
 
                   window.parent.postMessage({
                     type: 'ELEMENT_SELECTED',
+                    element: targetInfo,
                     payload: {
                       ...targetInfo,
                       selected,
@@ -581,7 +611,7 @@ const LocalPreview: React.FC<LocalPreviewProps> = ({
                   element.style.borderRadius = state.previousBorderRadius;
 
                   isInspectMode = Boolean(state.wasInspectMode);
-                  document.body.classList.toggle('ai-builder-inspect-active', isInspectMode);
+                  document.body.classList.toggle('ai-builder-inspect-active', Boolean(isInspectMode && isVisualEditEnabled));
                 }
 
                 function commitInlineTextEdit() {
@@ -742,11 +772,16 @@ const LocalPreview: React.FC<LocalPreviewProps> = ({
                   }
                   if (event.data.type === 'TOGGLE_INSPECT') {
                     isInspectMode = event.data.payload;
-                    document.body.classList.toggle('ai-builder-inspect-active', isInspectMode);
-                    if (!isInspectMode && currentHighlight) {
+                    document.body.classList.toggle('ai-builder-inspect-active', Boolean(isInspectMode && isVisualEditEnabled));
+                    if ((!isInspectMode || !isVisualEditEnabled) && currentHighlight) {
                        currentHighlight.classList.remove('ai-builder-highlight');
                        currentHighlight = null;
                     }
+                    return;
+                  }
+
+                  if (event.data.type === 'SET_VISUAL_EDIT_MODE') {
+                    applyVisualEditMode(event.data?.payload);
                     return;
                   }
 
@@ -1033,7 +1068,7 @@ const LocalPreview: React.FC<LocalPreviewProps> = ({
                 window.addEventListener('gestureend', (event) => event.preventDefault(), { passive: false });
 
                 document.addEventListener('mouseover', (e) => {
-                  if (!isInspectMode) return;
+                  if (!isInspectMode || !isVisualEditEnabled) return;
                   e.preventDefault();
                   e.stopPropagation();
 
@@ -1077,8 +1112,21 @@ const LocalPreview: React.FC<LocalPreviewProps> = ({
                   }
                 }, true);
 
+                document.addEventListener('mouseout', (e) => {
+                  if (!isInspectMode || !isVisualEditEnabled) return;
+                  const target = e.target;
+                  const el = target instanceof Element
+                    ? target
+                    : (target instanceof Node ? target.parentElement : null);
+                  if (!el) return;
+                  el.classList.remove('ai-builder-highlight');
+                  if (currentHighlight === el) {
+                    currentHighlight = null;
+                  }
+                }, true);
+
                 document.addEventListener('click', (e) => {
-                  if (!isInspectMode) return;
+                  if (!isInspectMode || !isVisualEditEnabled) return;
                   e.preventDefault();
                   e.stopPropagation();
 
@@ -1189,6 +1237,7 @@ const LocalPreview: React.FC<LocalPreviewProps> = ({
                   
                   window.parent.postMessage({
                     type: 'ELEMENT_SELECTED',
+                    element: lead,
                     payload: {
                       ...lead,
                       selected,
@@ -1341,7 +1390,16 @@ const LocalPreview: React.FC<LocalPreviewProps> = ({
 
     const timer = setTimeout(updatePreview, 800); // Debounce - increased for better performance
     return () => clearTimeout(timer);
-  }, [code, files, entryPath, dependencies, refreshToken]);
+  }, [code, files, entryPath, dependencies, refreshToken, visualEditEnabled]);
+
+  useEffect(() => {
+    if (iframeRef.current?.contentWindow) {
+      iframeRef.current.contentWindow.postMessage({
+        type: 'SET_VISUAL_EDIT_MODE',
+        payload: visualEditEnabled,
+      }, '*');
+    }
+  }, [visualEditEnabled, refreshToken]);
 
   useEffect(() => {
     if (iframeRef.current?.contentWindow) {

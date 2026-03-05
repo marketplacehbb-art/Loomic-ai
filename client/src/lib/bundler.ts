@@ -21,6 +21,60 @@ interface MissingExportIssue {
     importName: string;
 }
 
+export const buildVisualEditSelectionScript = (parentOrigin: string): string => `
+(() => {
+  if (window.__AI_BUILDER_ADVANCED_VISUAL_EDIT__) return;
+  const PARENT_ORIGIN = ${JSON.stringify(parentOrigin)};
+  const getTargetElement = (target) => {
+    if (target instanceof Element) return target;
+    if (target instanceof Node) return target.parentElement;
+    return null;
+  };
+  const isEnabled = () => Boolean(window.__AI_BUILDER_VISUAL_EDIT_ENABLED__);
+
+  document.addEventListener('mouseover', (event) => {
+    if (!isEnabled()) return;
+    const el = getTargetElement(event.target);
+    if (!el || el === document.body || el.id === 'root') return;
+    el.style.outline = '2px solid #8b5cf6';
+    el.style.cursor = 'pointer';
+  }, true);
+
+  document.addEventListener('mouseout', (event) => {
+    if (!isEnabled()) return;
+    const el = getTargetElement(event.target);
+    if (!el || el === document.body || el.id === 'root') return;
+    el.style.outline = '';
+  }, true);
+
+  document.addEventListener('click', (event) => {
+    if (!isEnabled()) return;
+    const el = getTargetElement(event.target);
+    if (!el || el === document.body || el.id === 'root') return;
+    event.preventDefault();
+    event.stopPropagation();
+    const rect = el.getBoundingClientRect();
+    const info = {
+      tagName: el.tagName,
+      className: el.className || '',
+      textContent: (el.textContent || '').slice(0, 100),
+      id: el.id || '',
+      rect: {
+        x: rect.x,
+        y: rect.y,
+        width: rect.width,
+        height: rect.height,
+        top: rect.top,
+        left: rect.left,
+        right: rect.right,
+        bottom: rect.bottom,
+      },
+    };
+    window.parent.postMessage({ type: 'ELEMENT_SELECTED', element: info, payload: info }, PARENT_ORIGIN);
+  }, true);
+})();
+`;
+
 const PREVIEW_ENTRY_CANDIDATES = ['src/main.tsx', 'src/index.tsx', 'main.tsx', 'index.tsx'] as const;
 
 const SHADCN_COMMON_EXPORTS = [
@@ -92,16 +146,13 @@ const createSyntheticModule = (path: string): string => {
     if (path.endsWith('.json')) {
         return '{}\n';
     }
-    if (path.endsWith('.ts')) {
-        return 'export {};\n';
-    }
-    if (path.endsWith('.js')) {
-        return 'export default {};\n';
-    }
-    const componentName = (path.split('/').pop() || 'Placeholder')
+    const baseName = (path.split('/').pop() || 'Stub')
         .replace(/\.[^.]+$/, '')
-        .replace(/[^a-zA-Z0-9_$]/g, '') || 'Placeholder';
-    return `export default function ${componentName}(){ return null; }\n`;
+        .replace(/[^a-zA-Z0-9_$]/g, '') || 'Stub';
+    const exportName = /^[A-Za-z_$]/.test(baseName)
+        ? baseName.charAt(0).toUpperCase() + baseName.slice(1)
+        : `Stub${baseName}`;
+    return `export default function Stub() { return null; }\nexport const [${exportName}] = [() => null];\n`;
 };
 
 const toPascalCase = (value: string): string =>
@@ -819,7 +870,9 @@ export const bundleCode = async (rawCode: string, options: BundleOptions = {}): 
                                     const stubPath = normalizePath(`__virtual_shadcn__/${specifier.replace(/^@\//, '').replace(/[^\w/-]/g, '')}.tsx`);
                                     return { path: stubPath, namespace: 'shadcn-stub' };
                                 }
-                                return { errors: [{ text: `Cannot resolve alias "${specifier}"` }] };
+                                const missingStubPath = normalizePath(`__virtual_missing__/${specifier.replace(/[^\w/@.-]/g, '_')}.tsx`);
+                                virtualFilesInput[missingStubPath] = createSyntheticModule(missingStubPath);
+                                return { path: missingStubPath, namespace: 'virtual' };
                             }
                             return { path: aliasedResolved, namespace: 'virtual' };
                         }

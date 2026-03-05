@@ -283,6 +283,34 @@ export interface GitHubPushResponse {
     error?: string;
 }
 
+export interface GenerateSnapshotHistoryEntry {
+    id: string;
+    createdAt: string;
+    fileCount: number;
+    projectId: string;
+    label?: string;
+}
+
+export interface GenerateSnapshotsResponse {
+    success: boolean;
+    projectId?: string;
+    snapshots?: GenerateSnapshotHistoryEntry[];
+    error?: string;
+}
+
+export interface GenerateSnapshotRestoreResponse {
+    success: boolean;
+    projectId?: string;
+    snapshotId?: string;
+    files?: Array<{ path: string; content: string }>;
+    metadata?: {
+        createdAt?: string;
+        fileCount?: number;
+    };
+    error?: string;
+    code?: string;
+}
+
 export type SecurityFindingSeverity = 'low' | 'medium' | 'high' | 'critical';
 export type SecurityFindingCategory = 'rls' | 'auth' | 'policy' | 'edge' | 'secrets';
 
@@ -681,6 +709,36 @@ export const api = {
         });
         const payload = await response.json();
         return payload as VisualPatchApplyResponse;
+    },
+
+    async getGenerateSnapshots(projectId: string, limit = 20): Promise<GenerateSnapshotsResponse> {
+        const safeLimit = Number.isFinite(limit) ? Math.max(1, Math.min(50, Math.floor(limit))) : 20;
+        const response = await fetch(`${API_URL}/api/generate/snapshots/${projectId}?limit=${safeLimit}`, {
+            method: 'GET',
+            headers: await buildAuthHeaders(false),
+        });
+        return response.json() as Promise<GenerateSnapshotsResponse>;
+    },
+
+    async restoreGenerateSnapshot(input: {
+        projectId: string;
+        snapshotId: string;
+        files?: Record<string, string>;
+    }): Promise<GenerateSnapshotRestoreResponse> {
+        const body = JSON.stringify(input);
+        let response = await fetch(`${API_URL}/api/generate/snapshot/restore`, {
+            method: 'POST',
+            headers: await buildAuthHeaders(true),
+            body,
+        });
+        if (response.status === 404) {
+            response = await fetch(`${API_URL}/api/generate/rollback`, {
+                method: 'POST',
+                headers: await buildAuthHeaders(true),
+                body,
+            });
+        }
+        return response.json() as Promise<GenerateSnapshotRestoreResponse>;
     },
 
     async verifyGeneratedFiles(input: {

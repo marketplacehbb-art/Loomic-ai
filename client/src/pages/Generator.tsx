@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ImageIcon, X } from 'lucide-react';
+import { Clock3, ImageIcon, LayoutGrid, RotateCcw, RotateCw, Shuffle, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { MonacoEditor } from '../components/MonacoEditor';
 import { CodePreview } from '../components/CodePreview';
@@ -28,6 +28,7 @@ import SupabaseConnect from '../components/SupabaseConnect';
 import CloudWorkspace from '../components/CloudWorkspace';
 import PublishModal from '../components/PublishModal';
 import GitHubSync from '../components/GitHubSync';
+import TemplateGallery from '../components/TemplateGallery';
 import GenerationTimeline, {
   TIMELINE_BUNDLING_INDEX,
   TIMELINE_READY_INDEX,
@@ -35,6 +36,7 @@ import GenerationTimeline, {
   type TimelineStepState,
 } from '../components/GenerationTimeline';
 import { supabase } from '../lib/supabase';
+import type { GalleryTemplate } from '../data/templates';
 import {
   normalizeRuntimeIssuePayload,
   type PreviewRuntimeIssuePayload,
@@ -129,11 +131,22 @@ const normalizeProviderErrorCategory = (value: unknown): ProviderErrorCategory |
 };
 
 interface VisualEditAnchorPayload {
+  rect?: {
+    x?: number;
+    y?: number;
+    width?: number;
+    height?: number;
+    top?: number;
+    left?: number;
+    right?: number;
+    bottom?: number;
+  };
   nodeId?: string;
   tagName?: string;
   className?: string;
   id?: string;
   innerText?: string;
+  textContent?: string;
   selector?: string;
   domPath?: string;
   sectionId?: string;
@@ -146,6 +159,120 @@ interface VisualEditAnchorPayload {
   activeSelectionKey?: string;
   text?: string;
 }
+
+interface VisualSelectionRect {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+}
+
+interface VisualEditTargetElement {
+  tagName: string;
+  className: string;
+  textContent: string;
+}
+
+interface VisualEditRequestPayload {
+  targetElement: VisualEditTargetElement;
+  editInstruction: string;
+}
+
+interface GenerateInvocationOptions {
+  forceGenerationMode?: 'new' | 'edit';
+}
+
+type FileMap = Record<string, string>;
+
+interface SnapshotHistoryEntry {
+  id: string;
+  timestamp: string;
+  label: string;
+  snapshotId?: string | null;
+}
+
+interface StarterSuggestionCard {
+  emoji: string;
+  title: string;
+  description: string;
+  prompt: string;
+}
+
+const STARTER_SUGGESTION_CARDS: StarterSuggestionCard[] = [
+  {
+    emoji: '🍕',
+    title: 'Pizza Restaurant',
+    description: 'Menu, story section, and smooth online ordering flow.',
+    prompt: 'Create a beautiful pizza restaurant website with menu, about section, and online ordering',
+  },
+  {
+    emoji: '🚀',
+    title: 'SaaS Landing Page',
+    description: 'Hero, features, pricing, and social proof sections.',
+    prompt: 'Build a modern SaaS landing page with hero, features, pricing, and testimonials',
+  },
+  {
+    emoji: '👤',
+    title: 'Developer Portfolio',
+    description: 'Projects, skills, timeline, and contact form.',
+    prompt: 'Create a minimal developer portfolio with projects, skills, and contact form',
+  },
+  {
+    emoji: '🛍️',
+    title: 'E-Commerce Store',
+    description: 'Product grid, cart interactions, and checkout flow.',
+    prompt: 'Build an online store with product grid, cart, and checkout flow',
+  },
+  {
+    emoji: '📊',
+    title: 'Analytics Dashboard',
+    description: 'Stats cards, charts, and a useful data table.',
+    prompt: 'Create an analytics dashboard with stats cards, charts, and data table',
+  },
+  {
+    emoji: '💒',
+    title: 'Wedding Page',
+    description: 'Elegant story, gallery, schedule, and RSVP form.',
+    prompt: 'Build an elegant wedding website with story, gallery, and RSVP form',
+  },
+  {
+    emoji: '💪',
+    title: 'Fitness Studio',
+    description: 'Classes, trainers, plans, and memberships.',
+    prompt: 'Create a fitness studio website with classes, trainers, and membership pricing',
+  },
+  {
+    emoji: '📝',
+    title: 'Blog Platform',
+    description: 'Article grid, categories, and newsletter signup.',
+    prompt: 'Build a clean blog with article grid, categories, and newsletter signup',
+  },
+];
+
+const RANDOM_CREATIVE_PROMPTS: string[] = [
+  'Build a futuristic AI travel planner dashboard with interactive itinerary cards and map previews.',
+  'Erstelle eine moderne Landingpage fuer eine lokale Kaffeeroesterei mit Shop und Abo-Planen.',
+  'Create a clean legal-tech homepage for a contract analysis startup with pricing and FAQ.',
+  'Baue eine minimalistische Fotografen-Portfolio-Seite mit Filter-Galerie und Kontaktformular.',
+  'Design a music festival website with lineup grid, schedule timeline, and ticket tiers.',
+  'Erstelle ein elegantes Immobilienportal mit Suchfiltern, Expose-Seiten und Favoriten.',
+  'Create a productivity app website with feature tour, integrations section, and testimonials.',
+  'Baue eine Bildungsplattform fuer Online-Kurse mit Kurskarten, Dozentenprofilen und Bewertungen.',
+  'Build a pet adoption platform with animal cards, filter chips, and application steps.',
+  'Erstelle eine moderne Arztpraxis-Webseite mit Leistungen, Team, Terminbuchung und Bewertungen.',
+  'Create a cyber-security dashboard UI with alerts panel, incident timeline, and risk score.',
+  'Baue eine nachhaltige Fashion-Storefront mit Produktkacheln, Lookbook und Warenkorb.',
+  'Build a startup investor portal with KPI widgets, funding rounds, and milestone tracker.',
+  'Erstelle eine Reiseseite fuer Island mit hero video section, tour cards und Buchungsmodul.',
+  'Create a restaurant reservation app interface with calendar slots and table availability.',
+  'Baue ein Event-Management-Dashboard mit Teilnehmerliste, Check-in Status und Umsatzkarten.',
+  'Create a bold agency website with case studies, service matrix, and lead capture form.',
+  'Erstelle eine bilinguale Unternehmensseite (DE/EN) mit Branchenloesungen und Kontaktmodul.',
+  'Build a mobile-first fintech landing page with trust badges and onboarding steps.',
+  'Baue eine smarte Smart-Home Produktseite mit Feature-Comparison und Preismodellen.',
+  'Create a marketplace for handmade goods with category browse and seller profiles.',
+  'Erstelle eine Non-Profit-Webseite mit Mission, Impact-Statistiken und Spendenformular.',
+];
 
 interface PendingInlineDraft {
   key: string;
@@ -623,6 +750,53 @@ const buildVisualPatchErrorMessage = (response: VisualPatchApplyResponse, fallba
   return `${base} Details: ${details}`;
 };
 
+const toFiniteNumber = (value: unknown): number | null => {
+  const parsed = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const normalizeVisualRect = (value: unknown): VisualSelectionRect | null => {
+  if (!value || typeof value !== 'object') return null;
+  const source = value as Record<string, unknown>;
+  const width = Math.max(0, toFiniteNumber(source.width) || 0);
+  const height = Math.max(0, toFiniteNumber(source.height) || 0);
+  const top = toFiniteNumber(source.top);
+  const left = toFiniteNumber(source.left);
+  if (top === null || left === null || width <= 0 || height <= 0) return null;
+  return { top, left, width, height };
+};
+
+const buildVisualEditPrompt = (target: VisualEditTargetElement, instruction: string): string => {
+  const tagName = (target.tagName || 'element').trim().toLowerCase();
+  const textContent = (target.textContent || '').replace(/\s+/g, ' ').trim();
+  const safeText = textContent ? textContent.slice(0, 120) : 'selected element';
+  return `Edit the ${tagName} with text '${safeText}': ${instruction.trim()}`;
+};
+
+const MAX_FILE_SNAPSHOTS = 20;
+
+const areFileMapsEqual = (a: FileMap | undefined, b: FileMap | undefined): boolean => {
+  const left = a || {};
+  const right = b || {};
+  const leftKeys = Object.keys(left);
+  const rightKeys = Object.keys(right);
+  if (leftKeys.length !== rightKeys.length) return false;
+  for (const key of leftKeys) {
+    if (left[key] !== right[key]) return false;
+  }
+  return true;
+};
+
+const formatSnapshotTimestamp = (value: string): string => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+};
+
 export default function Generator() {
   const { user, session } = useAuth();
   const { updateRateLimit } = useUsage();
@@ -636,6 +810,12 @@ export default function Generator() {
   const [autoInlineEdit, setAutoInlineEdit] = useState(true);
   const [selectedEditAnchor, setSelectedEditAnchor] = useState<VisualEditAnchorPayload | null>(null);
   const [selectedEditAnchors, setSelectedEditAnchors] = useState<VisualEditAnchorPayload[]>([]);
+  const [selectedVisualRect, setSelectedVisualRect] = useState<VisualSelectionRect | null>(null);
+  const [visualEditInstruction, setVisualEditInstruction] = useState('');
+  const [history, setHistory] = useState<FileMap[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const [snapshotHistoryMeta, setSnapshotHistoryMeta] = useState<SnapshotHistoryEntry[]>([]);
+  const [showHistoryDropdown, setShowHistoryDropdown] = useState(false);
   const [pendingInlineEdits, setPendingInlineEdits] = useState<PendingInlineDraft[]>([]);
   const [visualSaveNotice, setVisualSaveNotice] = useState<string | null>(null);
   const [isApplyingVisualPatch, setIsApplyingVisualPatch] = useState(false);
@@ -703,6 +883,7 @@ export default function Generator() {
   const [showSupabaseModal, setShowSupabaseModal] = useState(false);
   const [showGitHubSyncModal, setShowGitHubSyncModal] = useState(false);
   const [showPublishModal, setShowPublishModal] = useState(false);
+  const [showTemplateGallery, setShowTemplateGallery] = useState(false);
   const [publication, setPublication] = useState<ProjectPublication | null>(null);
   const [publishLoading, setPublishLoading] = useState(false);
   const [publishSubmitting, setPublishSubmitting] = useState(false);
@@ -717,6 +898,8 @@ export default function Generator() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const modelSwitcherRef = useRef<HTMLDivElement>(null);
   const surfaceMenuRef = useRef<HTMLDivElement>(null);
+  const historyDropdownRef = useRef<HTMLDivElement>(null);
+  const previewStageRef = useRef<HTMLDivElement>(null);
   const previewBlobUrlRef = useRef<string | null>(null);
   const isGenerating = useRef(false);
   const timelineStepsRef = useRef<TimelineStepState[]>(createInitialTimelineState());
@@ -733,6 +916,14 @@ export default function Generator() {
   const liveChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const liveClientIdRef = useRef<string>(`client-${Math.random().toString(36).slice(2, 10)}`);
   const lastSecurityWarningRef = useRef<string>('');
+  const randomPromptIndexRef = useRef<number>(
+    RANDOM_CREATIVE_PROMPTS.length > 0
+      ? Math.floor(Math.random() * RANDOM_CREATIVE_PROMPTS.length)
+      : 0
+  );
+  const historyRef = useRef<FileMap[]>([]);
+  const historyIndexRef = useRef(-1);
+  const snapshotHistoryMetaRef = useRef<SnapshotHistoryEntry[]>([]);
   const [liveEnabled] = useState(true);
   const [, setLivePeerCount] = useState(1);
 
@@ -750,6 +941,92 @@ export default function Generator() {
 
   const refreshPreview = useCallback(() => {
     setPreviewRefreshToken((value) => value + 1);
+  }, []);
+
+  useEffect(() => {
+    historyRef.current = history;
+  }, [history]);
+
+  useEffect(() => {
+    historyIndexRef.current = historyIndex;
+  }, [historyIndex]);
+
+  useEffect(() => {
+    snapshotHistoryMetaRef.current = snapshotHistoryMeta;
+  }, [snapshotHistoryMeta]);
+
+  const initializeSnapshotHistory = useCallback((initialFiles: FileMap, label: string, snapshotId?: string | null) => {
+    const normalized = { ...(initialFiles || {}) };
+    if (Object.keys(normalized).length === 0) {
+      historyRef.current = [];
+      historyIndexRef.current = -1;
+      snapshotHistoryMetaRef.current = [];
+      setHistory([]);
+      setHistoryIndex(-1);
+      setSnapshotHistoryMeta([]);
+      return;
+    }
+    const timestamp = new Date().toISOString();
+    const entry: SnapshotHistoryEntry = {
+      id: `snap-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+      timestamp,
+      label,
+      snapshotId: snapshotId || null,
+    };
+    historyRef.current = [normalized];
+    historyIndexRef.current = 0;
+    snapshotHistoryMetaRef.current = [entry];
+    setHistory([normalized]);
+    setHistoryIndex(0);
+    setSnapshotHistoryMeta([entry]);
+  }, []);
+
+  const pushSnapshot = useCallback((nextFiles: FileMap, options?: {
+    label?: string;
+    snapshotId?: string | null;
+    timestamp?: string | null;
+  }) => {
+    const normalized = { ...(nextFiles || {}) };
+    if (Object.keys(normalized).length === 0) return;
+
+    let nextHistory = historyRef.current.slice(0, historyIndexRef.current + 1);
+    let nextMeta = snapshotHistoryMetaRef.current.slice(0, historyIndexRef.current + 1);
+    const currentFiles = nextHistory[nextHistory.length - 1];
+
+    if (areFileMapsEqual(currentFiles, normalized)) {
+      if (nextMeta.length > 0 && options?.snapshotId) {
+        const lastIdx = nextMeta.length - 1;
+        nextMeta[lastIdx] = {
+          ...nextMeta[lastIdx],
+          snapshotId: options.snapshotId,
+        };
+        snapshotHistoryMetaRef.current = nextMeta;
+        setSnapshotHistoryMeta(nextMeta);
+      }
+      return;
+    }
+
+    nextHistory.push(normalized);
+    nextMeta.push({
+      id: `snap-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+      timestamp: options?.timestamp || new Date().toISOString(),
+      label: options?.label || 'Snapshot',
+      snapshotId: options?.snapshotId || null,
+    });
+
+    if (nextHistory.length > MAX_FILE_SNAPSHOTS) {
+      const overflow = nextHistory.length - MAX_FILE_SNAPSHOTS;
+      nextHistory = nextHistory.slice(overflow);
+      nextMeta = nextMeta.slice(overflow);
+    }
+
+    const nextIndex = nextHistory.length - 1;
+    historyRef.current = nextHistory;
+    historyIndexRef.current = nextIndex;
+    snapshotHistoryMetaRef.current = nextMeta;
+    setHistory(nextHistory);
+    setHistoryIndex(nextIndex);
+    setSnapshotHistoryMeta(nextMeta);
   }, []);
 
   const syncTimelineSteps = useCallback((nextSteps: TimelineStepState[]) => {
@@ -1295,11 +1572,13 @@ export default function Generator() {
   }, [currentProject?.id, loadCloudOverview, loadSupabaseIntegrationStatus]);
 
   const normalizeAnchor = useCallback((anchor: VisualEditAnchorPayload): VisualEditAnchorPayload => ({
+    rect: normalizeVisualRect(anchor.rect) || undefined,
     nodeId: (anchor.nodeId || '').trim(),
     tagName: (anchor.tagName || '').trim(),
     className: (anchor.className || '').trim(),
     id: (anchor.id || '').trim(),
-    innerText: (anchor.innerText || '').trim(),
+    innerText: (anchor.innerText || anchor.textContent || '').trim(),
+    textContent: (anchor.textContent || anchor.innerText || '').trim(),
     selector: (anchor.selector || '').trim(),
     domPath: (anchor.domPath || '').trim(),
     sectionId: (anchor.sectionId || '').trim(),
@@ -1436,6 +1715,10 @@ export default function Generator() {
         ...Object.keys(files),
         ...Object.keys(filesObj),
       ])).filter((path) => files[path] !== filesObj[path]);
+      const repairSnapshotId =
+        typeof data?.pipeline?.snapshot?.currentId === 'string' ? data.pipeline.snapshot.currentId : null;
+      const repairSnapshotTimestamp =
+        typeof data?.pipeline?.snapshot?.createdAt === 'string' ? data.pipeline.snapshot.createdAt : null;
 
       const beforeFiles = { ...files };
       const beforeDependencies = { ...dependencies };
@@ -1443,6 +1726,11 @@ export default function Generator() {
         files: filesObj,
         dependencies: nextDependencies,
         message: 'Manual fix applied.',
+      });
+      pushSnapshot(filesObj, {
+        label: 'Manual fix',
+        snapshotId: repairSnapshotId,
+        timestamp: repairSnapshotTimestamp,
       });
       pushOperationHistory({
         label: 'Manual fix',
@@ -1506,6 +1794,7 @@ export default function Generator() {
     isAutoRepairing,
     loading,
     provider,
+    pushSnapshot,
     pushOperationHistory,
     refreshPreview,
     session?.access_token,
@@ -1524,6 +1813,8 @@ export default function Generator() {
   const clearVisualSelection = useCallback(() => {
     setSelectedEditAnchor(null);
     setSelectedEditAnchors([]);
+    setSelectedVisualRect(null);
+    setVisualEditInstruction('');
     const iframe = document.querySelector('iframe[title="Local Preview"]') as HTMLIFrameElement | null;
     iframe?.contentWindow?.postMessage({ type: 'CLEAR_SELECTION' }, '*');
   }, []);
@@ -1645,6 +1936,9 @@ export default function Generator() {
         dependencies: nextDependencies,
         message: 'Inline text updates applied.',
       });
+      pushSnapshot(nextFiles, {
+        label: `Inline text edits (${operations.length})`,
+      });
       setLastVisualDiagnostics({
         phase: 'inline-text',
         code: 'APPLIED',
@@ -1691,35 +1985,89 @@ export default function Generator() {
     } finally {
       setIsApplyingVisualPatch(false);
     }
-  }, [applyOperationEntry, currentProject?.id, dependencies, files, operationHistory, resolveAnchorProjectFile, selectorForAnchor]);
+  }, [applyOperationEntry, currentProject?.id, dependencies, files, operationHistory, pushSnapshot, resolveAnchorProjectFile, selectorForAnchor]);
+
+  const applyFiles = useCallback((nextFiles: FileMap) => {
+    const normalized = sanitizeLoadedFiles(nextFiles);
+    const nextDependencies = mergeDependencyMaps(extractDependenciesFromFiles(normalized));
+    lastLocalProjectWriteAtRef.current = Date.now();
+    try {
+      lastAppliedFileMapRef.current = JSON.stringify(normalized);
+    } catch {
+      lastAppliedFileMapRef.current = '{}';
+    }
+    setFiles(normalized);
+    setDependencies(nextDependencies);
+    broadcastLiveSnapshot(normalized, nextDependencies);
+    refreshPreview();
+  }, [broadcastLiveSnapshot, refreshPreview, setFiles]);
+
+  const syncSnapshotRestoreWithBackend = useCallback(async (
+    targetFiles: FileMap,
+    targetMeta: SnapshotHistoryEntry | undefined
+  ) => {
+    if (!currentProject?.id) return;
+    try {
+      let snapshotId = targetMeta?.snapshotId || '';
+      if (!snapshotId) {
+        const snapshotList = await api.getGenerateSnapshots(currentProject.id, 1);
+        snapshotId = snapshotList?.snapshots?.[0]?.id || '';
+      }
+      if (snapshotId) {
+        await api.restoreGenerateSnapshot({
+          projectId: currentProject.id,
+          snapshotId,
+          files: targetFiles,
+        });
+      }
+      await api.updateProject(currentProject.id, {
+        code: JSON.stringify(targetFiles),
+        prompt: `snapshot restore: ${targetMeta?.label || 'history'}`,
+        updated_at: new Date().toISOString(),
+      });
+    } catch (restoreError) {
+      console.error('Failed to sync snapshot restore with backend:', restoreError);
+    }
+  }, [currentProject?.id]);
+
+  const restoreSnapshotAtIndex = useCallback((targetIndex: number, source: 'undo' | 'redo' | 'history') => {
+    const snapshots = historyRef.current;
+    if (targetIndex < 0 || targetIndex >= snapshots.length) return;
+    const targetFiles = snapshots[targetIndex];
+    const targetMeta = snapshotHistoryMetaRef.current[targetIndex];
+    historyIndexRef.current = targetIndex;
+    setHistoryIndex(targetIndex);
+    applyFiles(targetFiles);
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: 'assistant',
+        content: `${source === 'undo' ? 'Undo' : source === 'redo' ? 'Redo' : 'History restore'}: ${targetMeta?.label || `Snapshot ${targetIndex + 1}`}`,
+      },
+    ]);
+    void syncSnapshotRestoreWithBackend(targetFiles, targetMeta);
+  }, [applyFiles, syncSnapshotRestoreWithBackend]);
+
+  const undo = useCallback(() => {
+    const idx = historyIndexRef.current;
+    if (idx <= 0) return;
+    restoreSnapshotAtIndex(idx - 1, 'undo');
+  }, [restoreSnapshotAtIndex]);
+
+  const redo = useCallback(() => {
+    const idx = historyIndexRef.current;
+    const snapshots = historyRef.current;
+    if (idx < 0 || idx >= snapshots.length - 1) return;
+    restoreSnapshotAtIndex(idx + 1, 'redo');
+  }, [restoreSnapshotAtIndex]);
 
   const handleUndoOperation = useCallback(() => {
-    const op = operationHistory.undo();
-    if (!op) return;
-    const beforeDependencies = mergeDependencyMaps(
-      extractDependenciesFromFiles(op.beforeFiles),
-      op.beforeDependencies
-    );
-    applyOperationEntry({
-      files: op.beforeFiles,
-      dependencies: beforeDependencies,
-      message: `Undo: ${op.label}`,
-    });
-  }, [applyOperationEntry, operationHistory]);
+    undo();
+  }, [undo]);
 
   const handleRedoOperation = useCallback(() => {
-    const op = operationHistory.redo();
-    if (!op) return;
-    const afterDependencies = mergeDependencyMaps(
-      extractDependenciesFromFiles(op.afterFiles),
-      op.afterDependencies
-    );
-    applyOperationEntry({
-      files: op.afterFiles,
-      dependencies: afterDependencies,
-      message: `Redo: ${op.label}`,
-    });
-  }, [applyOperationEntry, operationHistory]);
+    redo();
+  }, [redo]);
 
   const handleApplyPendingInlineEdits = useCallback(async () => {
     if (pendingInlineEdits.length === 0 || workspaceMode !== 'visual') return;
@@ -1769,21 +2117,25 @@ export default function Generator() {
           const sanitizedLoaded = sanitizeLoadedFiles(parsedFiles);
           resetFiles(sanitizedLoaded);
           setDependencies(mergeDependencyMaps(extractDependenciesFromFiles(sanitizedLoaded)));
+          initializeSnapshotHistory(sanitizedLoaded, `Loaded ${project.name}`);
           try {
             lastAppliedFileMapRef.current = JSON.stringify(sanitizedLoaded);
           } catch {
             lastAppliedFileMapRef.current = '{}';
           }
+        } else {
+          initializeSnapshotHistory({}, 'Loaded project');
         }
       } catch (e) {
         console.log('Project code is not JSON file map');
+        initializeSnapshotHistory({}, 'Loaded project');
       }
 
       // Load Chat History
       try {
-        const history = await api.getMessages(id);
-        if (history && history.length > 0) {
-          setMessages(history.map(m => ({
+        const messageHistory = await api.getMessages(id);
+        if (messageHistory && messageHistory.length > 0) {
+          setMessages(messageHistory.map(m => ({
             role: m.role as 'user' | 'assistant',
             content: m.content
           })));
@@ -1812,11 +2164,12 @@ export default function Generator() {
       }
 
       setShowProjectDropdown(false);
+      setShowHistoryDropdown(false);
     } catch (error) {
       console.error('Error loading project:', error);
       setError('Failed to load project');
     }
-  }, [resetFiles]);
+  }, [initializeSnapshotHistory, resetFiles]);
 
   // Load project if ID is present
   useEffect(() => {
@@ -1976,14 +2329,15 @@ export default function Generator() {
       if (!(event.origin === 'null' || event.origin === window.location.origin)) return;
 
       if (event.data.type === 'ELEMENT_SELECTED') {
-        const payload = (event.data.payload || {}) as VisualEditAnchorPayload;
+        const payload = (event.data.payload || event.data.element || {}) as VisualEditAnchorPayload;
         const selected = Array.isArray(payload.selected) && payload.selected.length > 0
           ? payload.selected.map(normalizeAnchor)
           : [normalizeAnchor(payload)];
         const primary = selected[0] || normalizeAnchor(payload);
+        const incomingRect = normalizeVisualRect(primary.rect || (event.data.element as any)?.rect);
         const tagName = (primary.tagName || '').trim();
         const className = (primary.className || '').trim();
-        const innerText = (primary.innerText || '').trim();
+        const innerText = (primary.innerText || primary.textContent || '').trim();
         const selector = (primary.selector || '').trim();
         const routePath = (primary.routePath || '').trim();
         const sectionId = (primary.sectionId || '').trim();
@@ -1991,6 +2345,21 @@ export default function Generator() {
         const sourceId = (primary.sourceId || '').trim();
         setSelectedEditAnchor(primary);
         setSelectedEditAnchors(selected);
+        setVisualEditInstruction('');
+        if (incomingRect && previewIframe) {
+          const iframeRect = previewIframe.getBoundingClientRect();
+          const stageRect = previewStageRef.current?.getBoundingClientRect() || iframeRect;
+          const relativeTop = incomingRect.top + (iframeRect.top - stageRect.top);
+          const relativeLeft = incomingRect.left + (iframeRect.left - stageRect.left);
+          setSelectedVisualRect({
+            top: Math.max(0, relativeTop),
+            left: Math.max(0, relativeLeft),
+            width: Math.max(1, incomingRect.width),
+            height: Math.max(1, incomingRect.height),
+          });
+        } else {
+          setSelectedVisualRect(null);
+        }
         const contextParts = [
           tagName ? `tag=${tagName}` : '',
           selected.length > 1 ? `count=${selected.length}` : '',
@@ -2008,6 +2377,13 @@ export default function Generator() {
             const prefix = prev ? prev + '\n' : '';
             return `${prefix}Aendere dieses Element gezielt (${contextString}) -> `;
           });
+        } else {
+          const prefilledPrompt = buildVisualEditPrompt({
+            tagName: (primary.tagName || 'element').toLowerCase(),
+            className: primary.className || '',
+            textContent: primary.innerText || primary.textContent || '',
+          }, '');
+          setPromptInput(prefilledPrompt.endsWith(':') ? `${prefilledPrompt} ` : prefilledPrompt);
         }
         return;
       }
@@ -2100,6 +2476,16 @@ export default function Generator() {
   useEffect(() => {
     const iframe = document.querySelector('iframe[title="Local Preview"]') as HTMLIFrameElement;
     if (iframe && iframe.contentWindow) {
+      iframe.contentWindow.postMessage(
+        { type: 'SET_VISUAL_EDIT_MODE', payload: workspaceMode === 'visual' && isInspectMode },
+        '*'
+      );
+    }
+  }, [workspaceMode, isInspectMode, previewRefreshToken, files]);
+
+  useEffect(() => {
+    const iframe = document.querySelector('iframe[title="Local Preview"]') as HTMLIFrameElement;
+    if (iframe && iframe.contentWindow) {
       iframe.contentWindow.postMessage({ type: 'SET_AUTO_INLINE_EDIT', payload: autoInlineEdit }, '*');
     }
   }, [autoInlineEdit, previewRefreshToken, files]);
@@ -2115,6 +2501,8 @@ export default function Generator() {
     setIsInspectMode(false);
     setPendingInlineEdits([]);
     setVisualSaveNotice(null);
+    setSelectedVisualRect(null);
+    setVisualEditInstruction('');
   }, [workspaceMode]);
 
   useEffect(() => {
@@ -2215,7 +2603,7 @@ export default function Generator() {
         e.preventDefault();
         // Save logic could be added here if needed
       }
-      // Ctrl/Cmd+Z: Operation undo, Ctrl/Cmd+Y or Ctrl/Cmd+Shift+Z: redo
+      // Ctrl/Cmd+Z: snapshot undo, Ctrl/Cmd+Y or Ctrl/Cmd+Shift+Z: redo
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
         e.preventDefault();
         handleUndoOperation();
@@ -2237,8 +2625,14 @@ export default function Generator() {
         if (showSurfaceMenu) {
           setShowSurfaceMenu(false);
         }
+        if (showHistoryDropdown) {
+          setShowHistoryDropdown(false);
+        }
         if (showPublishModal) {
           setShowPublishModal(false);
+        }
+        if (showTemplateGallery) {
+          setShowTemplateGallery(false);
         }
         if (isInspectMode) {
           setIsInspectMode(false);
@@ -2251,7 +2645,19 @@ export default function Generator() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [loading, isGeneratingLocked, promptInput, showProjectDropdown, showModelSwitcher, showSurfaceMenu, showPublishModal, isInspectMode, handleUndoOperation, handleRedoOperation, selectedEditAnchors.length, clearVisualSelection]);
+  }, [loading, isGeneratingLocked, promptInput, showProjectDropdown, showModelSwitcher, showSurfaceMenu, showHistoryDropdown, showPublishModal, showTemplateGallery, isInspectMode, handleUndoOperation, handleRedoOperation, selectedEditAnchors.length, clearVisualSelection]);
+
+  useEffect(() => {
+    if (!showHistoryDropdown) return;
+    const handleOutsideClick = (event: MouseEvent) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+      if (historyDropdownRef.current?.contains(target)) return;
+      setShowHistoryDropdown(false);
+    };
+    window.addEventListener('mousedown', handleOutsideClick);
+    return () => window.removeEventListener('mousedown', handleOutsideClick);
+  }, [showHistoryDropdown]);
 
   // Disable browser/page zoom inside generator view.
   useEffect(() => {
@@ -2387,6 +2793,9 @@ export default function Generator() {
         dependencies: nextDependencies,
         message: 'Visual patch wurde angewendet.',
       });
+      pushSnapshot(nextFiles, {
+        label: `Visual edit (${operations.length})`,
+      });
       operationHistory.push({
         label: `Visual edit (${operations.length})`,
         beforeFiles,
@@ -2442,11 +2851,17 @@ export default function Generator() {
     files,
     operationHistory,
     promptInput,
+    pushSnapshot,
     selectedEditAnchor?.selector,
     applyOperationEntry,
   ]);
 
-  const handleGenerate = async (forcePlanApply = false, promptOverride?: string) => {
+  const handleGenerate = async (
+    forcePlanApply = false,
+    promptOverride?: string,
+    visualEditRequest?: VisualEditRequestPayload,
+    options?: GenerateInvocationOptions
+  ) => {
     const candidatePrompt = (promptOverride ?? promptInput).trim();
     if (!candidatePrompt || loading || isAutoRepairing || isGenerating.current) return; // Guard against race conditions
     const accessToken = session?.access_token || null;
@@ -2454,7 +2869,12 @@ export default function Generator() {
       setError('Session abgelaufen. Bitte erneut einloggen.');
       return;
     }
-    if (workspaceMode === 'visual') {
+    const hasVisualEditRequest = Boolean(
+      visualEditRequest &&
+      typeof visualEditRequest.editInstruction === 'string' &&
+      visualEditRequest.editInstruction.trim().length > 0
+    );
+    if (workspaceMode === 'visual' && !hasVisualEditRequest) {
       if (pendingInlineEdits.length > 0) {
         setError('Du hast ungespeicherte Inline-Aenderungen. Bitte erst Save oder Discard.');
         return;
@@ -2510,7 +2930,7 @@ export default function Generator() {
     const plannerPromptFingerprint = toPlannerPromptFingerprint(userMessage);
     const plannerIntents = detectPlannerIntentTags(userMessage);
     const plannerIgnoredOnce = ignoredPlannerPromptFingerprint === plannerPromptFingerprint;
-    if (!forcePlanApply && plannerIntents.length > 0 && !plannerIgnoredOnce) {
+    if (!hasVisualEditRequest && !forcePlanApply && plannerIntents.length > 0 && !plannerIgnoredOnce) {
       setPendingIntentPlan({
         prompt: userMessage,
         intents: plannerIntents,
@@ -2529,6 +2949,13 @@ export default function Generator() {
     }
     setPendingIntentPlan(null);
     const strictVisualAnchors = selectedEditAnchors.filter(isReliableVisualAnchor);
+    const visualTargetElement: VisualEditTargetElement | null = hasVisualEditRequest
+      ? {
+        tagName: (visualEditRequest?.targetElement?.tagName || '').trim().toLowerCase(),
+        className: (visualEditRequest?.targetElement?.className || '').trim(),
+        textContent: (visualEditRequest?.targetElement?.textContent || '').trim(),
+      }
+      : null;
     const visualSelectionPromptAddon = strictVisualAnchors.length > 1
       ? `\n\nVISUAL_SELECTIONS:\n${strictVisualAnchors
         .slice(0, 8)
@@ -2540,10 +2967,19 @@ export default function Generator() {
         })
         .join('\n')}`
       : '';
-    const requestPrompt = `${userMessage}${visualSelectionPromptAddon}`;
+    const requestPrompt = hasVisualEditRequest && visualTargetElement
+      ? buildVisualEditPrompt(visualTargetElement, visualEditRequest?.editInstruction || '')
+      : `${userMessage}${visualSelectionPromptAddon}`;
     const keepSelectionAfterRun = workspaceMode === 'visual';
-    const autoGenerationMode: 'new' | 'edit' = currentProject?.id ? 'edit' : 'new';
+    const forcedGenerationMode = options?.forceGenerationMode;
+    const autoGenerationMode: 'new' | 'edit' = forcedGenerationMode
+      ? forcedGenerationMode
+      : (hasVisualEditRequest ? 'edit' : (currentProject?.id ? 'edit' : 'new'));
     const hasEditableFiles = files && Object.keys(files).length > 0;
+    if (hasVisualEditRequest && !hasEditableFiles) {
+      setError('Visual Edit braucht bestehende Projektdateien.');
+      return;
+    }
     const useEditContext = autoGenerationMode === 'edit' && hasEditableFiles;
     const generationProjectId = autoGenerationMode === 'edit' ? currentProject?.id : undefined;
     const supabaseGenerateContext = buildSupabaseGenerateContext(supabaseStatus);
@@ -2611,6 +3047,7 @@ export default function Generator() {
         accessToken,
         {
           provider,
+          mode: hasVisualEditRequest ? 'visual-edit' : undefined,
           generationMode: autoGenerationMode,
           prompt: requestPrompt,
           validate: true,
@@ -2619,6 +3056,8 @@ export default function Generator() {
           editAnchor: useEditContext
             ? (isReliableVisualAnchor(selectedEditAnchor || {}) ? selectedEditAnchor : strictVisualAnchors[0])
             : undefined,
+          targetElement: hasVisualEditRequest ? visualTargetElement : undefined,
+          editInstruction: hasVisualEditRequest ? visualEditRequest?.editInstruction : undefined,
 
           image: attachedImage, // legacy field (data URL)
           screenshotBase64: screenshotPayload?.screenshotBase64,
@@ -2792,6 +3231,10 @@ export default function Generator() {
       const plannedPages: string[] = (data?.pipeline?.plan?.pages as string[]) || [];
       const shouldUseDiffReview = defaultEnterpriseFlags.diffPreview && workspaceMode !== 'visual';
       const awaitingPatchConfirmation = hasAppliedChanges && Boolean(selectedEditAnchor && shouldUseDiffReview);
+      const responseSnapshotId =
+        typeof data?.pipeline?.snapshot?.currentId === 'string' ? data.pipeline.snapshot.currentId : null;
+      const responseSnapshotTimestamp =
+        typeof data?.pipeline?.snapshot?.createdAt === 'string' ? data.pipeline.snapshot.createdAt : null;
 
       const applyChanges = () => {
         const beforeFiles = { ...files };
@@ -2814,6 +3257,11 @@ export default function Generator() {
         setFiles(filesObj);
         setDependencies(nextDependencies);
         broadcastLiveSnapshot(filesObj, nextDependencies);
+        pushSnapshot(filesObj, {
+          label: userMessage.substring(0, 80) || 'Generation',
+          snapshotId: responseSnapshotId,
+          timestamp: responseSnapshotTimestamp,
+        });
 
         // Enterprise Feature 6: Push to Operation History
         operationHistory.push({
@@ -3038,6 +3486,29 @@ export default function Generator() {
     }
   };
 
+  const handleApplySelectedElementEdit = async () => {
+    if (!selectedEditAnchor) {
+      setError('Bitte zuerst ein Element in der Preview auswaehlen.');
+      return;
+    }
+    const instruction = visualEditInstruction.trim();
+    if (!instruction) {
+      setError('Bitte beschreibe die Aenderung fuer das ausgewaehlte Element.');
+      return;
+    }
+    const targetElement: VisualEditTargetElement = {
+      tagName: (selectedEditAnchor.tagName || 'element').toLowerCase(),
+      className: selectedEditAnchor.className || '',
+      textContent: selectedEditAnchor.innerText || selectedEditAnchor.textContent || '',
+    };
+    const contextualPrompt = buildVisualEditPrompt(targetElement, instruction);
+    setPromptInput(contextualPrompt);
+    await handleGenerate(false, contextualPrompt, {
+      targetElement,
+      editInstruction: instruction,
+    });
+  };
+
   const contextFileCount = Object.keys(files || {}).filter((path) => path.startsWith('src/')).length;
   const isEditMode = Boolean(currentProject?.id);
   const sidebarContextCount = lastContextCount ?? contextFileCount;
@@ -3080,7 +3551,33 @@ export default function Generator() {
   const publishButtonTone = isPublished
     ? 'bg-blue-600 hover:bg-blue-500'
     : 'bg-[#2f5ce9] hover:bg-[#416bf1]';
+  const canUndo = historyIndex > 0;
+  const canRedo = historyIndex >= 0 && historyIndex < history.length - 1;
+  const recentSnapshots = snapshotHistoryMeta
+    .map((entry, index) => ({ ...entry, index }))
+    .slice(Math.max(0, snapshotHistoryMeta.length - 5))
+    .reverse();
   const reliableVisualSelectionCount = selectedEditAnchors.filter(isReliableVisualAnchor).length;
+  const previewStageWidth = previewStageRef.current?.clientWidth || 0;
+  const previewStageHeight = previewStageRef.current?.clientHeight || 0;
+  const selectedVisualOverlayRect = selectedVisualRect
+    ? {
+      top: Math.max(0, Math.min(selectedVisualRect.top, Math.max(0, previewStageHeight - 1))),
+      left: Math.max(0, Math.min(selectedVisualRect.left, Math.max(0, previewStageWidth - 1))),
+      width: Math.max(1, Math.min(selectedVisualRect.width, Math.max(1, previewStageWidth - selectedVisualRect.left))),
+      height: Math.max(1, Math.min(selectedVisualRect.height, Math.max(1, previewStageHeight - selectedVisualRect.top))),
+    }
+    : null;
+  const visualPopupWidth = 320;
+  const visualPopupLeft = selectedVisualOverlayRect
+    ? Math.max(8, Math.min(selectedVisualOverlayRect.left, Math.max(8, previewStageWidth - visualPopupWidth - 8)))
+    : 8;
+  const visualPopupTop = selectedVisualOverlayRect
+    ? Math.min(
+      selectedVisualOverlayRect.top + selectedVisualOverlayRect.height + 10,
+      Math.max(8, previewStageHeight - 140)
+    )
+    : 8;
   const primaryVisualFile = selectedEditAnchor ? resolveAnchorProjectFile(selectedEditAnchor) : null;
   const primaryVisualAnchorIsValid = Boolean(selectedEditAnchor && isReliableVisualAnchor(selectedEditAnchor));
   const { visualStatus } = useVisualWorkflow({
@@ -3111,6 +3608,7 @@ export default function Generator() {
   const showPreviewToolbar = activeSurfaceMode === 'preview' || activeSurfaceMode === 'design';
   const showPreviewFrame = activeSurfaceMode === 'preview' || activeSurfaceMode === 'design';
   const hasFiles = Object.keys(files).length > 0;
+  const showStarterSuggestions = !currentProject?.id && !hasFiles && messages.length === 0 && !isVisualMode;
 
   const handleToggleSurfacePin = (mode: SurfaceMode) => {
     setPinnedSurfaceModes((prev) => {
@@ -3190,6 +3688,27 @@ export default function Generator() {
         setError('Projekt-Link konnte nicht geteilt werden.');
       }
     }
+  };
+
+  const handleStarterSuggestionClick = (prompt: string) => {
+    if (loading || isGeneratingLocked || isAutoRepairing || !prompt.trim()) return;
+    setPromptInput(prompt);
+    void handleGenerate(false, prompt);
+  };
+
+  const handleFillRandomPrompt = () => {
+    if (RANDOM_CREATIVE_PROMPTS.length === 0) return;
+    const index = randomPromptIndexRef.current % RANDOM_CREATIVE_PROMPTS.length;
+    const nextPrompt = RANDOM_CREATIVE_PROMPTS[index];
+    randomPromptIndexRef.current = (index + 1) % RANDOM_CREATIVE_PROMPTS.length;
+    setPromptInput(nextPrompt);
+  };
+
+  const handleUseTemplate = (template: GalleryTemplate) => {
+    if (loading || isGeneratingLocked || isAutoRepairing) return;
+    setShowTemplateGallery(false);
+    setPromptInput(template.prompt);
+    void handleGenerate(false, template.prompt, undefined, { forceGenerationMode: 'new' });
   };
 
   return (
@@ -3388,14 +3907,14 @@ export default function Generator() {
                   <div className="mt-3 flex items-center gap-2">
                     <button
                       onClick={handleUndoOperation}
-                      disabled={!operationHistory.canUndo}
+                      disabled={!canUndo}
                       className="rounded-lg border border-slate-600 bg-[#0f1118] px-2.5 py-1.5 text-xs font-semibold text-slate-200 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       Undo
                     </button>
                     <button
                       onClick={handleRedoOperation}
-                      disabled={!operationHistory.canRedo}
+                      disabled={!canRedo}
                       className="rounded-lg border border-slate-600 bg-[#0f1118] px-2.5 py-1.5 text-xs font-semibold text-slate-200 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       Redo
@@ -3435,9 +3954,36 @@ export default function Generator() {
             ) : (
               <div className="flex flex-col gap-8">
               {messages.length === 0 ? (
-                <div className="rounded-2xl border border-slate-700 bg-[#171922] p-6 shadow-sm">
-                  <p className="text-[15px] leading-relaxed text-slate-300">Describe your first change to get started.</p>
-                </div>
+                showStarterSuggestions ? (
+                  <div className="space-y-4">
+                    <div className="rounded-2xl border border-slate-700 bg-[#171922] p-5">
+                      <p className="text-sm font-semibold text-white">Start with a proven prompt</p>
+                      <p className="mt-1 text-sm text-slate-400">
+                        Pick a starter and generate instantly.
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      {STARTER_SUGGESTION_CARDS.map((card) => (
+                        <button
+                          key={card.title}
+                          onClick={() => handleStarterSuggestionClick(card.prompt)}
+                          className="group bg-slate-800/50 border border-slate-700 rounded-2xl p-4 text-left hover:border-purple-500 hover:bg-slate-800 transition-all cursor-pointer"
+                        >
+                          <p className="text-3xl">{card.emoji}</p>
+                          <p className="mt-2 font-semibold text-white">{card.title}</p>
+                          <p className="mt-1 text-sm text-slate-400">{card.description}</p>
+                          <p className="mt-2 text-xs font-semibold text-purple-400 opacity-0 transition-opacity group-hover:opacity-100">
+                            → Try this
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-slate-700 bg-[#171922] p-6 shadow-sm">
+                    <p className="text-[15px] leading-relaxed text-slate-300">Describe your first change to get started.</p>
+                  </div>
+                )
               ) : (
                 messages.map((msg, index) => {
                   const isAssistant = msg.role === 'assistant';
@@ -3583,6 +4129,13 @@ export default function Generator() {
 
                 <div className="mt-2 flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleFillRandomPrompt}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-600 text-slate-300 transition-colors hover:border-slate-500 hover:bg-white/5 hover:text-white"
+                      title="Random prompt"
+                    >
+                      <Shuffle className="h-4 w-4" />
+                    </button>
                     <button
                       onClick={() => knowledgeInputRef.current?.click()}
                       className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-600 text-slate-300 transition-colors hover:border-slate-500 hover:bg-white/5 hover:text-white"
@@ -3933,6 +4486,61 @@ export default function Generator() {
                       >
                         <span className="material-icons-round text-[15px]">refresh</span>
                       </button>
+                      <button
+                        onClick={handleUndoOperation}
+                        title="Undo (Ctrl+Z)"
+                        disabled={!canUndo}
+                        className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <RotateCcw className="h-[15px] w-[15px]" />
+                      </button>
+                      <button
+                        onClick={handleRedoOperation}
+                        title="Redo (Ctrl+Y)"
+                        disabled={!canRedo}
+                        className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <RotateCw className="h-[15px] w-[15px]" />
+                      </button>
+                      <div ref={historyDropdownRef} className="relative">
+                        <button
+                          onClick={() => setShowHistoryDropdown((prev) => !prev)}
+                          title="History"
+                          className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
+                        >
+                          <Clock3 className="h-[15px] w-[15px]" />
+                        </button>
+                        {showHistoryDropdown && (
+                          <div className="absolute right-0 top-9 z-50 w-72 rounded-xl border border-[#2d3444] bg-[#12161f] p-2 shadow-2xl">
+                            <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                              History
+                            </p>
+                            {recentSnapshots.length === 0 ? (
+                              <p className="px-2 py-1.5 text-xs text-slate-500">No snapshots yet.</p>
+                            ) : (
+                              <div className="space-y-1">
+                                {recentSnapshots.map((entry) => (
+                                  <button
+                                    key={entry.id}
+                                    onClick={() => {
+                                      setShowHistoryDropdown(false);
+                                      restoreSnapshotAtIndex(entry.index, 'history');
+                                    }}
+                                    className={`w-full rounded-lg border px-2 py-1.5 text-left transition ${
+                                      entry.index === historyIndex
+                                        ? 'border-blue-400/40 bg-blue-500/15 text-blue-200'
+                                        : 'border-transparent text-slate-300 hover:border-[#364056] hover:bg-[#1c2230]'
+                                    }`}
+                                  >
+                                    <p className="truncate text-[11px] font-semibold">{entry.label}</p>
+                                    <p className="text-[10px] text-slate-500">{formatSnapshotTimestamp(entry.timestamp)}</p>
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     {isVisualMode && (
@@ -3954,6 +4562,15 @@ export default function Generator() {
             </div>
 
             <div className="ml-2 flex shrink-0 items-center gap-2 border-l border-white/10 pl-2">
+              <button
+                onClick={() => setShowTemplateGallery(true)}
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#364056] bg-[#121722] px-3 text-sm font-semibold text-slate-200 transition-colors hover:bg-[#192033] hover:text-white"
+                title="Browse templates"
+              >
+                <LayoutGrid className="h-4 w-4" />
+                Templates
+              </button>
+
               <div className="flex items-center gap-1 rounded-2xl border border-[#303749] bg-[#151923] p-1">
                 <button
                   onClick={() => setShowSupabaseModal(true)}
@@ -4022,12 +4639,16 @@ export default function Generator() {
 
 
           <div className="flex-1 p-8 pt-0 overflow-hidden flex flex-col items-center">
-            <div className={`relative flex h-full w-full flex-col overflow-hidden rounded-2xl border border-[#2b3242] bg-[#131823] shadow-2xl transition-all duration-300 ${(showPreviewFrame && previewMode === 'mobile')
+            <div
+              ref={previewStageRef}
+              data-preview-stage="true"
+              className={`relative flex h-full w-full flex-col overflow-hidden rounded-2xl border border-[#2b3242] bg-[#131823] shadow-2xl transition-all duration-300 ${(showPreviewFrame && previewMode === 'mobile')
               ? 'max-w-[390px] max-h-[844px] my-auto !h-auto aspect-[390/844] border-8 border-slate-800 rounded-[3rem] shadow-xl'
               : (showPreviewFrame && previewMode === 'tablet')
                 ? 'max-w-[834px] max-h-[1112px] my-auto !h-auto aspect-[834/1112] border-[10px] border-slate-800 rounded-[2.2rem] shadow-xl'
                 : ''
-              }`}>
+              }`}
+            >
               {activeSurfaceMode === 'analytics' ? (
                 <div className="flex h-full flex-col items-center justify-center px-6 text-center">
                   <span className="material-icons-round mb-4 text-5xl text-slate-400">query_stats</span>
@@ -4128,6 +4749,7 @@ export default function Generator() {
                 <CodePreview
                   files={files}
                   dependencies={dependencies}
+                  visualEditEnabled={isVisualMode && isInspectMode}
                   previewPath={previewPath}
                   refreshToken={previewRefreshToken}
                   previewMode={previewMode}
@@ -4140,6 +4762,42 @@ export default function Generator() {
                   <p className="text-xl font-medium text-slate-300">{activeSurfaceMeta.label}</p>
                   <p className="text-sm max-w-md text-center text-slate-500">Beschreibe links eine Idee, um den Builder zu starten.</p>
                 </div>
+              )}
+
+              {showPreviewFrame && isVisualMode && selectedVisualOverlayRect && (
+                <>
+                  <div
+                    className="pointer-events-none absolute z-30 rounded-md border-2 border-[#8b5cf6] bg-[#8b5cf6]/10 shadow-[0_0_0_1px_rgba(139,92,246,0.35)]"
+                    style={{
+                      top: selectedVisualOverlayRect.top,
+                      left: selectedVisualOverlayRect.left,
+                      width: selectedVisualOverlayRect.width,
+                      height: selectedVisualOverlayRect.height,
+                    }}
+                  />
+                  <div
+                    className="absolute z-40 w-[320px] rounded-xl border border-[#8b5cf6]/45 bg-[#0d0a1a]/95 p-3 shadow-2xl backdrop-blur"
+                    style={{
+                      top: visualPopupTop,
+                      left: visualPopupLeft,
+                    }}
+                  >
+                    <p className="text-xs font-semibold text-[#d8b4fe]">✦ Edit this element</p>
+                    <input
+                      value={visualEditInstruction}
+                      onChange={(event) => setVisualEditInstruction(event.target.value)}
+                      placeholder="What would you like to change?"
+                      className="mt-2 w-full rounded-lg border border-[#8b5cf6]/35 bg-[#120f21] px-2.5 py-1.5 text-xs text-slate-100 outline-none placeholder:text-slate-400 focus:border-[#a78bfa]"
+                    />
+                    <button
+                      onClick={() => void handleApplySelectedElementEdit()}
+                      disabled={loading || isGeneratingLocked || !visualEditInstruction.trim()}
+                      className="mt-2 inline-flex h-8 items-center justify-center rounded-lg bg-[#8b5cf6] px-3 text-xs font-semibold text-white transition-colors hover:bg-[#7c3aed] disabled:cursor-not-allowed disabled:opacity-45"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                </>
               )}
 
               {showPreviewFrame && isVisualMode && pendingInlineEdits.length > 0 && (
@@ -4238,6 +4896,12 @@ export default function Generator() {
         status={gitHubSyncStatus}
         loading={gitHubSyncLoading}
         onRefresh={() => loadGitHubSyncStatus(currentProject?.id)}
+      />
+      <TemplateGallery
+        open={showTemplateGallery}
+        onClose={() => setShowTemplateGallery(false)}
+        onUseTemplate={handleUseTemplate}
+        loading={loading || isGeneratingLocked || isAutoRepairing}
       />
       <PublishModal
         open={showPublishModal}

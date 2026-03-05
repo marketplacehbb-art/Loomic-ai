@@ -4,6 +4,7 @@ import LocalPreview from './LocalPreview';
 interface CodePreviewProps {
     files: Record<string, string>;
     dependencies?: Record<string, string>;
+    visualEditEnabled?: boolean;
     previewPath?: string;
     refreshToken?: number;
     previewMode?: 'desktop' | 'tablet' | 'mobile';
@@ -78,6 +79,7 @@ class PreviewErrorBoundary extends Component<{ children: ReactNode }, ErrorBound
 export function CodePreview({
     files,
     dependencies,
+    visualEditEnabled = false,
     previewPath = '/',
     refreshToken = 0,
     previewMode = 'desktop',
@@ -101,6 +103,7 @@ export function CodePreview({
                     files={files}
                     entryPath={entryPath}
                     dependencies={dependencies}
+                    visualEditEnabled={visualEditEnabled}
                     previewPath={previewPath}
                     refreshToken={refreshToken}
                     previewMode={previewMode}

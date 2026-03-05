@@ -26,7 +26,12 @@ import { evaluateLibraryQuality } from '../ai/project-pipeline/library-quality-g
 import { editTelemetry } from '../ai/project-pipeline/edit-telemetry.js';
 import { generateObservability } from '../ai/project-pipeline/generate-observability.js';
 import { getFeatureFlagsForRequest as getRequestFeatureFlags, type FeatureFlags } from '../config/feature-flags.js';
-import { parseLLMOutput, sanitizeGeneratedModuleCode, type ParsedLLMOutput } from '../ai/project-pipeline/llm-response-parser.js';
+import {
+  parseLLMOutput,
+  sanitizeGeneratedModuleCode,
+  ensureLastResortRenderableOutput,
+  type ParsedLLMOutput,
+} from '../ai/project-pipeline/llm-response-parser.js';
 import { polishGeneratedContent } from '../ai/project-pipeline/content-intelligence.js';
 import { applyDeterministicEditActions } from '../ai/project-pipeline/deterministic-edit-actions.js';
 import { evaluateQualityGates } from '../ai/project-pipeline/quality-gates.js';
@@ -165,6 +170,30 @@ Rules:
 - Use shadcn/ui components where appropriate
 - Make it fully responsive
 - Output complete multi-file structure as always`;
+}
+
+function buildVisualEditModePromptBlock(input: {
+  targetElement?: {
+    tagName?: string;
+    className?: string;
+    textContent?: string;
+  } | null;
+  editInstruction?: string | null;
+}): string {
+  const target = input.targetElement || {};
+  const tagName = String(target.tagName || 'element').trim().toLowerCase();
+  const className = String(target.className || '').trim();
+  const textContent = String(target.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 160);
+  const instruction = String(input.editInstruction || '').replace(/\s+/g, ' ').trim();
+  return `VISUAL EDIT REQUEST:
+Target element: ${tagName} with className='${className || 'n/a'}' containing text='${textContent || 'n/a'}'
+Edit instruction: ${instruction || 'apply the requested change exactly'}
+
+Rules:
+- Find this EXACT element in the code by its className or text content
+- Apply ONLY the requested change to this element
+- Do not change anything else
+- Return the complete modified file`;
 }
 
 type FileMap = Record<string, string>;
@@ -498,7 +527,7 @@ function ensureProjectFontSystem(input: {
 
 function isFallbackAppPlaceholder(code: string): boolean {
   const normalized = String(code || '');
-  return normalized.includes('Generation incomplete - please retry');
+  return normalized.includes('Generation incomplete');
 }
 
 function sanitizeProjectSourceFiles(files: Record<string, string>): Record<string, string> {
@@ -1180,6 +1209,259 @@ type FallbackTemplateContext = {
 const FORCE_NEW_PROJECT_PROMPT_REGEX =
   /\b(mach mir|erstelle|baue|neue seite|new page|create|build me|make me)\b/i;
 
+type IntentSignalPattern = {
+  label: string;
+  pattern: RegExp;
+};
+
+type EditIntentDetection = {
+  intent: 'edit' | 'new' | 'unknown';
+  editScore: number;
+  newScore: number;
+  matchedEditSignals: string[];
+  matchedNewSignals: string[];
+  hasExistingFiles: boolean;
+};
+
+const EDIT_INTENT_SIGNAL_PATTERNS: IntentSignalPattern[] = [
+  { label: 'change', pattern: /\bchange\b/i },
+  { label: 'update', pattern: /\bupdate\b/i },
+  { label: 'fix', pattern: /\bfix\b/i },
+  { label: 'make', pattern: /\bmake\b/i },
+  { label: 'add', pattern: /\badd\b/i },
+  { label: 'remove', pattern: /\bremove\b/i },
+  { label: 'replace', pattern: /\breplace\b/i },
+  { label: 'modify', pattern: /\bmodify\b/i },
+  { label: 'adjust', pattern: /\badjust\b/i },
+  { label: 'set', pattern: /\bset\b/i },
+  { label: 'turn', pattern: /\bturn\b/i },
+  { label: 'convert', pattern: /\bconvert\b/i },
+  { label: 'rename', pattern: /\brename\b/i },
+  { label: 'mach', pattern: /\bmach\b/i },
+  { label: 'andere', pattern: /\b(?:ändere|aendere)\b/i },
+  { label: 'fuege', pattern: /\b(?:füge|fuege)\b/i },
+  { label: 'entferne', pattern: /\bentferne\b/i },
+  { label: 'ersetze', pattern: /\bersetze\b/i },
+  { label: 'setze', pattern: /\bsetze\b/i },
+];
+
+const NEW_INTENT_SIGNAL_PATTERNS: IntentSignalPattern[] = [
+  { label: 'create', pattern: /\bcreate\b/i },
+  { label: 'build', pattern: /\bbuild\b/i },
+  { label: 'generate', pattern: /\bgenerate\b/i },
+  { label: 'new_project', pattern: /\bnew\s+project\b/i },
+  { label: 'from_scratch', pattern: /\bfrom\s+scratch\b/i },
+  { label: 'erstelle_neu', pattern: /\berstelle\s+neu\b/i },
+  { label: 'neues_projekt', pattern: /\bneues\s+projekt\b/i },
+  { label: 'von_vorne', pattern: /\bvon\s+vorne\b/i },
+];
+
+const LARGE_REDESIGN_PROMPT_REGEX =
+  /\b(redesign|rewrite|overhaul|revamp|rework|full\s+rebuild|complete\s+rebuild|from\s+scratch|new\s+project|komplett\s+neu|von\s+vorne|neu\s+aufbauen|neu\s+gestalten)\b/i;
+
+const SMALL_EDIT_PROMPT_ACTION_REGEX =
+  /\b(change|update|fix|make|add|remove|replace|modify|adjust|set|turn|convert|rename|mach|ändere|aendere|füge|fuege|entferne|ersetze|setze)\b/i;
+
+type SelectMostRelevantEditFileInput = {
+  prompt: string;
+  contextFiles: Record<string, string>;
+  ragSelectedPaths: string[];
+  impactedFiles?: string[];
+  editAnchorSourceId?: string;
+};
+
+function collectMatchedIntentSignals(prompt: string, patterns: IntentSignalPattern[]): string[] {
+  const normalizedPrompt = String(prompt || '');
+  return patterns
+    .filter((entry) => entry.pattern.test(normalizedPrompt))
+    .map((entry) => entry.label);
+}
+
+function detectEditIntent(prompt: string, existingFiles: Record<string, string> | undefined): EditIntentDetection {
+  const hasExistingFiles = Boolean(existingFiles && Object.keys(existingFiles).length > 0);
+  const matchedEditSignals = collectMatchedIntentSignals(prompt, EDIT_INTENT_SIGNAL_PATTERNS);
+  const matchedNewSignals = collectMatchedIntentSignals(prompt, NEW_INTENT_SIGNAL_PATTERNS);
+  const editScore = matchedEditSignals.length;
+  const newScore = matchedNewSignals.length;
+
+  let intent: EditIntentDetection['intent'] = 'unknown';
+  if (hasExistingFiles) {
+    if (newScore > editScore && newScore > 0) {
+      intent = 'new';
+    } else if (editScore > 0) {
+      intent = 'edit';
+    } else if (newScore > 0) {
+      intent = 'new';
+    }
+  } else if (newScore > 0) {
+    intent = 'new';
+  }
+
+  return {
+    intent,
+    editScore,
+    newScore,
+    matchedEditSignals,
+    matchedNewSignals,
+    hasExistingFiles,
+  };
+}
+
+function isLikelyTargetableSourcePath(path: string): boolean {
+  const normalized = normalizeGeneratedPath(path || '');
+  if (!normalized.startsWith('src/')) return false;
+  return /\.(tsx|ts|jsx|js|css|scss|sass|less)$/.test(normalized);
+}
+
+function computePromptPathKeywordBoost(promptLower: string, normalizedPath: string): number {
+  const hints: Array<{ signal: RegExp; tokens: string[] }> = [
+    { signal: /\bbutton|cta\b/i, tokens: ['button', 'cta'] },
+    { signal: /\bnav|navbar|menu|header\b/i, tokens: ['nav', 'navbar', 'menu', 'header'] },
+    { signal: /\bfooter\b/i, tokens: ['footer'] },
+    { signal: /\bhero\b/i, tokens: ['hero'] },
+    { signal: /\bform|input|field\b/i, tokens: ['form', 'input'] },
+    { signal: /\bcard\b/i, tokens: ['card'] },
+    { signal: /\bcolor|theme|style|blue|red|green|background\b/i, tokens: ['style', 'theme', 'color', '.css'] },
+  ];
+
+  let boost = 0;
+  hints.forEach((hint) => {
+    if (!hint.signal.test(promptLower)) return;
+    if (hint.tokens.some((token) => normalizedPath.includes(token))) {
+      boost += 180;
+    }
+  });
+  return boost;
+}
+
+function selectMostRelevantEditFile(input: SelectMostRelevantEditFileInput): string | null {
+  const contextEntries = Object.entries(input.contextFiles || {});
+  if (contextEntries.length === 0) return null;
+  const normalizedContextMap = new Map<string, string>();
+  contextEntries.forEach(([path, content]) => {
+    const normalized = normalizeGeneratedPath(path);
+    if (!normalized) return;
+    normalizedContextMap.set(normalized, content);
+  });
+  if (normalizedContextMap.size === 0) return null;
+
+  const rankedPaths = (input.ragSelectedPaths || [])
+    .map((path) => normalizeGeneratedPath(path))
+    .filter(Boolean);
+  const rankedIndex = new Map<string, number>();
+  rankedPaths.forEach((path, index) => {
+    if (!rankedIndex.has(path)) rankedIndex.set(path, index);
+  });
+
+  const impactedSet = new Set(
+    (input.impactedFiles || [])
+      .map((path) => normalizeGeneratedPath(path))
+      .filter(Boolean)
+  );
+  const anchorPath = resolveSourceFileFromSourceId(String(input.editAnchorSourceId || ''));
+  const normalizedAnchorPath = normalizeGeneratedPath(anchorPath || '');
+  const promptLower = String(input.prompt || '').toLowerCase();
+
+  const candidateSet = new Set<string>();
+  if (normalizedAnchorPath) candidateSet.add(normalizedAnchorPath);
+  impactedSet.forEach((path) => candidateSet.add(path));
+  rankedPaths.forEach((path) => candidateSet.add(path));
+  normalizedContextMap.forEach((_content, path) => candidateSet.add(path));
+
+  let bestPath: string | null = null;
+  let bestScore = Number.NEGATIVE_INFINITY;
+
+  candidateSet.forEach((candidate) => {
+    if (!normalizedContextMap.has(candidate)) return;
+    const rankingScore = rankedIndex.has(candidate)
+      ? Math.max(0, 500 - (rankedIndex.get(candidate) || 0))
+      : 0;
+    const impactedScore = impactedSet.has(candidate) ? 1200 : 0;
+    const anchorScore = normalizedAnchorPath && candidate === normalizedAnchorPath ? 1600 : 0;
+    const sourcePathScore = isLikelyTargetableSourcePath(candidate) ? 120 : -220;
+    const appPenalty = candidate === 'src/App.tsx' ? -80 : 0;
+    const promptBoost = computePromptPathKeywordBoost(promptLower, candidate);
+    const score = rankingScore + impactedScore + anchorScore + sourcePathScore + appPenalty + promptBoost;
+    if (score > bestScore) {
+      bestScore = score;
+      bestPath = candidate;
+    }
+  });
+
+  if (bestPath) return bestPath;
+  if (normalizedContextMap.has('src/App.tsx')) return 'src/App.tsx';
+  return normalizedContextMap.keys().next().value || null;
+}
+
+function enforceTargetedEditBoundary(input: {
+  candidateFiles: Record<string, string>;
+  existingFiles: Record<string, string>;
+  targetPath: string;
+}): { files: Record<string, string>; revertedPaths: string[] } {
+  const normalizedTargetPath = normalizeGeneratedPath(input.targetPath || '');
+  if (!normalizedTargetPath) {
+    return { files: input.candidateFiles, revertedPaths: [] };
+  }
+
+  const existingNormalized: Record<string, string> = {};
+  Object.entries(input.existingFiles || {}).forEach(([path, content]) => {
+    const normalized = normalizeGeneratedPath(path);
+    if (!normalized || typeof content !== 'string') return;
+    existingNormalized[normalized] = content;
+  });
+
+  const next: Record<string, string> = {};
+  Object.entries(input.candidateFiles || {}).forEach(([path, content]) => {
+    const normalized = normalizeGeneratedPath(path);
+    if (!normalized || typeof content !== 'string') return;
+    next[normalized] = content;
+  });
+
+  const reverted = new Set<string>();
+
+  Object.keys(next).forEach((path) => {
+    if (path === normalizedTargetPath) return;
+    const existing = existingNormalized[path];
+    if (typeof existing === 'string') {
+      if (next[path] !== existing) {
+        next[path] = existing;
+        reverted.add(path);
+      }
+      return;
+    }
+    delete next[path];
+    reverted.add(path);
+  });
+
+  Object.entries(existingNormalized).forEach(([path, content]) => {
+    if (path === normalizedTargetPath) return;
+    if (typeof next[path] !== 'string') {
+      next[path] = content;
+      reverted.add(path);
+    }
+  });
+
+  return {
+    files: next,
+    revertedPaths: [...reverted].sort((a, b) => a.localeCompare(b)),
+  };
+}
+
+function isLargeRedesignPrompt(prompt: string): boolean {
+  return LARGE_REDESIGN_PROMPT_REGEX.test(String(prompt || ''));
+}
+
+function isSmallEditPrompt(prompt: string): boolean {
+  const normalized = String(prompt || '');
+  const wordCount = normalized
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean).length;
+  if (wordCount === 0 || wordCount > 60) return false;
+  if (isLargeRedesignPrompt(normalized)) return false;
+  return SMALL_EDIT_PROMPT_ACTION_REGEX.test(normalized);
+}
+
 const INDUSTRY_SIGNAL_PATTERNS: Record<DetectedIndustry, RegExp[]> = {
   restaurant: [/\b(restaurant|pizza|cafe|bistro|food|menu|delivery)\b/g],
   saas: [/\b(saas|platform|software|cloud|automation|b2b)\b/g],
@@ -1417,6 +1699,151 @@ function classifyValidationErrors(errors: string[]): ValidationErrorBreakdown {
   };
 }
 
+const SHADCN_STUB_EXPORTS = [
+  'Button',
+  'Card', 'CardHeader', 'CardTitle', 'CardDescription', 'CardContent', 'CardFooter',
+  'Dialog', 'DialogTrigger', 'DialogContent', 'DialogHeader', 'DialogTitle', 'DialogDescription', 'DialogFooter', 'DialogClose',
+  'Input', 'Textarea', 'Label', 'Select', 'SelectTrigger', 'SelectContent', 'SelectItem', 'SelectValue',
+  'Tabs', 'TabsList', 'TabsTrigger', 'TabsContent',
+  'Badge', 'Avatar', 'AvatarImage', 'AvatarFallback',
+  'Separator', 'Switch', 'Checkbox', 'RadioGroup', 'RadioGroupItem',
+  'Tooltip', 'TooltipTrigger', 'TooltipContent', 'TooltipProvider',
+  'Popover', 'PopoverTrigger', 'PopoverContent',
+  'Sheet', 'SheetTrigger', 'SheetContent', 'SheetHeader', 'SheetTitle', 'SheetDescription', 'SheetFooter', 'SheetClose',
+  'Table', 'TableHeader', 'TableBody', 'TableFooter', 'TableHead', 'TableRow', 'TableCell', 'TableCaption',
+  'Accordion', 'AccordionItem', 'AccordionTrigger', 'AccordionContent',
+  'DropdownMenu', 'DropdownMenuTrigger', 'DropdownMenuContent', 'DropdownMenuItem', 'DropdownMenuLabel', 'DropdownMenuSeparator',
+  'Alert', 'AlertTitle', 'AlertDescription',
+  'Progress', 'Skeleton', 'ScrollArea',
+  'cn',
+];
+
+function normalizeValidationErrorText(error: string): string {
+  return String(error || '').trim().toLowerCase();
+}
+
+function isShadcnMissingModuleError(error: string): boolean {
+  return /cannot find module ['"]@\/components\/ui\//i.test(String(error || ''));
+}
+
+function isHardBlockingValidationError(error: string): boolean {
+  const text = normalizeValidationErrorText(error);
+  if (!text) return false;
+  if (
+    /declaration expected|unexpected token|unterminated|parsing error|syntaxerror|expression expected|identifier expected|expected .* but found/i.test(text)
+  ) {
+    return true;
+  }
+  if (
+    /no valid jsx|keinen ausführbaren code|no executable code|expected a react module|invalid html document output|full html document/i.test(text)
+  ) {
+    return true;
+  }
+  return false;
+}
+
+function isBundlingFailureMessage(message: string): boolean {
+  const text = normalizeValidationErrorText(message);
+  if (!text) return false;
+  return (
+    text.includes('bundle warning:') ||
+    text.includes('esbuild error') ||
+    text.includes('bundling error') ||
+    text.includes('build failed')
+  );
+}
+
+function didBundlingCompletelyFail(errors: string[], warnings: string[]): boolean {
+  return [...errors, ...warnings].some((message) => isBundlingFailureMessage(message));
+}
+
+function partitionValidationErrorsForStability(errors: string[]): {
+  blocking: string[];
+  warnings: string[];
+} {
+  const blocking: string[] = [];
+  const warnings: string[] = [];
+
+  for (const error of errors) {
+    if (!String(error || '').trim()) continue;
+    if (isHardBlockingValidationError(error)) {
+      blocking.push(error);
+      continue;
+    }
+
+    // TypeScript/import/runtime mismatches are warning-only for generation stability.
+    warnings.push(error);
+  }
+
+  return { blocking, warnings };
+}
+
+function extractMissingShadcnSpecifiers(errors: string[]): string[] {
+  const specifiers = new Set<string>();
+  const regex = /cannot find module ['"]([^'"]+)['"]/ig;
+
+  errors.forEach((error) => {
+    const source = String(error || '');
+    let match: RegExpExecArray | null;
+    while ((match = regex.exec(source)) !== null) {
+      const specifier = String(match[1] || '').trim();
+      if (specifier.startsWith('@/components/ui/')) {
+        specifiers.add(specifier);
+      }
+    }
+  });
+
+  return Array.from(specifiers);
+}
+
+function toPascalCaseStable(value: string): string {
+  return String(value || '')
+    .split(/[^a-zA-Z0-9]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join('') || 'UiComponent';
+}
+
+function buildShadcnAutoStub(specifier: string): string {
+  const moduleName = specifier.split('/').pop() || 'component';
+  const primaryExport = toPascalCaseStable(moduleName);
+  const exports = Array.from(new Set([primaryExport, ...SHADCN_STUB_EXPORTS]));
+  const lines: string[] = [
+    `export default function Stub() { return null; }`,
+    `const __stub = () => null;`,
+  ];
+  exports.forEach((name) => {
+    if (name === 'cn') {
+      lines.push(`export const cn = (...parts: Array<string | undefined | null | false>) => parts.filter(Boolean).join(' ');`);
+      return;
+    }
+    lines.push(`export const [${name}] = [__stub];`);
+  });
+  return `${lines.join('\n')}\n`;
+}
+
+function applyShadcnAutoStubsFromValidationErrors(
+  files: Record<string, string>,
+  errors: string[]
+): { files: Record<string, string>; addedPaths: string[] } {
+  const next = { ...files };
+  const addedPaths: string[] = [];
+
+  const specifiers = extractMissingShadcnSpecifiers(errors);
+  specifiers.forEach((specifier) => {
+    const normalizedPath = normalizeGeneratedPath(`src/${specifier.slice(2)}.tsx`);
+    if (!normalizedPath) return;
+    if (typeof next[normalizedPath] === 'string' && next[normalizedPath].trim().length > 0) return;
+    next[normalizedPath] = buildShadcnAutoStub(specifier);
+    addedPaths.push(normalizedPath);
+  });
+
+  return {
+    files: next,
+    addedPaths,
+  };
+}
+
 function hasValidAppEntryPointFromCode(code: string): boolean {
   const normalized = String(code || '').trim();
   if (!normalized) return false;
@@ -1454,13 +1881,11 @@ function hasValidAssembledEntryPoint(fileMap: Record<string, string>, fallbackCo
 
 function shouldRollbackForValidationOutcome(
   breakdown: ValidationErrorBreakdown,
-  noValidEntryPoint: boolean
+  noValidEntryPoint: boolean,
+  bundlingFailed: boolean
 ): boolean {
-  const criticalErrors =
-    breakdown.byType.syntax +
-    breakdown.byType.import +
-    breakdown.byType.runtime;
-  return criticalErrors > 2 && noValidEntryPoint;
+  const criticalErrors = breakdown.byType.syntax;
+  return criticalErrors > 3 && noValidEntryPoint && bundlingFailed;
 }
 
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -1491,7 +1916,7 @@ type RequestIntegrations = {
 interface GenerateRequest {
   provider: SupportedProvider;
   prompt: string;
-  mode?: 'generate' | 'repair';
+  mode?: 'generate' | 'repair' | 'visual-edit';
   errorContext?: string;
   generationMode?: 'new' | 'edit';
   templateId?: string;
@@ -1510,6 +1935,12 @@ interface GenerateRequest {
   userId?: string;
   projectId?: string;
   integrations?: RequestIntegrations;
+  targetElement?: {
+    tagName?: string;
+    className?: string;
+    textContent?: string;
+  };
+  editInstruction?: string;
   editAnchor?: {
     nodeId?: string;
     tagName?: string;
@@ -1797,6 +2228,8 @@ router.post('/generate', validateRequest(generateSchema), async (req, res) => {
       knowledgeBase,
       userId,
       integrations,
+      targetElement,
+      editInstruction,
       editAnchor,
     } = requestBody;
 
@@ -1836,14 +2269,33 @@ router.post('/generate', validateRequest(generateSchema), async (req, res) => {
       ? (image || screenshotImageDataUrl)
       : image;
 
-    const requestMode = mode === 'repair' ? 'repair' : 'generate';
+    const requestMode: 'generate' | 'repair' | 'visual-edit' =
+      mode === 'repair'
+        ? 'repair'
+        : mode === 'visual-edit'
+          ? 'visual-edit'
+          : 'generate';
     const normalizedErrorContext = typeof errorContext === 'string' ? errorContext.trim() : '';
     const hasEditableFiles = Boolean(files && Object.keys(files).length > 0);
+    const requestedGenerationMode = requestBody.generationMode === 'new' || requestBody.generationMode === 'edit'
+      ? requestBody.generationMode
+      : null;
+    const intentDetection = detectEditIntent(prompt, files);
     if (requestMode === 'repair' && !hasEditableFiles) {
       return res.status(400).json({
         success: false,
         error: 'Repair mode requires current project files.',
         code: 'REPAIR_FILES_REQUIRED',
+        provider,
+        timestamp: new Date().toISOString(),
+        duration: Date.now() - startTime,
+      });
+    }
+    if (requestMode === 'visual-edit' && !hasEditableFiles) {
+      return res.status(400).json({
+        success: false,
+        error: 'Visual edit mode requires current project files.',
+        code: 'VISUAL_EDIT_FILES_REQUIRED',
         provider,
         timestamp: new Date().toISOString(),
         duration: Date.now() - startTime,
@@ -1856,26 +2308,49 @@ router.post('/generate', validateRequest(generateSchema), async (req, res) => {
       Boolean(promptSignals.industry) &&
       Boolean(existingSignals.industry) &&
       promptSignals.industry !== existingSignals.industry;
+    const forceNewIntentDetected = intentDetection.intent === 'new';
     const forceNewProject =
       requestMode === 'generate' &&
       hasEditableFiles &&
-      FORCE_NEW_PROJECT_PROMPT_REGEX.test(prompt) &&
-      hasIndustryMismatch;
+      (
+        forceNewIntentDetected ||
+        (FORCE_NEW_PROJECT_PROMPT_REGEX.test(prompt) && hasIndustryMismatch)
+      );
 
     if (forceNewProject) {
       console.log(
-        `[ModeSwitch] Forced generationMode=new due to new-project prompt in edit context (${existingSignals.industry} -> ${promptSignals.industry}).`
+        `[ModeSwitch] Forced generationMode=new (intent=${intentDetection.intent}; existing=${existingSignals.industry || 'n/a'} -> prompt=${promptSignals.industry || 'n/a'}).`
       );
     }
 
-    const effectiveGenerationMode: 'new' | 'edit' = forceNewProject
-      ? 'new'
-      : ((requestMode === 'repair' || hasEditableFiles) ? 'edit' : 'new');
+    const effectiveGenerationMode: 'new' | 'edit' = (() => {
+      if (requestMode === 'repair') return 'edit';
+      if (requestMode === 'visual-edit') return 'edit';
+      if (requestedGenerationMode === 'new') return 'new';
+      if (requestedGenerationMode === 'edit') return hasEditableFiles ? 'edit' : 'new';
+      if (!hasEditableFiles) return 'new';
+      if (forceNewProject) return 'new';
+      if (intentDetection.intent === 'edit') return 'edit';
+      if (intentDetection.intent === 'new') return 'new';
+      return 'edit';
+    })();
+    console.log(
+      `[IntentDetection] requested=${requestedGenerationMode || 'auto'} detected=${intentDetection.intent} ` +
+      `editScore=${intentDetection.editScore} newScore=${intentDetection.newScore} ` +
+      `editSignals=${intentDetection.matchedEditSignals.join('|') || 'none'} ` +
+      `newSignals=${intentDetection.matchedNewSignals.join('|') || 'none'}`
+    );
     const hasVisualAnchorInput = Boolean(
       editAnchor &&
       Object.values(editAnchor).some((value) => typeof value === 'string' && value.trim().length > 0)
     );
     const visualAnchorPrompt = effectiveGenerationMode === 'edit' ? buildVisualAnchorPrompt(editAnchor) : '';
+    const visualEditPromptBlock = requestMode === 'visual-edit'
+      ? buildVisualEditModePromptBlock({
+        targetElement,
+        editInstruction,
+      })
+      : '';
     const repairContextSuffix = requestMode === 'repair'
       ? `\n\nREPAIR_REQUEST:
 - mode: repair
@@ -1883,7 +2358,12 @@ router.post('/generate', validateRequest(generateSchema), async (req, res) => {
 - Task: Fix runtime/build issues with minimal changes and keep the existing design/content.`
       : '';
     const promptForPlanningBase = `${prompt}${repairContextSuffix}`;
-    const promptForPlanning = visualAnchorPrompt ? `${promptForPlanningBase}\n\n${visualAnchorPrompt}` : promptForPlanningBase;
+    const promptForPlanningWithAnchor = visualAnchorPrompt
+      ? `${promptForPlanningBase}\n\n${visualAnchorPrompt}`
+      : promptForPlanningBase;
+    const promptForPlanning = visualEditPromptBlock
+      ? `${promptForPlanningWithAnchor}\n\n${visualEditPromptBlock}`
+      : promptForPlanningWithAnchor;
     const supabaseIntegration = integrations?.supabase || null;
     const authUserId = (() => {
       const authReq = req as AuthenticatedRequest;
@@ -2011,7 +2491,28 @@ router.post('/generate', validateRequest(generateSchema), async (req, res) => {
       editScope: promptUnderstanding.editScope,
       maxChars: sectionPlan.semantic.intensity === 'high' ? 42000 : 26000,
     });
-    const scopedContextFiles = ragContextResult.contextFiles;
+    const selectedEditTargetPath = effectiveGenerationMode === 'edit'
+      ? selectMostRelevantEditFile({
+        prompt: promptForPlanning,
+        contextFiles: contextualFiles,
+        ragSelectedPaths: ragContextResult.selectedPaths,
+        impactedFiles: promptUnderstanding.impactedFiles,
+        editAnchorSourceId: editAnchor?.sourceId,
+      })
+      : null;
+    const scopedContextFiles = (() => {
+      if (effectiveGenerationMode !== 'edit' || !selectedEditTargetPath) {
+        return ragContextResult.contextFiles;
+      }
+      const normalizedTargetPath = normalizeGeneratedPath(selectedEditTargetPath);
+      const targetContent =
+        contextualFiles[normalizedTargetPath] ??
+        ragContextResult.contextFiles[normalizedTargetPath];
+      if (typeof targetContent !== 'string' || targetContent.trim().length === 0) {
+        return ragContextResult.contextFiles;
+      }
+      return { [normalizedTargetPath]: targetContent };
+    })();
     const genomeSeedFiles = effectiveGenerationMode === 'edit' && Object.keys(contextualFiles).length > 0
       ? contextualFiles
       : composedTemplate.files;
@@ -2022,10 +2523,12 @@ router.post('/generate', validateRequest(generateSchema), async (req, res) => {
     const integrationContextSuffix = supabaseIntegrationContextPrompt
       ? `\n\n${supabaseIntegrationContextPrompt}`
       : '';
-    const contractAllowedPaths = Array.from(new Set([
-      ...sectionPlan.allowedUpdatePaths.map(normalizeGeneratedPath),
-      ...ragContextResult.selectedPaths.map(normalizeGeneratedPath),
-    ])).slice(0, 60);
+    const contractAllowedPaths = (effectiveGenerationMode === 'edit' && selectedEditTargetPath)
+      ? [normalizeGeneratedPath(selectedEditTargetPath)]
+      : Array.from(new Set([
+        ...sectionPlan.allowedUpdatePaths.map(normalizeGeneratedPath),
+        ...ragContextResult.selectedPaths.map(normalizeGeneratedPath),
+      ])).slice(0, 60);
     const contractReadOnlyFiles = Array.from(new Set([
       ...Array.from(EDIT_MODE_READ_ONLY_FILES),
       ...(promptUnderstanding.forbiddenFiles || []).map(normalizeGeneratedPath),
@@ -2127,6 +2630,9 @@ ${contractReadOnlyFiles.map((path) => `  - ${path}`).join('\n')}
     if (effectiveGenerationMode === 'edit' && Object.keys(contextualFiles).length > 0) {
       console.log(`ðŸ“‚ Context: ${Object.keys(contextualFiles).length} files provided for iterative editing`);
       console.log(`ðŸ§  LLM context after filtering: ${Object.keys(scopedContextFiles).length} files`);
+      if (selectedEditTargetPath) {
+        console.log(`[EditTarget] Selected most relevant file: ${selectedEditTargetPath}`);
+      }
     }
     console.log(`ðŸ§© File plan ready: +${filePlan.create.length} create, ~${filePlan.update.length} update`);
 
@@ -2278,6 +2784,7 @@ ${contractReadOnlyFiles.map((path) => `  - ${path}`).join('\n')}
           runNodeGraph(selectedNodes, {
             provider: executionProviderHint,
             generationMode: effectiveGenerationMode,
+            requestMode,
             prompt: generationPrompt,
             systemPrompt: generationSystemPrompt,
             temperature: temperature || 0.7,
@@ -2292,6 +2799,16 @@ ${contractReadOnlyFiles.map((path) => `  - ${path}`).join('\n')}
             hydratedContext: hydratedContextForResponse,
             supabaseIntegration,
             githubIntegration,
+            visualEditContext: requestMode === 'visual-edit'
+              ? {
+                targetElement: {
+                  tagName: String(targetElement?.tagName || '').trim(),
+                  className: String(targetElement?.className || '').trim(),
+                  textContent: String(targetElement?.textContent || '').trim(),
+                },
+                editInstruction: String(editInstruction || '').trim(),
+              }
+              : undefined,
           }),
           orchestratorTimeoutMs,
           () => orchestratorAbortController.abort()
@@ -2638,6 +3155,9 @@ ${contractReadOnlyFiles.map((path) => `  - ${path}`).join('\n')}
           }
         }
       }
+    }
+    if (effectiveGenerationMode === 'new') {
+      parsedOutput = ensureLastResortRenderableOutput(parsedOutput, 'src/App.tsx');
     }
     const parsedAppGuard = ensureAppDefaultExportInFiles(parsedOutput.extractedFiles || []);
     if (parsedAppGuard.hasAppFile) {
@@ -3054,9 +3574,11 @@ CRITICAL STYLE ENFORCEMENT:
       orchestrationFiles,
       contextualFiles,
     });
+    const initialBundlingFailed = didBundlingCompletelyFail(processed.errors, processed.warnings);
     const shouldRollbackInitialValidation = shouldRollbackForValidationOutcome(
       rollbackErrorBreakdown,
-      initialNoValidEntryPoint
+      initialNoValidEntryPoint,
+      initialBundlingFailed
     );
     if (effectiveGenerationMode === 'edit' && shouldRollbackInitialValidation) {
       const hasContextFiles = Object.keys(contextualFiles).length > 0;
@@ -3160,6 +3682,20 @@ CRITICAL STYLE ENFORCEMENT:
       ? assembledFileMap
       : applySectionUpdateGuard(assembledFileMap, contextualFiles, sectionPlan);
     let sanitizedFileMap = sanitizeProjectSourceFiles(sectionGuardedFileMap);
+    if (!rollbackApplied && effectiveGenerationMode === 'edit' && selectedEditTargetPath) {
+      const targetedBoundary = enforceTargetedEditBoundary({
+        candidateFiles: sanitizedFileMap,
+        existingFiles: contextualFiles,
+        targetPath: selectedEditTargetPath,
+      });
+      sanitizedFileMap = sanitizeProjectSourceFiles(targetedBoundary.files);
+      if (targetedBoundary.revertedPaths.length > 0) {
+        processed.warnings = [
+          ...processed.warnings,
+          `[EditTarget] Reverted ${targetedBoundary.revertedPaths.length} out-of-target file change(s): ${targetedBoundary.revertedPaths.slice(0, 5).join(', ')}${targetedBoundary.revertedPaths.length > 5 ? ' ...' : ''}`,
+        ];
+      }
+    }
     if (rollbackApplied && rollbackFileMap) {
       sanitizedFileMap = sanitizeProjectSourceFiles(rollbackFileMap);
       const rollbackTargetPath = normalizeGeneratedPath(validationTargetPath);
@@ -3209,6 +3745,8 @@ CRITICAL STYLE ENFORCEMENT:
       changes: [],
     };
     let deterministicActions: string[] = [];
+    let suspiciousEditRedoTriggered = false;
+    let suspiciousEditRedoRecovered = false;
 
     if (!rollbackApplied) {
       const polished = polishGeneratedContent({
@@ -3279,6 +3817,116 @@ CRITICAL STYLE ENFORCEMENT:
       sanitizedFileMap = sanitizeProjectSourceFiles(hydration.files);
     }
 
+    if (
+      effectiveGenerationMode === 'edit' &&
+      !rollbackApplied &&
+      selectedEditTargetPath &&
+      isSmallEditPrompt(promptForPlanning) &&
+      !isLargeRedesignPrompt(promptForPlanning)
+    ) {
+      const preValidationSmartDiff = computeSmartDiff(contextualFiles, sanitizedFileMap);
+      if (preValidationSmartDiff.changeRatio > 0.8) {
+        suspiciousEditRedoTriggered = true;
+        const normalizedTargetPath = normalizeGeneratedPath(selectedEditTargetPath);
+        console.warn(
+          `[EditDiffGuard] Suspicious large diff (${preValidationSmartDiff.changeRatio.toFixed(2)}) for small edit. Retrying targeted file ${normalizedTargetPath}.`
+        );
+        const baselineTargetContent =
+          contextualFiles[normalizedTargetPath] ||
+          scopedContextFiles[normalizedTargetPath] ||
+          sanitizedFileMap[normalizedTargetPath] ||
+          '';
+
+        if (baselineTargetContent.trim().length > 0) {
+          const redoPrompt = `${promptForPlanning}
+
+EDIT MODE REDO:
+- Previous output changed too much code for this small edit request.
+- ONLY modify ${normalizedTargetPath}.
+- Keep all other files exactly unchanged.
+- Return the COMPLETE modified file ${normalizedTargetPath}.`;
+
+          try {
+            const redoResult = await withTimeout(
+              llmManager.generate({
+                provider: executionProviderHint,
+                generationMode: effectiveGenerationMode,
+                prompt: redoPrompt,
+                systemPrompt: generationSystemPrompt,
+                temperature: Math.min(0.5, temperature || 0.7),
+                maxTokens: Math.min(tokenBudget.generationMaxTokens, 1800),
+                stream: false,
+                currentFiles: {
+                  [normalizedTargetPath]: baselineTargetContent,
+                },
+                image: effectiveImagePayload,
+                screenshotBase64: normalizedScreenshotBase64 || undefined,
+                screenshotMimeType: hasScreenshotInput ? normalizedScreenshotMimeType : undefined,
+                knowledgeBase,
+              }),
+              Math.min(TIMEOUT_MS, 45000)
+            );
+            const redoRawCode = typeof redoResult === 'string'
+              ? redoResult
+              : (redoResult as any)?.content || '';
+            const redoParsed = parseLLMOutputWithDebugLogs(redoRawCode, normalizedTargetPath, {
+              [normalizedTargetPath]: baselineTargetContent,
+            });
+            const parsedTargetFile = (redoParsed.extractedFiles || []).find((file) => {
+              const candidatePath = normalizeGeneratedPath(file.path || '');
+              return candidatePath === normalizedTargetPath && String(file.content || '').trim().length > 0;
+            });
+            const fallbackParsedFile = (redoParsed.extractedFiles || []).find((file) => {
+              const candidatePath = normalizeGeneratedPath(file.path || '');
+              return /\.(tsx|ts|jsx|js|css|scss|sass|less)$/.test(candidatePath) && String(file.content || '').trim().length > 0;
+            });
+            const redoContentCandidate =
+              String(parsedTargetFile?.content || fallbackParsedFile?.content || '').trim().length > 0
+                ? String(parsedTargetFile?.content || fallbackParsedFile?.content || '')
+                : String(redoParsed.primaryCode || '');
+
+            if (redoContentCandidate.trim().length > 0) {
+              const sanitizedRedoTarget = sanitizeProjectSourceFiles({
+                [normalizedTargetPath]: redoContentCandidate,
+              });
+              sanitizedFileMap = sanitizeProjectSourceFiles({
+                ...sanitizedFileMap,
+                [normalizedTargetPath]: sanitizedRedoTarget[normalizedTargetPath] || redoContentCandidate,
+              });
+              const postRedoSmartDiff = computeSmartDiff(contextualFiles, sanitizedFileMap);
+              suspiciousEditRedoRecovered = postRedoSmartDiff.changeRatio <= 0.8;
+              if (suspiciousEditRedoRecovered) {
+                processed.warnings = [
+                  ...processed.warnings,
+                  `[EditDiffGuard] Suspicious diff corrected via targeted redo (${preValidationSmartDiff.changeRatio.toFixed(2)} -> ${postRedoSmartDiff.changeRatio.toFixed(2)}).`,
+                ];
+              } else {
+                processed.warnings = [
+                  ...processed.warnings,
+                  `[EditDiffGuard] Suspicious diff persisted after targeted redo (${postRedoSmartDiff.changeRatio.toFixed(2)}).`,
+                ];
+              }
+            } else {
+              processed.warnings = [
+                ...processed.warnings,
+                '[EditDiffGuard] Suspicious diff detected, but targeted redo returned no usable file.',
+              ];
+            }
+          } catch (redoError: any) {
+            processed.warnings = [
+              ...processed.warnings,
+              `[EditDiffGuard] Targeted redo failed: ${redoError?.message || 'unknown error'}`,
+            ];
+          }
+        } else {
+          processed.warnings = [
+            ...processed.warnings,
+            `[EditDiffGuard] Suspicious diff detected for ${normalizedTargetPath}, but baseline file content was empty.`,
+          ];
+        }
+      }
+    }
+
     let forcedCriticalErrors: string[] = [];
 
     const preValidationAppGuard = ensureAppDefaultExportInFileMap(sanitizedFileMap);
@@ -3333,9 +3981,11 @@ CRITICAL STYLE ENFORCEMENT:
     if (!rollbackApplied && appFallbackPlaceholderDetected) {
       const fallbackErrorMessage = 'Generation incomplete: App scaffold fallback placeholder was produced.';
       const hasContextFiles = Object.keys(contextualFiles).length > 0;
+      const placeholderBundlingFailed = didBundlingCompletelyFail(processed.errors, processed.warnings);
       const shouldRollbackPlaceholder = shouldRollbackForValidationOutcome(
         classifyValidationErrors(processed.errors),
-        true
+        true,
+        placeholderBundlingFailed
       );
       if (effectiveGenerationMode === 'edit' && hasContextFiles && shouldRollbackPlaceholder) {
         rollbackApplied = true;
@@ -3352,7 +4002,7 @@ CRITICAL STYLE ENFORCEMENT:
         processed.errors = [];
         processed.metadata.hasErrors = false;
       } else {
-        forcedCriticalErrors = [...forcedCriticalErrors, fallbackErrorMessage];
+        processed.warnings = [...processed.warnings, fallbackErrorMessage];
       }
 
       processed.warnings = [
@@ -3376,17 +4026,45 @@ CRITICAL STYLE ENFORCEMENT:
       codeToProcess;
 
     if (!rollbackApplied && validate) {
-      const finalProcessed = await codeProcessor.process(finalValidationCode, finalValidationPath, {
+      let effectiveFinalValidationCode = finalValidationCode;
+      let finalProcessed = await codeProcessor.process(effectiveFinalValidationCode, finalValidationPath, {
         validate,
         bundle,
       });
 
+      const shadcnStubOutcome = applyShadcnAutoStubsFromValidationErrors(
+        sanitizedFileMap,
+        finalProcessed.errors
+      );
+      if (shadcnStubOutcome.addedPaths.length > 0) {
+        const shadcnAutoStubWarning = `[AutoStub] Added missing shadcn/ui stub module(s): ${shadcnStubOutcome.addedPaths.slice(0, 5).join(', ')}${shadcnStubOutcome.addedPaths.length > 5 ? ' ...' : ''}`;
+        sanitizedFileMap = sanitizeProjectSourceFiles(shadcnStubOutcome.files);
+        effectiveFinalValidationCode =
+          sanitizedFileMap[finalValidationPath] ||
+          sanitizedFileMap['src/App.tsx'] ||
+          finalValidationCode;
+        finalProcessed = await codeProcessor.process(effectiveFinalValidationCode, finalValidationPath, {
+          validate,
+          bundle,
+        });
+        finalProcessed.warnings = [...finalProcessed.warnings, shadcnAutoStubWarning];
+      }
+
+      const partitionedFinalErrors = partitionValidationErrorsForStability(finalProcessed.errors);
+      const nonBlockingWarnings = partitionedFinalErrors.warnings.map((error) => `[Validation/warn-only] ${error}`);
+      finalProcessed.errors = partitionedFinalErrors.blocking;
+      if (nonBlockingWarnings.length > 0) {
+        finalProcessed.warnings = [...finalProcessed.warnings, ...nonBlockingWarnings];
+      }
+
       if (finalProcessed.errors.length > 0) {
         const finalErrorBreakdown = classifyValidationErrors(finalProcessed.errors);
-        const finalNoValidEntryPoint = !hasValidAssembledEntryPoint(sanitizedFileMap, finalValidationCode);
+        const finalNoValidEntryPoint = !hasValidAssembledEntryPoint(sanitizedFileMap, effectiveFinalValidationCode);
+        const finalBundlingFailed = didBundlingCompletelyFail(finalProcessed.errors, finalProcessed.warnings);
         const shouldRollbackFinalValidation = shouldRollbackForValidationOutcome(
           finalErrorBreakdown,
-          finalNoValidEntryPoint
+          finalNoValidEntryPoint,
+          finalBundlingFailed
         );
         const hasContextFiles = Object.keys(contextualFiles).length > 0;
         if (effectiveGenerationMode === 'edit' && hasContextFiles && shouldRollbackFinalValidation) {
@@ -3406,7 +4084,7 @@ CRITICAL STYLE ENFORCEMENT:
           console.warn('â†©ï¸ Rollback applied after final validation failure (context-files)');
         } else {
           processed = finalProcessed;
-          codeToProcess = finalValidationCode;
+          codeToProcess = effectiveFinalValidationCode;
           processed.warnings = [
             ...processed.warnings,
             `Final validation failed after post-processing (${finalProcessed.errors.length} errors).`,
@@ -3414,7 +4092,7 @@ CRITICAL STYLE ENFORCEMENT:
         }
       } else {
         processed = finalProcessed;
-        codeToProcess = finalValidationCode;
+        codeToProcess = effectiveFinalValidationCode;
       }
     } else {
       codeToProcess = finalValidationCode;
@@ -3507,7 +4185,7 @@ CRITICAL STYLE ENFORCEMENT:
         qualityGate.findings.push(...blockedLibraries.map((l, i) => ({
           id: `lib-block-${i}-${Date.now()}`,
           type: 'security' as any,
-          severity: 'critical' as const,
+          severity: 'warning' as const,
           message: `[LibraryQuality] Blocked library: ${l.name} in ${l.path}. ${l.suggestion || ''}`,
           category: 'security',
           suggestion: l.suggestion || 'Remove the blocked library and use an approved alternative.'
@@ -3515,10 +4193,10 @@ CRITICAL STYLE ENFORCEMENT:
         qualityGate.findings.push(...scaffoldWarnings.map((w, i) => ({
           id: `scaffold-warn-${i}-${Date.now()}`,
           type: 'quality' as any,
-          severity: 'critical' as const,
+          severity: 'warning' as const,
           message: `[Scaffold] ${w.message} at ${w.path}:${w.location}`,
           category: 'quality',
-          suggestion: 'Scaffold/placeholder code is blocked in strict mode. Replace it with verified production-ready implementation.'
+          suggestion: 'Scaffold/placeholder text detected; replace with domain-specific production copy.'
         } as any)));
       }
     }
@@ -3606,6 +4284,21 @@ CRITICAL STYLE ENFORCEMENT:
         styleRecoveryApplied = smartDiff.changedCount > 0 && styleAnchorDelta > 0;
       }
     }
+    if (suspiciousEditRedoTriggered) {
+      const stillSuspiciousLargeDiff =
+        smartDiff.changeRatio > 0.8 &&
+        isSmallEditPrompt(promptForPlanning) &&
+        !isLargeRedesignPrompt(promptForPlanning);
+      console.log(
+        `[EditDiffGuard] retryTriggered=true recovered=${suspiciousEditRedoRecovered} finalRatio=${smartDiff.changeRatio.toFixed(2)}`
+      );
+      if (stillSuspiciousLargeDiff) {
+        processed.warnings = [
+          ...processed.warnings,
+          `[EditDiffGuard] Small edit still produced a large diff (${smartDiff.changeRatio.toFixed(2)}).`,
+        ];
+      }
+    }
     const styleIntentWithoutAnchors = effectiveGenerationMode === 'edit' && !rollbackApplied && styleIntentDetected && styleAnchorDelta === 0;
     const blockedByScopeOnly =
       effectiveGenerationMode === 'edit' &&
@@ -3687,12 +4380,26 @@ CRITICAL STYLE ENFORCEMENT:
     // 4. SUCCESS RESPONSE
     // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-    const qualityCriticalMessages = qualityGate.findings
-      .filter((finding) => finding.severity === 'critical')
+    const partitionedProcessedErrors = partitionValidationErrorsForStability(processed.errors);
+    const processedWarnOnlyMessages = partitionedProcessedErrors.warnings.map((error) => `[Validation/warn-only] ${error}`);
+    processed.errors = partitionedProcessedErrors.blocking;
+    if (processedWarnOnlyMessages.length > 0) {
+      processed.warnings = [...processed.warnings, ...processedWarnOnlyMessages];
+    }
+
+    const qualityCriticalFindings = qualityGate.findings.filter((finding) => finding.severity === 'critical');
+    const qualityBlockingMessages = qualityCriticalFindings
+      .filter((finding) => isHardBlockingValidationError(finding.message))
       .map((finding) => `[Quality/critical] ${finding.message}`);
+    const qualityWarnOnlyCriticalMessages = qualityCriticalFindings
+      .filter((finding) => !isHardBlockingValidationError(finding.message))
+      .map((finding) => `[Quality/warn-only] ${finding.message}`);
+    if (qualityWarnOnlyCriticalMessages.length > 0) {
+      processed.warnings = [...processed.warnings, ...qualityWarnOnlyCriticalMessages];
+    }
     let combinedErrors = rollbackApplied
       ? []
-      : [...processed.errors, ...qualityCriticalMessages, ...forcedCriticalErrors];
+      : [...processed.errors, ...qualityBlockingMessages, ...forcedCriticalErrors];
     const malformedStructuredOnly = combinedErrors.length > 0
       && combinedErrors.every((entry) => /LLM returned malformed structured JSON/i.test(String(entry || '')));
     if (malformedStructuredOnly && responseFiles.length > 0) {

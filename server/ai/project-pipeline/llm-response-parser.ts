@@ -671,6 +671,55 @@ export function sanitizeGeneratedModuleCode(code: string): string {
   return sanitizePrimaryCode(code);
 }
 
+export function ensureLastResortRenderableOutput(
+  parsed: ParsedLLMOutput,
+  preferredPath: string = 'src/App.tsx'
+): ParsedLLMOutput {
+  const safeParsed = parsed || {
+    primaryCode: '',
+    extractedFiles: [],
+    detectedFormat: 'raw' as const,
+  };
+  const hasAstPatches = Array.isArray(safeParsed.astPatches) && safeParsed.astPatches.length > 0;
+  const hasRenderableRuntimeFile = (safeParsed.extractedFiles || []).some((file) => {
+    const normalizedPath = normalizeGeneratedPath(file.path || '');
+    const content = String(file.content || '').trim();
+    if (!normalizedPath || !content) return false;
+    if (!isRuntimeModulePath(normalizedPath)) return false;
+    if (looksLikeHtmlDocument(content)) return false;
+    return true;
+  });
+
+  if (hasRenderableRuntimeFile || hasAstPatches) {
+    return safeParsed;
+  }
+
+  const normalizedPreferred = normalizeGeneratedPath(preferredPath || 'src/App.tsx') || 'src/App.tsx';
+  let candidatePrimary = sanitizePrimaryCode(String(safeParsed.primaryCode || ''));
+  if (!candidatePrimary || looksLikeHtmlDocument(candidatePrimary)) {
+    candidatePrimary = APP_DEFAULT_EXPORT_FALLBACK;
+  } else if (isAppModulePath(normalizedPreferred) && !hasDefaultExport(candidatePrimary)) {
+    const injected = tryInjectDefaultExportForApp(candidatePrimary);
+    candidatePrimary = injected || APP_DEFAULT_EXPORT_FALLBACK;
+  }
+
+  const fallbackFiles = ensureAppDefaultExportInFiles([
+    { path: normalizedPreferred, content: candidatePrimary },
+  ]).files;
+  const fallbackPrimary =
+    fallbackFiles.find((file) => isAppModulePath(file.path))?.content ||
+    fallbackFiles[0]?.content ||
+    APP_DEFAULT_EXPORT_FALLBACK;
+
+  return {
+    primaryCode: sanitizePrimaryCode(fallbackPrimary),
+    extractedFiles: fallbackFiles,
+    detectedFormat: 'json',
+    operationsReport: safeParsed.operationsReport,
+    astPatches: safeParsed.astPatches,
+  };
+}
+
 function parseFencedBlocks(raw: string): Array<{ path?: string; content: string }> {
   const blocks: Array<{ path?: string; content: string }> = [];
   const fenceRegex = /```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g;

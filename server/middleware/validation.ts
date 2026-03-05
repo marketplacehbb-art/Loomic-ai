@@ -78,7 +78,7 @@ const integrationsSchema = z.object({
 export const generateSchema = z.object({
     prompt: z.string().min(10, 'Prompt too short (min 10 chars)').max(5000, 'Prompt too long (max 5000 chars)'),
     provider: z.enum(['gemini', 'groq', 'openai', 'nvidia']),
-    mode: z.enum(['generate', 'repair']).nullable().optional(),
+    mode: z.enum(['generate', 'repair', 'visual-edit']).nullable().optional(),
     errorContext: z.string().max(8000).nullable().optional(),
     generationMode: z.enum(['new', 'edit']).nullable().optional(),
     templateId: z.string().max(100).nullable().optional(),
@@ -96,6 +96,12 @@ export const generateSchema = z.object({
     integrations: integrationsSchema.optional(),
     userId: z.string().nullable().optional(),
     projectId: z.string().uuid().nullable().optional(),
+    targetElement: z.object({
+        tagName: z.string().optional(),
+        className: z.string().optional(),
+        textContent: z.string().optional(),
+    }).partial().nullable().optional(),
+    editInstruction: z.string().nullable().optional(),
     editAnchor: z.object({
         nodeId: z.string().optional(),
         tagName: z.string().optional(),

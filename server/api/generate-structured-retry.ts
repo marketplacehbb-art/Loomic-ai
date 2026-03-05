@@ -11,7 +11,11 @@ import {
     looksLikeHtmlDocument,
 } from './generate-shared.js';
 import { withTimeout, TIMEOUT_MS } from './generate-edit-mode-utils.js';
-import { type ParsedLLMOutput, sanitizeGeneratedModuleCode } from '../ai/project-pipeline/llm-response-parser.js';
+import {
+    type ParsedLLMOutput,
+    sanitizeGeneratedModuleCode,
+    ensureLastResortRenderableOutput,
+} from '../ai/project-pipeline/llm-response-parser.js';
 
 export function decodeEscapedJsonString(value: string): string {
     if (!value) return '';
@@ -325,12 +329,31 @@ export async function executeStructuredRetryLoop(input: StructuredRetryInput): P
     let requestRateLimit = input.requestRateLimit;
     let success = false;
 
-    const structuredRetryLimit = 3;
+    const structuredRetryLimit = 4;
     const structuredRetryTimeoutMs = TIMEOUT_MS;
     for (let retry = 1; retry <= structuredRetryLimit; retry += 1) {
+        if (retry === 4) {
+            const fallbackParsed = ensureLastResortRenderableOutput({
+                primaryCode: APP_DEFAULT_EXPORT_FALLBACK,
+                extractedFiles: [],
+                detectedFormat: 'raw',
+            }, 'src/App.tsx');
+            repairedRaw = APP_DEFAULT_EXPORT_FALLBACK;
+            parsedOutput = fallbackParsed;
+            success = true;
+            console.warn('[Parser] Structured retry exhausted. Using guaranteed fallback App.tsx on attempt 4.');
+            break;
+        }
+
         const strictContractJson = input.requiresEditStructuredOutput
             ? `{"operations":[{"op":"add_class","path":"src/App.tsx","selector":"[data-source-id=\\"src/App.tsx:12:5\\"]","classes":["bg-amber-400"]}],"notes":[]}`
             : `{"mainEntry":"src/App.tsx","dependencies":["react","react-dom"],"files":[{"path":"src/App.tsx","content":"..."}],"notes":[]}`;
+        const retryInstruction =
+            retry === 1
+                ? 'Return ONLY valid JSON, no markdown.'
+                : retry === 2
+                    ? 'Simplify to just App.tsx and one component.'
+                    : 'Return minimal single-file App.tsx only.';
         const strictSystemPrompt = `${input.generationSystemPrompt || ''}
 
 CRITICAL OUTPUT ENFORCEMENT:
@@ -345,6 +368,7 @@ CRITICAL OUTPUT ENFORCEMENT:
   - new mode: mainEntry, dependencies, files, notes
 - If you return "files", every file content must be a valid JSON string with escaped newlines (\\n).
 - Do not wrap JSON in prose.
+ - ${retryInstruction}
 ${input.requiresEditStructuredOutput ? '- EDIT MODE: Prefer "operations" JSON. If anchors are uncertain, return "files" JSON instead of invalid operations. Never return raw code/markdown.' : '- NEW MODE: Return structured multi-file JSON, never raw code or markdown.'}
 Example:
 ${strictContractJson}`;
@@ -366,14 +390,17 @@ Return strict valid JSON now in this exact format:
 or
 {"operations":[{"op":"replace_text","path":"src/App.tsx","find":"...","replace":"..."}]}
 Fallback if operations cannot be applied safely:
-{"files":[{"path":"src/App.tsx","content":"..."}],"notes":[]}`
+{"files":[{"path":"src/App.tsx","content":"..."}],"notes":[]}
+
+Retry instruction: ${retryInstruction}`
             : `${input.generationPrompt}
 
 Your previous response had malformed structured JSON.
 Return strict valid JSON now in one of these formats:
 1) {"mainEntry":"src/App.tsx","dependencies":["react","react-dom"],"files":[{"path":"src/App.tsx","content":"..."}],"notes":[]}
 2) {"operations":[{"op":"replace_text","path":"src/App.tsx","find":"...","replace":"..."}],"notes":[]}
-Only return JSON.`;
+Only return JSON.
+Retry instruction: ${retryInstruction}`;
 
         const retryResult = await withTimeout(
             llmManager.generate({
